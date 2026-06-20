@@ -26,13 +26,13 @@ export default function ValuesIndex({ graph }: ValuesIndexProps) {
           Bedrock values
         </h2>
         <p className="mt-0.5 text-xs text-slate-500">
-          Where every chain bottoms out. A value used by more than one question
+          Where every chain bottoms out. A value used by more than one root
           shows <span className="font-medium text-indigo-600">convergence</span>{" "}
-          — the shared foundation under different debates.
+          — the shared foundation under different questions and premises.
         </p>
 
         <ul className="mt-3 space-y-3">
-          {usage.map(({ value, questions, groundingNodes, convergent }) => {
+          {usage.map(({ value, roots, groundingNodes, convergent }) => {
             const meta = NODE_META[value.type];
             return (
               <li
@@ -56,32 +56,32 @@ export default function ValuesIndex({ graph }: ValuesIndexProps) {
                   </span>
                   {convergent && (
                     <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
-                      CONVERGENT · {questions.length} questions
+                      CONVERGENT · {roots.length} roots
                     </span>
                   )}
                 </div>
 
                 <div className="mt-2 pl-7 text-xs text-slate-600">
-                  {questions.length > 0 ? (
+                  {roots.length > 0 ? (
                     <>
                       <span className="text-slate-400">
                         Grounds {groundingNodes.length} argument
                         {groundingNodes.length === 1 ? "" : "s"} across:
                       </span>
                       <ul className="mt-1 space-y-0.5">
-                        {questions.map((q) => (
-                          <li key={q.id} className="flex gap-1.5">
-                            <span style={{ color: NODE_META.question.color }}>
-                              {NODE_META.question.icon}
+                        {roots.map((r) => (
+                          <li key={r.id} className="flex gap-1.5">
+                            <span style={{ color: NODE_META[r.type].color }}>
+                              {NODE_META[r.type].icon}
                             </span>
-                            <span>{q.content}</span>
+                            <span>{r.content}</span>
                           </li>
                         ))}
                       </ul>
                     </>
                   ) : (
                     <span className="text-slate-400">
-                      Not yet linked into a question tree.
+                      Not yet linked into a tree.
                     </span>
                   )}
                 </div>

@@ -37,6 +37,8 @@ export function useGraph() {
     graph,
     addRootQuestion: (content: string) =>
       setGraph((g) => G.addRootQuestion(g, content)),
+    addRootPremise: (content: string) =>
+      setGraph((g) => G.addRootPremise(g, content)),
     addNode: (type: NodeType, content: string, parentId: string) =>
       setGraph((g) => G.addNode(g, type, content, parentId)),
     editNode: (id: string, content: string) =>

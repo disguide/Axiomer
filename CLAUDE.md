@@ -53,7 +53,7 @@ Two key user-facing concepts:
 │   │   │   ├── NodeCard.tsx      ← Single node: icon, label, content, badge, actions, inline edit
 │   │   │   ├── AddNodeForm.tsx   ← Modal: context-sensitive type dropdown + value linking
 │   │   │   ├── ValuesIndex.tsx   ← Convergence view: values + clashes (Tree/Values tab)
-│   │   │   └── Legend.tsx        ← Panel listing all 20 node types
+│   │   │   └── Legend.tsx        ← Panel listing all node types
 │   │   ├── lib/
 │   │   │   ├── types.ts          ← NodeType, EdgeType, GraphNode/Edge/Graph, TERMINAL_TYPES
 │   │   │   ├── meta.ts           ← NODE_META (labels/icons/colors/prompts), ALLOWED_CHILDREN, NODE_ORDER
@@ -100,15 +100,30 @@ interface GraphEdge { id: string; from: string; to: string; edgeType: EdgeType; 
 interface Graph     { nodes: GraphNode[]; edges: GraphEdge[]; }
 ```
 
-There are exactly **20 node types** and **10 edge types**. Don't add or rename
-them without updating the spec, the Legend, the colors table, and the
+There are **21 node types** and **11 edge types** (V1 shipped with 20/10; the
+`premise` type and `entails` edge were added for reverse authoring — see below).
+Don't add or rename them without updating the Legend, the colors table, and the
 context-sensitive dropdown rules together.
 
 ### Terminal nodes
 
 `value`, `principle`, and `epistemic-limit` are **terminal** — they cannot have
 children. The UI must not offer an "add child" affordance on them, and grounding
-logic treats them as the bottom of a chain.
+logic treats them as the bottom of a chain. `premise` is **not** terminal.
+
+### Premises (reverse / forward-from-a-base authoring)
+
+Normal authoring is top-down: `question → position → argument → grounds-in →
+value`. A **premise** is the reverse entry point — a foundational assumption you
+build *forward* from. It is a tree **root** (created via "New Premise", like
+"New Question"), it is non-terminal, and everything added directly under it is
+connected with the `entails` edge (`premise → child`, a `DOWNWARD` edge). A
+premise tree uses all the normal machinery below it, so it can bottom out at the
+same shared values — which feeds straight into the convergence view. There is no
+separate "reverse mode": premises are just another kind of root you build down
+from. `getRoots` returns questions **and** premises; `getRootQuestions` stays
+question-only (grounding/clash logic is question-centric). Premises don't get a
+grounding badge.
 
 ## Critical conventions — read before touching graph logic
 
@@ -129,6 +144,7 @@ visual flow of the tree. This is the single biggest gotcha in the codebase.
 | `grounds-in` | Argument → Value/Principle/Epistemic-limit | chain bottoms out here |
 | `connects-to` | Any ↔ Any | related concept (bidirectional in meaning) |
 | `illustrates` | Analogy/ThoughtExp → Position/Argument | illustrates it |
+| `entails` | Premise → derived node | the premise leads to / entails this (DOWNWARD) |
 
 **Important traversal subtlety (this bit the first implementation):** most edges
 run **child → parent** (`answers`, `argues-for`, `argues-against`, `supports`,
@@ -137,8 +153,9 @@ and the parent is `to`. But **`raises` and `grounds-in` run parent → child** �
 the argument is `from`, the question/value is `to`. If you treat all edges the
 same, value nodes never render and child questions appear as duplicate roots.
 
-`graph.ts` solves this with a `DOWNWARD = ["raises", "grounds-in"]` set and an
-`endpoints(edge)` helper that returns `{parent, child}` regardless of direction.
+`graph.ts` solves this with a `DOWNWARD = ["raises", "grounds-in", "entails"]`
+set and an `endpoints(edge)` helper that returns `{parent, child}` regardless of
+direction.
 **Always go through `getChildren`/`getParent`/`getRootQuestions`** rather than
 reading `edge.from`/`edge.to` directly when you mean tree structure.
 `makeEdge(parentId, childId, edgeType)` builds edges with the correct
@@ -181,10 +198,11 @@ in it (that repetition *is* the convergence visualization in the tree view).
 
 The **Values view** (`ValuesIndex.tsx`, toggled from the Tree/Values tabs in
 `Home`) surfaces convergence explicitly. It is powered by read-only queries in
-`graph.ts`: `getValueUsage` (each terminal with the distinct root questions that
-reach it; `convergent` when >1) and `getValueClashes` (a single question whose
-chains bottom out at multiple distinct values — the real disagreement).
-`getRootQuestionFor` walks a node's parent chain up to its root question.
+`graph.ts`: `getValueUsage` (each terminal with the distinct roots — questions
+or premises — that reach it; `convergent` when >1) and `getValueClashes` (a
+single question whose chains bottom out at multiple distinct values — the real
+disagreement). `getRootFor` walks a node's parent chain up to its root
+(question or premise).
 
 ### Context-sensitive "add child" options
 
@@ -293,14 +311,14 @@ If asked to build V1, proceed in phases — each builds on the last:
 
 ## V1 acceptance checklist (definition of done)
 
-- All 20 node types render with correct icons/colors.
+- All node types render with correct icons/colors.
 - Create root questions; add nodes under valid parents via a context-sensitive
   type selector.
 - Grounding badges (`FULLY GROUNDED` / `OPEN`) compute correctly.
 - Edit content (not type); delete with descendant warning.
 - Link arguments to **existing** values (no duplicates).
 - Graph persists in `localStorage`; seed data loads on first visit.
-- Legend lists all 20 types with descriptions/examples.
+- Legend lists all node types with descriptions/examples.
 - Tree view is mobile-responsive.
 
 ## Things to get right

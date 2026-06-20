@@ -13,7 +13,8 @@ import type { EdgeType, Graph, GraphEdge, GraphNode, NodeType } from "./types";
 import { isTerminalType } from "./types";
 
 // Edge types whose direction runs parent(from) -> child(to).
-const DOWNWARD: readonly EdgeType[] = ["raises", "grounds-in"];
+// `entails` joins this set: a premise (parent) entails what it leads to (child).
+const DOWNWARD: readonly EdgeType[] = ["raises", "grounds-in", "entails"];
 
 function endpoints(edge: GraphEdge): { parent: string; child: string } {
   return DOWNWARD.includes(edge.edgeType)
@@ -43,11 +44,22 @@ export function getParent(graph: Graph, nodeId: string): GraphNode | undefined {
   return edge ? getNode(graph, endpoints(edge).parent) : undefined;
 }
 
-// Root questions: questions that are nobody's child.
+// Root questions: questions that are nobody's child. (Grounding/clash logic is
+// question-centric, so it uses this rather than getRoots.)
 export function getRootQuestions(graph: Graph): GraphNode[] {
   return graph.nodes.filter(
     (n) =>
       n.type === "question" &&
+      !graph.edges.some((e) => endpoints(e).child === n.id),
+  );
+}
+
+// Tree entry points: top-level questions AND premises (nobody's child).
+// Premises are forward-reasoning roots — you build conclusions down from them.
+export function getRoots(graph: Graph): GraphNode[] {
+  return graph.nodes.filter(
+    (n) =>
+      (n.type === "question" || n.type === "premise") &&
       !graph.edges.some((e) => endpoints(e).child === n.id),
   );
 }
@@ -62,6 +74,8 @@ export function edgeTypeFor(
   childType: NodeType,
   parentType: NodeType,
 ): EdgeType {
+  // Anything built directly on a premise is entailed by it.
+  if (parentType === "premise") return "entails";
   if (childType === "position" && parentType === "question") return "answers";
   if (childType === "argument-support") return "argues-for";
   if (childType === "argument-attack") return "argues-against";
@@ -115,9 +129,18 @@ export function addNode(
 
 // Create a brand new root question (no parent edge).
 export function addRootQuestion(graph: Graph, content: string): Graph {
+  return addRoot(graph, "question", content);
+}
+
+// Create a brand new root premise — a base to reason forward from.
+export function addRootPremise(graph: Graph, content: string): Graph {
+  return addRoot(graph, "premise", content);
+}
+
+function addRoot(graph: Graph, type: NodeType, content: string): Graph {
   const newNode: GraphNode = {
     id: uid("node"),
-    type: "question",
+    type,
     content,
     createdAt: new Date().toISOString(),
   };
@@ -304,9 +327,10 @@ export function getTerminals(graph: Graph): GraphNode[] {
   return graph.nodes.filter((n) => isTerminalType(n.type));
 }
 
-// Walk up the parent chain to the root question a node ultimately sits under.
-// Returns undefined if the chain doesn't reach a top-level question.
-export function getRootQuestionFor(
+// Walk up the parent chain to the root a node ultimately sits under — a
+// top-level question or premise. Returns undefined if the chain dead-ends
+// somewhere else (e.g. an orphaned terminal).
+export function getRootFor(
   graph: Graph,
   nodeId: string,
 ): GraphNode | undefined {
@@ -316,7 +340,9 @@ export function getRootQuestionFor(
     seen.add(node.id);
     const parent = getParent(graph, node.id);
     if (!parent) {
-      return node.type === "question" ? node : undefined;
+      return node.type === "question" || node.type === "premise"
+        ? node
+        : undefined;
     }
     node = parent;
   }
@@ -327,13 +353,13 @@ export interface ValueUsage {
   value: GraphNode;
   // Nodes (arguments or positions) that ground directly in this terminal.
   groundingNodes: GraphNode[];
-  // Distinct root questions whose chains reach this terminal.
-  questions: GraphNode[];
-  // True when reached from more than one distinct root question.
+  // Distinct roots (questions or premises) whose chains reach this terminal.
+  roots: GraphNode[];
+  // True when reached from more than one distinct root.
   convergent: boolean;
 }
 
-// Usage summary for every terminal, sorted by how many questions converge on it.
+// Usage summary for every terminal, sorted by how many roots converge on it.
 export function getValueUsage(graph: Graph): ValueUsage[] {
   return getTerminals(graph)
     .map((value) => {
@@ -342,20 +368,20 @@ export function getValueUsage(graph: Graph): ValueUsage[] {
         .map((e) => getNode(graph, e.from))
         .filter((n): n is GraphNode => Boolean(n));
 
-      const questionMap = new Map<string, GraphNode>();
+      const rootMap = new Map<string, GraphNode>();
       for (const node of groundingNodes) {
-        const root = getRootQuestionFor(graph, node.id);
-        if (root) questionMap.set(root.id, root);
+        const root = getRootFor(graph, node.id);
+        if (root) rootMap.set(root.id, root);
       }
-      const questions = [...questionMap.values()];
+      const roots = [...rootMap.values()];
       return {
         value,
         groundingNodes,
-        questions,
-        convergent: questions.length > 1,
+        roots,
+        convergent: roots.length > 1,
       };
     })
-    .sort((a, b) => b.questions.length - a.questions.length);
+    .sort((a, b) => b.roots.length - a.roots.length);
 }
 
 export interface ValueClash {
@@ -374,7 +400,7 @@ export function getValueClashes(graph: Graph): ValueClash[] {
         (e) =>
           e.edgeType === "grounds-in" &&
           e.to === t.id &&
-          getRootQuestionFor(graph, e.from)?.id === question.id,
+          getRootFor(graph, e.from)?.id === question.id,
       );
       if (reaches) terminals.set(t.id, t);
     }
