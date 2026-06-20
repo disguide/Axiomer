@@ -5,8 +5,8 @@ export default function Legend() {
     <div className="rounded-lg border border-slate-200 bg-white p-4">
       <h2 className="text-sm font-semibold text-slate-900">Node types</h2>
       <p className="mt-0.5 text-[11px] text-slate-400">
-        20 node types. Value, Principle, and Epistemic Limit are terminal — they
-        end a chain.
+        {NODE_ORDER.length} node types. Value, Principle, and Epistemic Limit are
+        terminal — they end a chain. Premise is a root you reason forward from.
       </p>
       <ul className="mt-3 space-y-2">
         {NODE_ORDER.map((type) => {

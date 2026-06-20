@@ -194,6 +194,16 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     placeholder: "We don't know if consciousness is fundamental or emergent",
     terminal: true,
   },
+  premise: {
+    label: "PREMISE",
+    icon: "🌱",
+    color: "#0d9488",
+    description:
+      "A foundational assumption to reason forward FROM — build conclusions on top of it (reverse authoring).",
+    prompt: "What premise do you want to build from?",
+    placeholder: "All humans have equal moral worth",
+    terminal: false,
+  },
 };
 
 // Context-sensitive children: which node types may be added under a given
@@ -297,6 +307,27 @@ export const ALLOWED_CHILDREN: Record<NodeType, NodeType[]> = {
   value: [],
   principle: [],
   "epistemic-limit": [],
+  // A premise is a forward-reasoning root: it can lead to the same kinds of
+  // nodes a question can. Edges from a premise to its children are `entails`.
+  premise: [
+    "position",
+    "argument-support",
+    "argument-attack",
+    "question",
+    "evidence-empirical",
+    "evidence-anecdotal",
+    "assumption",
+    "definition",
+    "caveat",
+    "clarification",
+    "counter-argument",
+    "objection",
+    "rebuttal",
+    "analogy",
+    "thought-experiment",
+    "related-concept",
+    "logical-fallacy",
+  ],
 };
 
 // Display order for the Legend panel.
@@ -321,4 +352,5 @@ export const NODE_ORDER: NodeType[] = [
   "value",
   "principle",
   "epistemic-limit",
+  "premise",
 ];

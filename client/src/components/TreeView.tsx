@@ -21,8 +21,8 @@ export default function TreeView({
   onDeleteNode,
 }: TreeViewProps) {
   const [expanded, setExpanded] = useState<Set<string>>(() => {
-    // Expand root questions by default so the seed is visible on load.
-    return new Set(G.getRootQuestions(graph).map((n) => n.id));
+    // Expand roots by default so the seed is visible on load.
+    return new Set(G.getRoots(graph).map((n) => n.id));
   });
   const [addingTo, setAddingTo] = useState<GraphNode | null>(null);
 
@@ -72,13 +72,14 @@ export default function TreeView({
     );
   };
 
-  const roots = G.getRootQuestions(graph);
+  const roots = G.getRoots(graph);
 
   return (
     <div>
       {roots.length === 0 ? (
         <p className="rounded-md border border-dashed border-slate-300 p-8 text-center text-sm text-slate-400">
-          No questions yet. Click “New Question” to start a tree.
+          Nothing here yet. Start top-down with “New Question”, or bottom-up with
+          “New Premise”.
         </p>
       ) : (
         roots.map((node) => renderNode(node, 0))

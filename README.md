@@ -30,8 +30,11 @@ Other scripts: `npm run build`, `npm run preview`, `npm run typecheck`.
 
 ## How it works (in brief)
 
-- **20 node types** (question, position, argument, evidence, value, …) and
-  **10 edge types**, defined in `client/src/lib/types.ts` / `meta.ts`.
+- **21 node types** (question, position, argument, evidence, value, premise, …)
+  and **11 edge types**, defined in `client/src/lib/types.ts` / `meta.ts`.
+- **Reverse authoring:** start from a **premise** (a base assumption) and build
+  conclusions forward from it — premise trees bottom out at the same shared
+  values, feeding the convergence view.
 - **Grounding badge:** each question shows `FULLY GROUNDED` (every chain reaches
   a terminal) or `OPEN`.
 - **Convergence:** arguments link to *existing* values instead of duplicating

@@ -1,6 +1,8 @@
 // Core data model for Axiomer.
-// 20 node types, 10 edge types. Keep this in sync with NODE_META (meta.ts),
+// 21 node types, 11 edge types. Keep this in sync with NODE_META (meta.ts),
 // the Legend, and the context-sensitive dropdown rules in graph.ts.
+// `premise` is a non-terminal foundation you reason FORWARD from (reverse
+// authoring); `entails` connects a premise to what it leads to.
 
 export type NodeType =
   | "question"
@@ -22,7 +24,8 @@ export type NodeType =
   | "logical-fallacy"
   | "value"
   | "principle"
-  | "epistemic-limit";
+  | "epistemic-limit"
+  | "premise";
 
 export type EdgeType =
   | "answers"
@@ -34,7 +37,8 @@ export type EdgeType =
   | "rebuts"
   | "grounds-in"
   | "connects-to"
-  | "illustrates";
+  | "illustrates"
+  | "entails";
 
 export interface GraphNode {
   id: string;

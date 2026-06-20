@@ -8,6 +8,7 @@ export default function Home() {
   const {
     graph,
     addRootQuestion,
+    addRootPremise,
     addNode,
     editNode,
     deleteNode,
@@ -15,17 +16,28 @@ export default function Home() {
     resetToSeed,
   } = useGraph();
 
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState<null | "question" | "premise">(null);
   const [draft, setDraft] = useState("");
   const [showLegend, setShowLegend] = useState(false);
   const [view, setView] = useState<"tree" | "values">("tree");
 
-  const createQuestion = () => {
+  const startCreating = (kind: "question" | "premise") => {
+    setView("tree");
+    setDraft("");
+    setCreating(kind);
+  };
+
+  const cancelCreating = () => {
+    setDraft("");
+    setCreating(null);
+  };
+
+  const submitCreate = () => {
     const trimmed = draft.trim();
     if (!trimmed) return;
-    addRootQuestion(trimmed);
-    setDraft("");
-    setCreating(false);
+    if (creating === "premise") addRootPremise(trimmed);
+    else addRootQuestion(trimmed);
+    cancelCreating();
   };
 
   return (
@@ -35,7 +47,8 @@ export default function Home() {
           <div>
             <h1 className="text-lg font-bold tracking-tight">Axiomer</h1>
             <p className="text-xs text-slate-500">
-              Trace questions down to their bedrock values.
+              Trace questions down to bedrock values — or build up from a
+              premise.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -48,10 +61,14 @@ export default function Home() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                setView("tree");
-                setCreating(true);
-              }}
+              onClick={() => startCreating("premise")}
+              className="rounded border border-teal-600 px-3 py-1.5 text-sm font-medium text-teal-700 hover:bg-teal-50"
+            >
+              🌱 New Premise
+            </button>
+            <button
+              type="button"
+              onClick={() => startCreating("question")}
               className="rounded bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
             >
               + New Question
@@ -94,41 +111,41 @@ export default function Home() {
           {creating && (
             <div className="mb-4 rounded-lg border border-slate-200 bg-white p-4">
               <label className="block text-sm font-medium text-slate-700">
-                What question do you want to explore?
+                {creating === "premise"
+                  ? "What premise do you want to build from?"
+                  : "What question do you want to explore?"}
               </label>
               <textarea
                 className="mt-1 w-full resize-y rounded border border-slate-300 p-2 text-sm focus:border-slate-500 focus:outline-none"
                 rows={2}
                 autoFocus
-                placeholder="Should you pull the lever?"
+                placeholder={
+                  creating === "premise"
+                    ? "All humans have equal moral worth"
+                    : "Should you pull the lever?"
+                }
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.metaKey || e.ctrlKey))
-                    createQuestion();
-                  if (e.key === "Escape") {
-                    setDraft("");
-                    setCreating(false);
-                  }
+                    submitCreate();
+                  if (e.key === "Escape") cancelCreating();
                 }}
               />
               <div className="mt-2 flex justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setDraft("");
-                    setCreating(false);
-                  }}
+                  onClick={cancelCreating}
                   className="rounded px-3 py-1.5 text-sm text-slate-500 hover:text-slate-800"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
-                  onClick={createQuestion}
+                  onClick={submitCreate}
                   className="rounded bg-slate-800 px-3 py-1.5 text-sm text-white hover:bg-slate-700"
                 >
-                  Create Question
+                  {creating === "premise" ? "Create Premise" : "Create Question"}
                 </button>
               </div>
             </div>

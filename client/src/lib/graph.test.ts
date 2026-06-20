@@ -162,19 +162,15 @@ describe("deletion", () => {
 });
 
 describe("convergence queries", () => {
-  it("resolves the root question a deep node belongs to", () => {
-    // A node with a single parent chain resolves to its top-level question,
+  it("resolves the root a deep node belongs to", () => {
+    // A node with a single parent chain resolves to its top-level root,
     // even a (non-shared) terminal value.
-    expect(G.getRootQuestionFor(seedGraph, "trolley-v1")?.id).toBe(
-      "trolley-q1",
-    );
-    expect(G.getRootQuestionFor(seedGraph, "trolley-a2")?.id).toBe(
-      "trolley-q1",
-    );
-    expect(G.getRootQuestionFor(seedGraph, "sky-p2")?.id).toBe("sky-q1");
+    expect(G.getRootFor(seedGraph, "trolley-v1")?.id).toBe("trolley-q1");
+    expect(G.getRootFor(seedGraph, "trolley-a2")?.id).toBe("trolley-q1");
+    expect(G.getRootFor(seedGraph, "sky-p2")?.id).toBe("sky-q1");
   });
 
-  it("reports a value as convergent once two questions share it", () => {
+  it("reports a value as convergent once two roots share it", () => {
     // Build a second question whose argument links to trolley's v1.
     let g = G.addRootQuestion(seedGraph, "Help refugees?");
     const qid = lastId(g);
@@ -186,10 +182,7 @@ describe("convergence queries", () => {
 
     const usage = G.getValueUsage(g).find((u) => u.value.id === "trolley-v1");
     expect(usage?.convergent).toBe(true);
-    expect(usage?.questions.map((q) => q.id).sort()).toEqual([
-      qid,
-      "trolley-q1",
-    ]);
+    expect(usage?.roots.map((r) => r.id).sort()).toEqual([qid, "trolley-q1"]);
   });
 
   it("detects a value clash within a single question", () => {
@@ -209,5 +202,51 @@ describe("convergence queries", () => {
       (c) => c.question.id === "sky-q1",
     );
     expect(clash).toBeUndefined();
+  });
+});
+
+describe("premises (reverse / forward-from-a-base authoring)", () => {
+  it("treats a premise as a tree root, like a question", () => {
+    const g = G.addRootPremise(seedGraph, "All humans have equal worth");
+    const pid = lastId(g);
+    const rootIds = G.getRoots(g).map((n) => n.id);
+    expect(rootIds).toContain(pid);
+    // getRootQuestions stays question-only.
+    expect(G.getRootQuestions(g).map((n) => n.id)).not.toContain(pid);
+  });
+
+  it("is not a terminal — it can take children", () => {
+    const g = G.addRootPremise(seedGraph, "P");
+    expect(G.getNode(g, lastId(g))?.type).toBe("premise");
+  });
+
+  it("connects children with an `entails` edge (premise→child)", () => {
+    let g = G.addRootPremise(seedGraph, "Equal worth");
+    const pid = lastId(g);
+    g = G.addNode(g, "position", "So we must help refugees", pid);
+    const conclusionId = lastId(g);
+    const edge = g.edges.find((e) => e.edgeType === "entails");
+    expect(edge?.from).toBe(pid); // premise is the parent (DOWNWARD)
+    expect(edge?.to).toBe(conclusionId);
+    // And the conclusion nests under the premise in the tree.
+    expect(G.getChildren(g, pid).map((n) => n.id)).toContain(conclusionId);
+    expect(G.getParent(g, conclusionId)?.id).toBe(pid);
+  });
+
+  it("lets a premise tree bottom out at a shared value (convergence)", () => {
+    // premise → position → argument → grounds-in → existing trolley value.
+    let g = G.addRootPremise(seedGraph, "Suffering matters");
+    const pid = lastId(g);
+    g = G.addNode(g, "position", "Help refugees", pid);
+    const posId = lastId(g);
+    g = G.addNode(g, "argument-support", "It reduces suffering", posId);
+    const argId = lastId(g);
+    g = G.linkToExistingValue(g, argId, "trolley-v1");
+
+    const usage = G.getValueUsage(g).find((u) => u.value.id === "trolley-v1");
+    expect(usage?.convergent).toBe(true);
+    expect(usage?.roots.map((r) => r.id)).toContain(pid);
+    // getRootFor resolves a node in the premise tree back to the premise.
+    expect(G.getRootFor(g, argId)?.id).toBe(pid);
   });
 });
