@@ -4,16 +4,15 @@ Guidance for AI assistants (Claude Code and others) working in this repository.
 
 ## Current state of the repo
 
-**This is a greenfield project. No application code exists yet.** As of this
-writing the repository contains only `README.md` and this file. Everything in
-the "Architecture" and "Project structure" sections below describes the
-**target** design from the master specification, not code that is already
-present. When you start implementing, create the structure described here.
+**V1 is implemented and builds.** The full client (data model, graph utilities,
+React UI, localStorage persistence, seed data) is in place under `client/`. The
+app builds with `npm run build` and runs with `npm run dev`.
 
 The authoritative design document is the **Axiomer V1 Master Specification &
-Implementation Guide** (provided to the team; not yet committed to the repo).
-If you are asked to implement features, follow that spec. Consider committing a
-copy of it under `docs/` so future sessions have it on hand.
+Implementation Guide**. A few spots in that spec are internally inconsistent;
+where they are, this file documents the decision that was actually implemented
+(see "Resolved spec inconsistencies" below). When in doubt, the code in
+`client/src/lib/` is the source of truth for behavior.
 
 ## What Axiomer is
 
@@ -41,34 +40,41 @@ Two key user-facing concepts:
 - shadcn/ui components
 - **No backend in V1.** All state lives in `localStorage`. No API, no DB.
 
-## Project structure (target)
+## Project structure (actual)
 
 ```
 /                       (repo root)
 ├── client/
 │   ├── src/
 │   │   ├── pages/
-│   │   │   └── Home.tsx          ← Main app page (TreeView + Legend)
+│   │   │   └── Home.tsx          ← Main page: header, New Question, TreeView + Legend
 │   │   ├── components/
-│   │   │   ├── TreeView.tsx      ← Recursive tree display, expand/collapse
-│   │   │   ├── NodeCard.tsx      ← Single node: icon, label, content, badge, actions
-│   │   │   ├── AddNodeForm.tsx   ← Create nodes; context-sensitive type dropdown
-│   │   │   ├── Legend.tsx        ← Panel listing all 20 node types
-│   │   │   └── ui/               ← shadcn/ui components
+│   │   │   ├── TreeView.tsx      ← Recursive tree; owns expand/collapse + add-modal
+│   │   │   ├── NodeCard.tsx      ← Single node: icon, label, content, badge, actions, inline edit
+│   │   │   ├── AddNodeForm.tsx   ← Modal: context-sensitive type dropdown + value linking
+│   │   │   └── Legend.tsx        ← Panel listing all 20 node types
 │   │   ├── lib/
-│   │   │   ├── types.ts          ← NodeType, EdgeType, GraphNode, GraphEdge, Graph
+│   │   │   ├── types.ts          ← NodeType, EdgeType, GraphNode/Edge/Graph, TERMINAL_TYPES
+│   │   │   ├── meta.ts           ← NODE_META (labels/icons/colors/prompts), ALLOWED_CHILDREN, NODE_ORDER
 │   │   │   ├── graph.ts          ← Pure graph utilities (see below)
 │   │   │   └── seed.ts           ← Seed graphs (Trolley Problem, Sky Blue)
 │   │   ├── hooks/
-│   │   │   └── useGraph.ts       ← Graph state + localStorage persistence
-│   │   ├── App.tsx               ← Routes & layout
+│   │   │   └── useGraph.ts       ← Graph state + localStorage persistence + auto-save
+│   │   ├── App.tsx               ← Renders Home
 │   │   ├── main.tsx              ← React entry point
-│   │   └── index.css             ← Global styles + node colors
-│   ├── public/
-│   └── index.html
+│   │   ├── index.css             ← Tailwind import + base styles
+│   │   └── vite-env.d.ts
+│   └── index.html                ← Vite root is `client/`
 ├── package.json
-└── vite.config.ts
+├── vite.config.ts                ← root: "client", @ alias → client/src, build → dist/
+├── tsconfig*.json
+└── dist/                         ← build output (gitignored)
 ```
+
+Note: shadcn/ui is listed in the spec's stack but was **not** pulled in for V1 —
+the UI is plain Tailwind components. Add shadcn later if richer primitives are
+needed; there is no `components/ui/` yet. `meta.ts` is an addition not in the
+spec's file list: it centralizes per-type display data and the dropdown matrix.
 
 ## Core data model
 
@@ -122,11 +128,19 @@ visual flow of the tree. This is the single biggest gotcha in the codebase.
 | `connects-to` | Any ↔ Any | related concept (bidirectional in meaning) |
 | `illustrates` | Analogy/ThoughtExp → Position/Argument | illustrates it |
 
-Note the consequence for tree traversal: a node's **children** (things that hang
-off it in the tree) are the edges whose **`to`** points at it — i.e.
-`getChildren(graph, id)` collects nodes where `edge.to === id`. A node has a
-parent when some edge has `edge.from === id`. Root questions are questions with
-no outgoing edge.
+**Important traversal subtlety (this bit the first implementation):** most edges
+run **child → parent** (`answers`, `argues-for`, `argues-against`, `supports`,
+`objects-to`, `rebuts`, `illustrates`, `connects-to`), so the child is `from`
+and the parent is `to`. But **`raises` and `grounds-in` run parent → child** —
+the argument is `from`, the question/value is `to`. If you treat all edges the
+same, value nodes never render and child questions appear as duplicate roots.
+
+`graph.ts` solves this with a `DOWNWARD = ["raises", "grounds-in"]` set and an
+`endpoints(edge)` helper that returns `{parent, child}` regardless of direction.
+**Always go through `getChildren`/`getParent`/`getRootQuestions`** rather than
+reading `edge.from`/`edge.to` directly when you mean tree structure.
+`makeEdge(parentId, childId, edgeType)` builds edges with the correct
+orientation — use it instead of constructing edges by hand.
 
 ### Grounding calculation
 
@@ -142,15 +156,26 @@ Traverse edges in their semantic direction:
   grounded.
 - An argument with neither is **not** grounded → the question is `OPEN`.
 
-Keep these functions **pure** (no mutation; return new graphs). The reference
-implementations live in the spec's "Code Examples" section.
+Keep these functions **pure** (no mutation; return new graphs). One extension
+beyond the spec's code: a **position may also ground directly** in a terminal
+(the Sky Blue seed does this), so `groundedPosition` accepts either a direct
+`grounds-in` or fully-grounded arguments. All walkers carry a `visiting` set to
+guard against cycles.
 
 ### Reuse of values (convergence)
 
 When grounding an argument, the user can **create a new value** or **link to an
-existing one**. Linking adds a `grounds-in` edge to the existing value node
-instead of creating a duplicate. This is the heart of the product — make sure
-linking works and never silently creates duplicate value nodes.
+existing one** (`AddNodeForm` shows this choice whenever a terminal type is
+selected and values already exist). Linking (`linkToExistingValue`) adds a
+`grounds-in` edge to the existing value node instead of creating a duplicate.
+This is the heart of the product — make sure linking works and never silently
+creates duplicate value nodes.
+
+Because a value can be shared by multiple arguments, `deleteNode` **spares any
+terminal node that still has a grounding argument outside the deletion set** —
+deleting one argument must not remove a value another argument depends on. See
+`doomedSet` in `graph.ts`. A value renders once under each argument that grounds
+in it (that repetition *is* the convergence visualization in the tree view).
 
 ### Context-sensitive "add child" options
 
@@ -189,21 +214,47 @@ should reproduce them verbatim so IDs in tests stay stable.
 
 ## Development workflow
 
-Once the project is scaffolded, expect standard Vite scripts (confirm against
-the actual `package.json` once it exists):
-
 ```bash
 npm install        # install deps
-npm run dev        # Vite dev server
-npm run build      # production build (tsc + vite build)
-npm run preview    # preview the build
-npm run lint       # if configured
+npm run dev        # Vite dev server at http://localhost:5173
+npm run build      # tsc -b (typecheck) + vite build → dist/
+npm run preview    # serve the production build
+npm run typecheck  # tsc -b --noEmit
 ```
 
-If you scaffold the project, wire up these scripts and update this file with the
-real commands. There is no test runner specified for V1; add one (e.g. Vitest)
-if you introduce tests for the graph utilities — they are pure functions and are
-the best candidates for unit tests.
+Vite's root is `client/`, so `index.html` lives at `client/index.html` and the
+`@` alias points at `client/src`. The build output goes to `dist/` at the repo
+root (gitignored).
+
+There is no test runner wired up yet. The graph utilities in `lib/graph.ts` are
+pure functions and are the natural place for unit tests — add Vitest if you need
+them. For quick one-off checks you can bundle a script with the bundled esbuild
+(`npx esbuild test.ts --bundle --platform=node --format=esm --outfile=t.mjs`)
+and run it with node, since the lib has no React/DOM dependencies.
+
+## Resolved spec inconsistencies
+
+The master spec is mostly authoritative, but a few parts contradict themselves.
+What V1 actually does:
+
+1. **`raises` / `grounds-in` edge direction.** The spec's example `getChildren`
+   (`edges where to === node`) would never surface value nodes and would render
+   child questions as duplicate roots, because these two edge types run
+   parent→child. Implemented via the `DOWNWARD`/`endpoints` model (see above).
+2. **Sky Blue grounding.** The spec calls Sky Blue "FULLY GROUNDED" but its seed
+   grounds a *position* directly into the epistemic limit, which the spec's own
+   `isPositionFullyGrounded` (arguments-only) would score as OPEN. V1 lets a
+   position ground directly, so Sky Blue computes as FULLY GROUNDED.
+3. **Trolley "OPEN".** The spec narrates Trolley as OPEN, but structurally every
+   chain reaches a value, so by the badge's own definition it is FULLY GROUNDED
+   (the narrative "open" means an unresolved *value clash*, not a missing
+   ground). V1 computes it as FULLY GROUNDED. To see an OPEN badge, add a new
+   question or an ungrounded argument.
+4. **Positions can't author terminal children.** Per the dropdown matrix,
+   `ALLOWED_CHILDREN["position"]` excludes value/principle/epistemic-limit — only
+   arguments may add them through the UI. The grounding logic still *reads*
+   direct position groundings (for seed compatibility), but the UI won't create
+   them.
 
 ## Git & branching conventions
 
