@@ -179,7 +179,15 @@ Keep these functions **pure** (no mutation; return new graphs). One extension
 beyond the spec's code: a **position may also ground directly** in a terminal
 (the Sky Blue seed does this), so `groundedPosition` accepts either a direct
 `grounds-in` or fully-grounded arguments. All walkers carry a `visiting` set to
-guard against cycles.
+guard against cycles. `isNodeGrounded(graph, nodeId)` exposes per-node status
+(question/position/argument by their rules; terminals and non-participating
+types are `true`) — the tree uses it to flag argument/position nodes that don't
+yet reach a foundation ("NEEDS GROUNDING").
+
+`TreeView` adds reading aids that don't touch the model: depth **guide rails**
+(nested bordered containers tinted by parent type), **expand/collapse-all**,
+**focus mode** (zoom into one subtree with a breadcrumb back to roots), and the
+ungrounded cue above. Keep these presentational — graph state stays in the model.
 
 ### Reuse of values (convergence)
 

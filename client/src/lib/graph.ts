@@ -226,6 +226,26 @@ export function isFullyGrounded(graph: Graph, questionId: string): boolean {
   return groundedQuestion(graph, questionId, new Set());
 }
 
+// Is this specific node grounded? Questions/positions/arguments are evaluated
+// by their respective rules; terminals are inherently grounded; other node
+// types (evidence, definitions, annotations…) don't participate, so `true`.
+// Powers the "what's left to ground" cue in the tree.
+export function isNodeGrounded(graph: Graph, nodeId: string): boolean {
+  const node = getNode(graph, nodeId);
+  if (!node) return false;
+  switch (node.type) {
+    case "question":
+      return groundedQuestion(graph, nodeId, new Set());
+    case "position":
+      return groundedPosition(graph, nodeId, new Set());
+    case "argument-support":
+    case "argument-attack":
+      return groundedArgument(graph, nodeId, new Set());
+    default:
+      return true;
+  }
+}
+
 function groundedQuestion(
   graph: Graph,
   questionId: string,

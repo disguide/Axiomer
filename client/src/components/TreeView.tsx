@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Graph, GraphNode, NodeType } from "@/lib/types";
 import { isTerminalType } from "@/lib/types";
+import { NODE_META } from "@/lib/meta";
 import * as G from "@/lib/graph";
 import NodeCard from "./NodeCard";
 import AddNodeForm from "./AddNodeForm";
@@ -25,6 +26,17 @@ export default function TreeView({
     return new Set(G.getRoots(graph).map((n) => n.id));
   });
   const [addingTo, setAddingTo] = useState<GraphNode | null>(null);
+  // Focus mode: when set, only this node's subtree is shown.
+  const [focusId, setFocusId] = useState<string | null>(null);
+
+  // Every node that has children — the set "expand all" targets.
+  const parentIds = useMemo(
+    () =>
+      graph.nodes
+        .filter((n) => G.getChildren(graph, n.id).length > 0)
+        .map((n) => n.id),
+    [graph],
+  );
 
   const toggle = (id: string) =>
     setExpanded((prev) => {
@@ -34,6 +46,9 @@ export default function TreeView({
       return next;
     });
 
+  const expandAll = () => setExpanded(new Set(parentIds));
+  const collapseAll = () => setExpanded(new Set(G.getRoots(graph).map((n) => n.id)));
+
   const confirmDelete = (node: GraphNode) => {
     const count = G.countDescendants(graph, node.id);
     const msg =
@@ -42,7 +57,10 @@ export default function TreeView({
             count === 1 ? "" : "s"
           }? This cannot be undone.`
         : "Delete this node? This cannot be undone.";
-    if (window.confirm(msg)) onDeleteNode(node.id);
+    if (window.confirm(msg)) {
+      if (focusId === node.id) setFocusId(null);
+      onDeleteNode(node.id);
+    }
   };
 
   const renderNode = (node: GraphNode, depth: number) => {
@@ -50,29 +68,58 @@ export default function TreeView({
     const isExpanded = expanded.has(node.id);
     const grounded =
       node.type === "question" ? G.isFullyGrounded(graph, node.id) : null;
+    // Flag argument/position nodes that don't yet reach a foundation.
+    const ungrounded =
+      (node.type === "argument-support" ||
+        node.type === "argument-attack" ||
+        node.type === "position") &&
+      !G.isNodeGrounded(graph, node.id);
 
     return (
-      <div key={node.id} className="mt-2">
-        <div style={{ marginLeft: depth * 20 }}>
+      <div key={node.id}>
+        <div className="py-1">
           <NodeCard
             node={node}
             grounded={grounded}
+            ungrounded={ungrounded}
+            childCount={children.length}
             hasChildren={children.length > 0}
             expanded={isExpanded}
             canAddChild={!isTerminalType(node.type)}
+            canFocus={children.length > 0 && focusId !== node.id}
             onToggle={() => toggle(node.id)}
+            onFocus={() => setFocusId(node.id)}
             onEdit={(content) => onEditNode(node.id, content)}
             onDelete={() => confirmDelete(node)}
             onAddChild={() => setAddingTo(node)}
           />
         </div>
-        {isExpanded &&
-          children.map((child) => renderNode(child, depth + 1))}
+        {isExpanded && children.length > 0 && (
+          <div
+            className="ml-3 border-l-2 pl-3"
+            style={{ borderColor: `${NODE_META[node.type].color}33` }}
+          >
+            {children.map((child) => renderNode(child, depth + 1))}
+          </div>
+        )}
       </div>
     );
   };
 
   const roots = G.getRoots(graph);
+  const focusNode = focusId ? G.getNode(graph, focusId) : undefined;
+
+  // Breadcrumb trail from the focused node up to its root.
+  const trail: GraphNode[] = [];
+  if (focusNode) {
+    let cur: GraphNode | undefined = focusNode;
+    const seen = new Set<string>();
+    while (cur && !seen.has(cur.id)) {
+      seen.add(cur.id);
+      trail.unshift(cur);
+      cur = G.getParent(graph, cur.id);
+    }
+  }
 
   return (
     <div>
@@ -82,7 +129,56 @@ export default function TreeView({
           “New Premise”.
         </p>
       ) : (
-        roots.map((node) => renderNode(node, 0))
+        <>
+          {focusNode ? (
+            <div className="mb-3 flex flex-wrap items-center gap-1 text-xs text-slate-500">
+              <button
+                type="button"
+                onClick={() => setFocusId(null)}
+                className="rounded px-1.5 py-0.5 font-medium text-slate-600 hover:bg-slate-100"
+              >
+                All roots
+              </button>
+              {trail.map((n, i) => (
+                <span key={n.id} className="flex items-center gap-1">
+                  <span className="text-slate-300">/</span>
+                  {i === trail.length - 1 ? (
+                    <span className="max-w-[16rem] truncate font-medium text-slate-700">
+                      {n.content}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setFocusId(n.id)}
+                      className="max-w-[10rem] truncate rounded px-1.5 py-0.5 hover:bg-slate-100"
+                    >
+                      {n.content}
+                    </button>
+                  )}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="mb-3 flex items-center gap-2 text-xs">
+              <button
+                type="button"
+                onClick={expandAll}
+                className="rounded border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-100"
+              >
+                Expand all
+              </button>
+              <button
+                type="button"
+                onClick={collapseAll}
+                className="rounded border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-100"
+              >
+                Collapse all
+              </button>
+            </div>
+          )}
+
+          {focusNode ? renderNode(focusNode, 0) : roots.map((n) => renderNode(n, 0))}
+        </>
       )}
 
       {addingTo && (
