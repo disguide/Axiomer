@@ -22,6 +22,14 @@ function endpoints(edge: GraphEdge): { parent: string; child: string } {
     : { parent: edge.to, child: edge.from };
 }
 
+// Public accessor for an edge's parent/child, used by the graph-map layout.
+export function edgeEndpoints(edge: GraphEdge): {
+  parent: string;
+  child: string;
+} {
+  return endpoints(edge);
+}
+
 function uid(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 }
@@ -42,6 +50,50 @@ export function getChildren(graph: Graph, nodeId: string): GraphNode[] {
 export function getParent(graph: Graph, nodeId: string): GraphNode | undefined {
   const edge = graph.edges.find((e) => endpoints(e).child === nodeId);
   return edge ? getNode(graph, endpoints(edge).parent) : undefined;
+}
+
+// All parents — a shared value has several (one per grounding argument).
+export function getParents(graph: Graph, nodeId: string): GraphNode[] {
+  return graph.edges
+    .filter((e) => endpoints(e).child === nodeId)
+    .map((e) => getNode(graph, endpoints(e).parent))
+    .filter((n): n is GraphNode => Boolean(n));
+}
+
+// Every node reachable downward FROM nodeId (descendants, including nodeId).
+export function getDescendantIds(graph: Graph, nodeId: string): Set<string> {
+  const seen = new Set<string>([nodeId]);
+  const queue = [nodeId];
+  while (queue.length > 0) {
+    const current = queue.shift() as string;
+    for (const child of getChildren(graph, current)) {
+      if (!seen.has(child.id)) {
+        seen.add(child.id);
+        queue.push(child.id);
+      }
+    }
+  }
+  return seen;
+}
+
+// Every node with a downward path INTO nodeId (its ancestors in the
+// parent→child DAG). For a value, that's everything that grounds in it —
+// the convergence highlight in the map view.
+export function getAncestors(graph: Graph, nodeId: string): Set<string> {
+  const result = new Set<string>();
+  const queue = [nodeId];
+  const seen = new Set<string>([nodeId]);
+  while (queue.length > 0) {
+    const current = queue.shift() as string;
+    for (const parent of getParents(graph, current)) {
+      if (!seen.has(parent.id)) {
+        seen.add(parent.id);
+        result.add(parent.id);
+        queue.push(parent.id);
+      }
+    }
+  }
+  return result;
 }
 
 // Root questions: questions that are nobody's child. (Grounding/clash logic is

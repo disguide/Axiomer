@@ -228,6 +228,32 @@ describe("per-node grounding (isNodeGrounded)", () => {
   });
 });
 
+describe("lineage helpers (map highlight)", () => {
+  it("collects all ancestors that flow into a value", () => {
+    // Share trolley-v1 across a2 and a3, then check who reaches it.
+    const g = G.linkToExistingValue(seedGraph, "trolley-a3", "trolley-v1");
+    const anc = G.getAncestors(g, "trolley-v1");
+    // Both grounding arguments and their upward chains to the root question.
+    for (const id of ["trolley-a2", "trolley-a3", "trolley-p2", "trolley-p3", "trolley-q1"]) {
+      expect(anc.has(id)).toBe(true);
+    }
+    expect(anc.has("trolley-v1")).toBe(false); // excludes the node itself
+  });
+
+  it("collects descendants including the node itself", () => {
+    const desc = G.getDescendantIds(seedGraph, "trolley-q2");
+    expect(desc.has("trolley-q2")).toBe(true);
+    expect(desc.has("trolley-p2")).toBe(true);
+    expect(desc.has("trolley-v1")).toBe(true);
+  });
+
+  it("getParents returns every grounding parent of a shared value", () => {
+    const g = G.linkToExistingValue(seedGraph, "trolley-a3", "trolley-v1");
+    const parents = G.getParents(g, "trolley-v1").map((n) => n.id).sort();
+    expect(parents).toEqual(["trolley-a2", "trolley-a3"]);
+  });
+});
+
 describe("premises (reverse / forward-from-a-base authoring)", () => {
   it("treats a premise as a tree root, like a question", () => {
     const g = G.addRootPremise(seedGraph, "All humans have equal worth");

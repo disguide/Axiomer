@@ -38,6 +38,8 @@ Two key user-facing concepts:
 - Vite
 - Tailwind CSS 4
 - shadcn/ui components
+- **React Flow (`@xyflow/react`) + `dagre`** — only for the Map view; lazy-loaded
+  so it stays out of the main bundle.
 - **No backend in V1.** All state lives in `localStorage`. No API, no DB.
 
 ## Project structure (actual)
@@ -52,12 +54,14 @@ Two key user-facing concepts:
 │   │   │   ├── TreeView.tsx      ← Recursive tree; owns expand/collapse + add-modal
 │   │   │   ├── NodeCard.tsx      ← Single node: icon, label, content, badge, actions, inline edit
 │   │   │   ├── AddNodeForm.tsx   ← Modal: context-sensitive type dropdown + value linking
-│   │   │   ├── ValuesIndex.tsx   ← Convergence view: values + clashes (Tree/Values tab)
+│   │   │   ├── ValuesIndex.tsx   ← Convergence view: values + clashes (Values tab)
+│   │   │   ├── GraphMap.tsx      ← Node-link DAG view (React Flow + dagre, Map tab; lazy-loaded)
 │   │   │   └── Legend.tsx        ← Panel listing all node types
 │   │   ├── lib/
 │   │   │   ├── types.ts          ← NodeType, EdgeType, GraphNode/Edge/Graph, TERMINAL_TYPES
 │   │   │   ├── meta.ts           ← NODE_META (labels/icons/colors/prompts), ALLOWED_CHILDREN, NODE_ORDER
 │   │   │   ├── graph.ts          ← Pure graph utilities (see below)
+│   │   │   ├── flowLayout.ts     ← dagre top-down layout for the Map view
 │   │   │   ├── graph.test.ts     ← Vitest suite for graph.ts
 │   │   │   └── seed.ts           ← Seed graphs (Trolley Problem, Sky Blue)
 │   │   ├── hooks/
@@ -211,6 +215,15 @@ or premises — that reach it; `convergent` when >1) and `getValueClashes` (a
 single question whose chains bottom out at multiple distinct values — the real
 disagreement). `getRootFor` walks a node's parent chain up to its root
 (question or premise).
+
+The **Map view** (`GraphMap.tsx`, Map tab) renders the whole graph as a
+top-down DAG with React Flow; `flowLayout.ts` positions nodes with dagre using
+`edgeEndpoints` (the same parent→child normalization the tree uses), so shared
+values render once with multiple incoming edges — convergence made literal.
+Clicking a node highlights its full lineage via `getAncestors` (everything that
+flows into it) ∪ `getDescendantIds` (everything below it). `getParents` returns
+all parents of a shared value. React Flow is **lazy-loaded** from `Home` so the
+Tree/Values tabs don't pay for it.
 
 ### Context-sensitive "add child" options
 
