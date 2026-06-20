@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useGraph } from "@/hooks/useGraph";
 import TreeView from "@/components/TreeView";
+import ValuesIndex from "@/components/ValuesIndex";
 import Legend from "@/components/Legend";
 
 export default function Home() {
@@ -17,6 +18,7 @@ export default function Home() {
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState("");
   const [showLegend, setShowLegend] = useState(false);
+  const [view, setView] = useState<"tree" | "values">("tree");
 
   const createQuestion = () => {
     const trimmed = draft.trim();
@@ -46,7 +48,10 @@ export default function Home() {
             </button>
             <button
               type="button"
-              onClick={() => setCreating(true)}
+              onClick={() => {
+                setView("tree");
+                setCreating(true);
+              }}
               className="rounded bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
             >
               + New Question
@@ -57,6 +62,35 @@ export default function Home() {
 
       <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-[1fr_18rem]">
         <section>
+          <div className="mb-4 inline-flex rounded-md border border-slate-200 bg-white p-0.5 text-sm">
+            <button
+              type="button"
+              onClick={() => setView("tree")}
+              className={`rounded px-3 py-1 ${
+                view === "tree"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Tree
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("values")}
+              className={`rounded px-3 py-1 ${
+                view === "values"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Values
+            </button>
+          </div>
+
+          {view === "values" ? (
+            <ValuesIndex graph={graph} />
+          ) : (
+            <>
           {creating && (
             <div className="mb-4 rounded-lg border border-slate-200 bg-white p-4">
               <label className="block text-sm font-medium text-slate-700">
@@ -107,6 +141,8 @@ export default function Home() {
             onEditNode={editNode}
             onDeleteNode={deleteNode}
           />
+            </>
+          )}
 
           <div className="mt-8 border-t border-slate-200 pt-4">
             <button

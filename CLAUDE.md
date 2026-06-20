@@ -52,11 +52,13 @@ Two key user-facing concepts:
 │   │   │   ├── TreeView.tsx      ← Recursive tree; owns expand/collapse + add-modal
 │   │   │   ├── NodeCard.tsx      ← Single node: icon, label, content, badge, actions, inline edit
 │   │   │   ├── AddNodeForm.tsx   ← Modal: context-sensitive type dropdown + value linking
+│   │   │   ├── ValuesIndex.tsx   ← Convergence view: values + clashes (Tree/Values tab)
 │   │   │   └── Legend.tsx        ← Panel listing all 20 node types
 │   │   ├── lib/
 │   │   │   ├── types.ts          ← NodeType, EdgeType, GraphNode/Edge/Graph, TERMINAL_TYPES
 │   │   │   ├── meta.ts           ← NODE_META (labels/icons/colors/prompts), ALLOWED_CHILDREN, NODE_ORDER
 │   │   │   ├── graph.ts          ← Pure graph utilities (see below)
+│   │   │   ├── graph.test.ts     ← Vitest suite for graph.ts
 │   │   │   └── seed.ts           ← Seed graphs (Trolley Problem, Sky Blue)
 │   │   ├── hooks/
 │   │   │   └── useGraph.ts       ← Graph state + localStorage persistence + auto-save
@@ -177,6 +179,13 @@ deleting one argument must not remove a value another argument depends on. See
 `doomedSet` in `graph.ts`. A value renders once under each argument that grounds
 in it (that repetition *is* the convergence visualization in the tree view).
 
+The **Values view** (`ValuesIndex.tsx`, toggled from the Tree/Values tabs in
+`Home`) surfaces convergence explicitly. It is powered by read-only queries in
+`graph.ts`: `getValueUsage` (each terminal with the distinct root questions that
+reach it; `convergent` when >1) and `getValueClashes` (a single question whose
+chains bottom out at multiple distinct values — the real disagreement).
+`getRootQuestionFor` walks a node's parent chain up to its root question.
+
 ### Context-sensitive "add child" options
 
 The allowed child types depend on the parent's type (e.g. under a Question you
@@ -220,17 +229,20 @@ npm run dev        # Vite dev server at http://localhost:5173
 npm run build      # tsc -b (typecheck) + vite build → dist/
 npm run preview    # serve the production build
 npm run typecheck  # tsc -b --noEmit
+npm test           # vitest run (unit tests for lib/graph.ts)
+npm run test:watch # vitest in watch mode
 ```
 
 Vite's root is `client/`, so `index.html` lives at `client/index.html` and the
 `@` alias points at `client/src`. The build output goes to `dist/` at the repo
 root (gitignored).
 
-There is no test runner wired up yet. The graph utilities in `lib/graph.ts` are
-pure functions and are the natural place for unit tests — add Vitest if you need
-them. For quick one-off checks you can bundle a script with the bundled esbuild
-(`npx esbuild test.ts --bundle --platform=node --format=esm --outfile=t.mjs`)
-and run it with node, since the lib has no React/DOM dependencies.
+Tests use **Vitest** (`vitest.config.ts` is separate from `vite.config.ts` so
+the `root: "client"` setting doesn't interfere). `lib/graph.test.ts` covers the
+graph utilities — edge-direction traversal, grounding (including the cyclic
+guard), value reuse, shared-value deletion, and the convergence queries. Keep
+these green; `graph.ts` is pure with no React/DOM deps, so add cases freely.
+**CI** (`.github/workflows/ci.yml`) runs typecheck + test + build on every PR.
 
 ## Resolved spec inconsistencies
 
