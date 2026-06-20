@@ -205,6 +205,29 @@ describe("convergence queries", () => {
   });
 });
 
+describe("per-node grounding (isNodeGrounded)", () => {
+  it("flags an argument with no foundation as ungrounded", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "A", pid);
+    const aid = lastId(g);
+    expect(G.isNodeGrounded(g, aid)).toBe(false);
+    expect(G.isNodeGrounded(g, pid)).toBe(false);
+    g = G.addNode(g, "value", "V", aid);
+    expect(G.isNodeGrounded(g, aid)).toBe(true);
+    expect(G.isNodeGrounded(g, pid)).toBe(true);
+  });
+
+  it("treats seeded grounded arguments and terminals as grounded", () => {
+    expect(G.isNodeGrounded(seedGraph, "trolley-a3")).toBe(true);
+    expect(G.isNodeGrounded(seedGraph, "trolley-v2")).toBe(true);
+    // Non-participating types are inherently "grounded".
+    expect(G.isNodeGrounded(seedGraph, "trolley-e1")).toBe(true);
+  });
+});
+
 describe("premises (reverse / forward-from-a-base authoring)", () => {
   it("treats a premise as a tree root, like a question", () => {
     const g = G.addRootPremise(seedGraph, "All humans have equal worth");

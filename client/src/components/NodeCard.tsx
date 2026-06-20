@@ -5,10 +5,14 @@ import { NODE_META } from "@/lib/meta";
 interface NodeCardProps {
   node: GraphNode;
   grounded: boolean | null; // only questions get a badge; null = no badge
+  ungrounded?: boolean; // argument/position that doesn't yet reach a foundation
+  childCount?: number;
   hasChildren: boolean;
   expanded: boolean;
   canAddChild: boolean;
+  canFocus?: boolean;
   onToggle: () => void;
+  onFocus?: () => void;
   onEdit: (content: string) => void;
   onDelete: () => void;
   onAddChild: () => void;
@@ -17,10 +21,14 @@ interface NodeCardProps {
 export default function NodeCard({
   node,
   grounded,
+  ungrounded = false,
+  childCount = 0,
   hasChildren,
   expanded,
   canAddChild,
+  canFocus = false,
   onToggle,
+  onFocus,
   onEdit,
   onDelete,
   onAddChild,
@@ -38,7 +46,9 @@ export default function NodeCard({
 
   return (
     <div
-      className="rounded-md border border-slate-200 bg-white shadow-sm"
+      className={`rounded-md border bg-white shadow-sm ${
+        ungrounded ? "border-amber-300 ring-1 ring-amber-200/60" : "border-slate-200"
+      }`}
       style={{ borderLeft: `5px solid ${meta.color}` }}
     >
       <div className="flex items-start gap-2 p-3">
@@ -82,6 +92,19 @@ export default function NodeCard({
                 }`}
               >
                 {grounded ? "FULLY GROUNDED" : "OPEN"}
+              </span>
+            )}
+            {ungrounded && (
+              <span
+                className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700"
+                title="This chain hasn't reached a value, principle, or epistemic limit yet"
+              >
+                NEEDS GROUNDING
+              </span>
+            )}
+            {hasChildren && !expanded && (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
+                {childCount} hidden
               </span>
             )}
           </div>
@@ -131,6 +154,16 @@ export default function NodeCard({
 
         {!editing && (
           <div className="flex shrink-0 items-center gap-1 text-xs">
+            {canFocus && onFocus && (
+              <button
+                type="button"
+                onClick={onFocus}
+                className="rounded px-2 py-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                title="Focus this subtree"
+              >
+                ⤢ Focus
+              </button>
+            )}
             {canAddChild && (
               <button
                 type="button"
