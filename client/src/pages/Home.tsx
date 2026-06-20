@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useGraph } from "@/hooks/useGraph";
 import TreeView from "@/components/TreeView";
 import ValuesIndex from "@/components/ValuesIndex";
 import Legend from "@/components/Legend";
+
+// React Flow is heavy and only used by the Map tab — load it on demand.
+const GraphMap = lazy(() => import("@/components/GraphMap"));
 
 export default function Home() {
   const {
@@ -19,7 +22,7 @@ export default function Home() {
   const [creating, setCreating] = useState<null | "question" | "premise">(null);
   const [draft, setDraft] = useState("");
   const [showLegend, setShowLegend] = useState(false);
-  const [view, setView] = useState<"tree" | "values">("tree");
+  const [view, setView] = useState<"tree" | "values" | "map">("tree");
 
   const startCreating = (kind: "question" | "premise") => {
     setView("tree");
@@ -102,10 +105,31 @@ export default function Home() {
             >
               Values
             </button>
+            <button
+              type="button"
+              onClick={() => setView("map")}
+              className={`rounded px-3 py-1 ${
+                view === "map"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Map
+            </button>
           </div>
 
           {view === "values" ? (
             <ValuesIndex graph={graph} />
+          ) : view === "map" ? (
+            <Suspense
+              fallback={
+                <p className="p-8 text-center text-sm text-slate-400">
+                  Loading map…
+                </p>
+              }
+            >
+              <GraphMap graph={graph} />
+            </Suspense>
           ) : (
             <>
           {creating && (
