@@ -294,3 +294,93 @@ export function getGroundingTerminal(
   }
   return undefined;
 }
+
+// --- Convergence ------------------------------------------------------------
+// The product thesis: many questions resolving to the same bedrock values.
+// These read-only queries power the Values index and clash detection.
+
+// All terminal nodes (value / principle / epistemic-limit).
+export function getTerminals(graph: Graph): GraphNode[] {
+  return graph.nodes.filter((n) => isTerminalType(n.type));
+}
+
+// Walk up the parent chain to the root question a node ultimately sits under.
+// Returns undefined if the chain doesn't reach a top-level question.
+export function getRootQuestionFor(
+  graph: Graph,
+  nodeId: string,
+): GraphNode | undefined {
+  let node = getNode(graph, nodeId);
+  const seen = new Set<string>();
+  while (node && !seen.has(node.id)) {
+    seen.add(node.id);
+    const parent = getParent(graph, node.id);
+    if (!parent) {
+      return node.type === "question" ? node : undefined;
+    }
+    node = parent;
+  }
+  return undefined;
+}
+
+export interface ValueUsage {
+  value: GraphNode;
+  // Nodes (arguments or positions) that ground directly in this terminal.
+  groundingNodes: GraphNode[];
+  // Distinct root questions whose chains reach this terminal.
+  questions: GraphNode[];
+  // True when reached from more than one distinct root question.
+  convergent: boolean;
+}
+
+// Usage summary for every terminal, sorted by how many questions converge on it.
+export function getValueUsage(graph: Graph): ValueUsage[] {
+  return getTerminals(graph)
+    .map((value) => {
+      const groundingNodes = graph.edges
+        .filter((e) => e.edgeType === "grounds-in" && e.to === value.id)
+        .map((e) => getNode(graph, e.from))
+        .filter((n): n is GraphNode => Boolean(n));
+
+      const questionMap = new Map<string, GraphNode>();
+      for (const node of groundingNodes) {
+        const root = getRootQuestionFor(graph, node.id);
+        if (root) questionMap.set(root.id, root);
+      }
+      const questions = [...questionMap.values()];
+      return {
+        value,
+        groundingNodes,
+        questions,
+        convergent: questions.length > 1,
+      };
+    })
+    .sort((a, b) => b.questions.length - a.questions.length);
+}
+
+export interface ValueClash {
+  question: GraphNode;
+  values: GraphNode[]; // the distinct terminals its chains bottom out at
+}
+
+// A root question "clashes" when its chains ground in more than one distinct
+// terminal — the real value disagreement the product aims to surface.
+export function getValueClashes(graph: Graph): ValueClash[] {
+  const clashes: ValueClash[] = [];
+  for (const question of getRootQuestions(graph)) {
+    const terminals = new Map<string, GraphNode>();
+    for (const t of getTerminals(graph)) {
+      const reaches = graph.edges.some(
+        (e) =>
+          e.edgeType === "grounds-in" &&
+          e.to === t.id &&
+          getRootQuestionFor(graph, e.from)?.id === question.id,
+      );
+      if (reaches) terminals.set(t.id, t);
+    }
+    if (terminals.size > 1) {
+      clashes.push({ question, values: [...terminals.values()] });
+    }
+  }
+  return clashes;
+}
