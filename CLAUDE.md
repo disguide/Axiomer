@@ -301,13 +301,34 @@ should reproduce them verbatim so IDs in tests stay stable.
 
 ```bash
 npm install        # install deps
-npm run dev        # Vite dev server at http://localhost:5173
+npm run dev        # Vite dev server at http://localhost:5173 (authoring mode)
 npm run build      # tsc -b (typecheck) + vite build → dist/
+npm run build:viewer # build the PUBLIC READ-ONLY viewer (VITE_PUBLIC_READONLY=1)
 npm run preview    # serve the production build
 npm run typecheck  # tsc -b --noEmit
-npm test           # vitest run (unit tests for lib/graph.ts)
+npm test           # vitest run (unit tests for lib/graph.ts, lib/io.ts)
 npm run test:watch # vitest in watch mode
 ```
+
+### Read-mostly setup (canonical graph + public viewer)
+
+Per `docs/ARCHITECTURE.md` / `docs/adr/0001`, the app runs in two modes from one
+codebase, switched by **`VITE_PUBLIC_READONLY`**:
+- **Authoring** (dev, flag unset): editable, persisted in `localStorage`.
+- **Public viewer** (`build:viewer`, flag=1): read-only; loads the canonical
+  **`client/public/graph.json`** (served at `/graph.json`), hides all editing,
+  and leads with the Map.
+
+`lib/io.ts` is the pure, strict **export/import** layer (`exportGraph`,
+`parseGraph`/`validateGraph` — validates node/edge types and referential
+integrity; tested in `io.test.ts`). The header **Export** button writes
+`graph.json` for a contributor's pull request. `lib/dataSource.ts`
+(`isReadOnly`, `loadCanonicalGraph`) picks the source. `useGraph` returns
+`{readOnly, loading}` and turns mutations into no-ops in read-only mode;
+`TreeView`/`NodeCard` take a `readOnly` prop that hides edit affordances.
+`types.ts` exports runtime `NODE_TYPES` / `EDGE_TYPES` lists used for validation.
+`.github/workflows/deploy.yml` builds the viewer and publishes on merge to `main`
+(`.env.example` documents `VITE_PUBLIC_READONLY` and `VITE_DONATE_URL`).
 
 Vite's root is `client/`, so `index.html` lives at `client/index.html` and the
 `@` alias points at `client/src`. The build output goes to `dist/` at the repo

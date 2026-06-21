@@ -11,6 +11,7 @@ interface NodeCardProps {
   childCount?: number;
   hasChildren: boolean;
   expanded: boolean;
+  readOnly?: boolean;
   canAddChild: boolean;
   canFocus?: boolean;
   onToggle: () => void;
@@ -28,6 +29,7 @@ export default function NodeCard({
   childCount = 0,
   hasChildren,
   expanded,
+  readOnly = false,
   canAddChild,
   canFocus = false,
   onToggle,
@@ -207,25 +209,29 @@ export default function NodeCard({
                 + Add
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => {
-                setDraft(node.content);
-                setEditing(true);
-              }}
-              className="rounded px-2 py-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-              title="Edit content"
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={onDelete}
-              className="rounded px-2 py-1 text-slate-500 hover:bg-rose-50 hover:text-rose-600"
-              title="Delete node and descendants"
-            >
-              Delete
-            </button>
+            {!readOnly && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraft(node.content);
+                    setEditing(true);
+                  }}
+                  className="rounded px-2 py-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                  title="Edit content"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  className="rounded px-2 py-1 text-slate-500 hover:bg-rose-50 hover:text-rose-600"
+                  title="Delete node and descendants"
+                >
+                  Delete
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

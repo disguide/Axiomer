@@ -66,6 +66,46 @@ export const TERMINAL_TYPES: readonly NodeType[] = [
   "epistemic-limit",
 ];
 
+// Runtime lists of every valid type — used to validate imported graph JSON.
+// Typed against the unions so a typo or drift is a compile error.
+export const NODE_TYPES: readonly NodeType[] = [
+  "question",
+  "position",
+  "argument-support",
+  "argument-attack",
+  "evidence-empirical",
+  "evidence-anecdotal",
+  "assumption",
+  "definition",
+  "caveat",
+  "clarification",
+  "counter-argument",
+  "objection",
+  "rebuttal",
+  "analogy",
+  "thought-experiment",
+  "related-concept",
+  "logical-fallacy",
+  "value",
+  "principle",
+  "epistemic-limit",
+  "premise",
+];
+
+export const EDGE_TYPES: readonly EdgeType[] = [
+  "answers",
+  "supports",
+  "argues-for",
+  "argues-against",
+  "raises",
+  "objects-to",
+  "rebuts",
+  "grounds-in",
+  "connects-to",
+  "illustrates",
+  "entails",
+];
+
 export function isTerminalType(type: NodeType): boolean {
   return TERMINAL_TYPES.includes(type);
 }

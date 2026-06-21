@@ -8,6 +8,7 @@ import AddNodeForm from "./AddNodeForm";
 
 interface TreeViewProps {
   graph: Graph;
+  readOnly?: boolean;
   focusId: string | null;
   onSetFocus: (id: string | null) => void;
   onAddNode: (type: NodeType, content: string, parentId: string) => void;
@@ -18,6 +19,7 @@ interface TreeViewProps {
 
 export default function TreeView({
   graph,
+  readOnly = false,
   focusId,
   onSetFocus,
   onAddNode,
@@ -96,7 +98,8 @@ export default function TreeView({
             childCount={children.length}
             hasChildren={children.length > 0}
             expanded={isExpanded}
-            canAddChild={!isTerminalType(node.type)}
+            readOnly={readOnly}
+            canAddChild={!readOnly && !isTerminalType(node.type)}
             canFocus={children.length > 0 && focusId !== node.id}
             onToggle={() => toggle(node.id)}
             onFocus={() => onSetFocus(node.id)}
