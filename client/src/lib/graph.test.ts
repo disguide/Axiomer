@@ -254,6 +254,63 @@ describe("lineage helpers (map highlight)", () => {
   });
 });
 
+describe("acceptability (Dung-style defeat analysis)", () => {
+  // Build: Q ← P ← A(support). Then attack A with an objection, etc.
+  const baseChain = () => {
+    let g = G.addRootQuestion(seedGraph, "Q?");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "A", pid);
+    const aid = lastId(g);
+    return { g, qid, pid, aid };
+  };
+
+  it("treats a node with no attackers as defended", () => {
+    const { g, aid } = baseChain();
+    expect(G.getAcceptability(g).get(aid)).toBe("defended");
+    expect(G.getAttackers(g, aid)).toHaveLength(0);
+  });
+
+  it("lets an objection defeat its parent argument", () => {
+    let { g, aid } = baseChain();
+    g = G.addNode(g, "objection", "But that's flawed", aid);
+    const oid = lastId(g);
+    const acc = G.getAcceptability(g);
+    expect(acc.get(aid)).toBe("defeated");
+    expect(acc.get(oid)).toBe("defended");
+    expect(G.getAttackers(g, aid).map((n) => n.id)).toEqual([oid]);
+  });
+
+  it("lets a rebuttal to the objection revive the argument", () => {
+    let { g, aid } = baseChain();
+    g = G.addNode(g, "objection", "Flawed", aid);
+    const oid = lastId(g);
+    g = G.addNode(g, "rebuttal", "Not so", oid);
+    const acc = G.getAcceptability(g);
+    expect(acc.get(oid)).toBe("defeated"); // rebutted
+    expect(acc.get(aid)).toBe("defended"); // therefore restored
+  });
+
+  it("stays defeated while any attacker survives", () => {
+    let { g, aid } = baseChain();
+    g = G.addNode(g, "objection", "Flawed", aid);
+    const oid = lastId(g);
+    g = G.addNode(g, "rebuttal", "Not so", oid); // defeats first objection
+    g = G.addNode(g, "objection", "Also wrong", aid); // fresh, undefeated
+    expect(G.getAcceptability(g).get(aid)).toBe("defeated");
+  });
+
+  it("lets an argument-attack defeat a position", () => {
+    let { g, pid } = baseChain();
+    g = G.addNode(g, "argument-attack", "P is harmful", pid);
+    const attackId = lastId(g);
+    const acc = G.getAcceptability(g);
+    expect(acc.get(pid)).toBe("defeated");
+    expect(acc.get(attackId)).toBe("defended");
+  });
+});
+
 describe("premises (reverse / forward-from-a-base authoring)", () => {
   it("treats a premise as a tree root, like a question", () => {
     const g = G.addRootPremise(seedGraph, "All humans have equal worth");

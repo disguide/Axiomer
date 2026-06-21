@@ -29,6 +29,9 @@ export default function TreeView({
   // Focus mode: when set, only this node's subtree is shown.
   const [focusId, setFocusId] = useState<string | null>(null);
 
+  // Whole-graph acceptability, recomputed when the graph changes.
+  const acceptability = useMemo(() => G.getAcceptability(graph), [graph]);
+
   // Every node that has children — the set "expand all" targets.
   const parentIds = useMemo(
     () =>
@@ -74,6 +77,11 @@ export default function TreeView({
         node.type === "argument-attack" ||
         node.type === "position") &&
       !G.isNodeGrounded(graph, node.id);
+    // Acceptability only matters for nodes that are actually under attack.
+    const attacked = G.getAttackers(graph, node.id).length > 0;
+    const acceptance = attacked
+      ? (acceptability.get(node.id) ?? null)
+      : null;
 
     return (
       <div key={node.id}>
@@ -82,6 +90,7 @@ export default function TreeView({
             node={node}
             grounded={grounded}
             ungrounded={ungrounded}
+            acceptance={acceptance}
             childCount={children.length}
             hasChildren={children.length > 0}
             expanded={isExpanded}
