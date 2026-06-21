@@ -20,6 +20,14 @@ are an optional facilitation layer, not the core**.
   open up reads, then gated public contribution, later.
 - **One canonical global graph** — the cumulative mega-tree — from the start.
 
+> **Refinement (read-mostly).** Since contribution is rare/expert and most people
+> only **view**, the near-term implementation is the lean architecture in
+> **`ARCHITECTURE.md`** (decision: **`adr/0001`**): canonical graph in **Git**
+> (`data/graph.json`), small-group **PR** editing, and a **CI-published static
+> read-only viewer** (the custom Map) on a CDN. This realises propose-and-review
+> with **no backend yet** — the heavy persistence/collaboration phases below stay
+> on the roadmap but are **deferred** until contribution volume demands them.
+
 ## The through-line
 
 Three problems, in order: **persist & share it → make collaboration safe &
