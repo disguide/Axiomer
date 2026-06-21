@@ -461,6 +461,106 @@ export function getAcceptability(graph: Graph): Map<string, Acceptability> {
   return result;
 }
 
+// --- Depth metrics ----------------------------------------------------------
+// The product is about depth — so surface it. These read-only queries power the
+// insights panel and the "weakest link" finder.
+
+// Steps from a node up to its root (0 for a root).
+export function getDepth(graph: Graph, nodeId: string): number {
+  let depth = 0;
+  let current = getParent(graph, nodeId);
+  const seen = new Set<string>([nodeId]);
+  while (current && !seen.has(current.id)) {
+    seen.add(current.id);
+    depth++;
+    current = getParent(graph, current.id);
+  }
+  return depth;
+}
+
+// Longest downward path from a node to a leaf (cycle-guarded, memoized).
+function longestPath(
+  graph: Graph,
+  nodeId: string,
+  memo: Map<string, number>,
+  visiting: Set<string>,
+): number {
+  const cached = memo.get(nodeId);
+  if (cached !== undefined) return cached;
+  if (visiting.has(nodeId)) return 0;
+  visiting.add(nodeId);
+  const children = getChildren(graph, nodeId);
+  const depth =
+    children.length === 0
+      ? 0
+      : 1 + Math.max(...children.map((c) => longestPath(graph, c.id, memo, visiting)));
+  visiting.delete(nodeId);
+  memo.set(nodeId, depth);
+  return depth;
+}
+
+export interface GraphStats {
+  questions: number;
+  premises: number;
+  positions: number;
+  arguments: number;
+  terminals: number;
+  groundedQuestions: number;
+  openQuestions: number;
+  convergentValues: number;
+  clashes: number;
+  maxDepth: number;
+}
+
+export function getGraphStats(graph: Graph): GraphStats {
+  const questions = getRootQuestions(graph);
+  const grounded = questions.filter((q) => isFullyGrounded(graph, q.id)).length;
+  const memo = new Map<string, number>();
+  const roots = getRoots(graph);
+  const maxDepth = roots.reduce(
+    (m, r) => Math.max(m, longestPath(graph, r.id, memo, new Set())),
+    0,
+  );
+  return {
+    questions: graph.nodes.filter((n) => n.type === "question").length,
+    premises: graph.nodes.filter((n) => n.type === "premise").length,
+    positions: graph.nodes.filter((n) => n.type === "position").length,
+    arguments: graph.nodes.filter(
+      (n) => n.type === "argument-support" || n.type === "argument-attack",
+    ).length,
+    terminals: getTerminals(graph).length,
+    groundedQuestions: grounded,
+    openQuestions: questions.length - grounded,
+    convergentValues: getValueUsage(graph).filter((u) => u.convergent).length,
+    clashes: getValueClashes(graph).length,
+    maxDepth,
+  };
+}
+
+export interface GroundingGap {
+  node: GraphNode;
+  root: GraphNode | undefined;
+  depth: number;
+}
+
+// Arguments that don't yet reach a foundation — the concrete grounding to-do
+// list, shallowest first (the shallowest is the "weakest link", closest to a
+// root and blocking the most).
+export function getGroundingGaps(graph: Graph): GroundingGap[] {
+  return graph.nodes
+    .filter(
+      (n) =>
+        (n.type === "argument-support" || n.type === "argument-attack") &&
+        !isNodeGrounded(graph, n.id),
+    )
+    .map((n) => ({
+      node: n,
+      root: getRootFor(graph, n.id),
+      depth: getDepth(graph, n.id),
+    }))
+    .sort((a, b) => a.depth - b.depth);
+}
+
 // --- Convergence ------------------------------------------------------------
 // The product thesis: many questions resolving to the same bedrock values.
 // These read-only queries power the Values index and clash detection.

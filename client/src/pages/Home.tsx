@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from "react";
 import { useGraph } from "@/hooks/useGraph";
 import TreeView from "@/components/TreeView";
 import ValuesIndex from "@/components/ValuesIndex";
+import DepthPanel from "@/components/DepthPanel";
 import Legend from "@/components/Legend";
 
 // React Flow is heavy and only used by the Map tab — load it on demand.
@@ -23,6 +24,12 @@ export default function Home() {
   const [draft, setDraft] = useState("");
   const [showLegend, setShowLegend] = useState(false);
   const [view, setView] = useState<"tree" | "values" | "map">("tree");
+  const [focusId, setFocusId] = useState<string | null>(null);
+
+  const focusInTree = (nodeId: string) => {
+    setView("tree");
+    setFocusId(nodeId);
+  };
 
   const startCreating = (kind: "question" | "premise") => {
     setView("tree");
@@ -132,6 +139,7 @@ export default function Home() {
             </Suspense>
           ) : (
             <>
+          {!focusId && <DepthPanel graph={graph} onFocus={focusInTree} />}
           {creating && (
             <div className="mb-4 rounded-lg border border-slate-200 bg-white p-4">
               <label className="block text-sm font-medium text-slate-700">
@@ -177,6 +185,8 @@ export default function Home() {
 
           <TreeView
             graph={graph}
+            focusId={focusId}
+            onSetFocus={setFocusId}
             onAddNode={addNode}
             onLinkValue={linkToExistingValue}
             onEditNode={editNode}
