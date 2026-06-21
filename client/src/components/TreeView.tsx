@@ -195,7 +195,7 @@ export default function TreeView({
       {addingTo && (
         <AddNodeForm
           parent={addingTo}
-          existingValues={G.getValues(graph)}
+          existingTerminals={G.getTerminals(graph)}
           onAdd={(type, content) => onAddNode(type, content, addingTo.id)}
           onLinkValue={(valueId) => onLinkValue(addingTo.id, valueId)}
           onClose={() => setAddingTo(null)}
