@@ -653,3 +653,52 @@ export function getValueClashes(graph: Graph): ValueClash[] {
   }
   return clashes;
 }
+
+// --- Value de-duplication ---------------------------------------------------
+// Convergence depends on REUSING bedrock nodes, not re-typing near-identical
+// ones. A lightweight text similarity nudges the user to link instead.
+
+function normalizeText(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// 0..1 similarity: 1 = identical (after normalization), else the larger of
+// token-set Jaccard overlap and a containment boost.
+export function similarity(a: string, b: string): number {
+  const na = normalizeText(a);
+  const nb = normalizeText(b);
+  if (!na || !nb) return 0;
+  if (na === nb) return 1;
+  const ta = new Set(na.split(" "));
+  const tb = new Set(nb.split(" "));
+  let inter = 0;
+  for (const t of ta) if (tb.has(t)) inter++;
+  const union = new Set([...ta, ...tb]).size;
+  const jaccard = union ? inter / union : 0;
+  const contained = na.includes(nb) || nb.includes(na) ? 0.6 : 0;
+  return Math.max(jaccard, contained);
+}
+
+export interface TerminalMatch {
+  node: GraphNode;
+  score: number;
+}
+
+// Existing terminals of `type` similar to `text`, most similar first.
+export function findSimilarTerminals(
+  graph: Graph,
+  text: string,
+  type: NodeType,
+  threshold = 0.5,
+): TerminalMatch[] {
+  if (!text.trim()) return [];
+  return graph.nodes
+    .filter((n) => n.type === type)
+    .map((node) => ({ node, score: similarity(text, node.content) }))
+    .filter((m) => m.score >= threshold)
+    .sort((a, b) => b.score - a.score);
+}

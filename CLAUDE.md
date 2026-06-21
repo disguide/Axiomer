@@ -229,10 +229,15 @@ grounding) is a deliberate future step, not the current behaviour.
 
 When grounding an argument, the user can **create a new value** or **link to an
 existing one** (`AddNodeForm` shows this choice whenever a terminal type is
-selected and values already exist). Linking (`linkToExistingValue`) adds a
-`grounds-in` edge to the existing value node instead of creating a duplicate.
-This is the heart of the product — make sure linking works and never silently
-creates duplicate value nodes.
+selected and a same-type terminal already exists). Linking (`linkToExistingValue`)
+adds a `grounds-in` edge to the existing value node instead of creating a
+duplicate. This is the heart of the product — make sure linking works and never
+silently creates duplicate value nodes. To protect convergence, `AddNodeForm`
+also runs a **dedup nudge**: as you type a new terminal, `findSimilarTerminals`
+(text `similarity`, both pure in `graph.ts`) surfaces near-identical existing
+terminals of the same type with a one-click "link instead". `AddNodeForm` takes
+`existingTerminals` (all terminals) and filters to the selected type, so you can
+link to existing principles/epistemic-limits too, not just values.
 
 Because a value can be shared by multiple arguments, `deleteNode` **spares any
 terminal node that still has a grounding argument outside the deletion set** —

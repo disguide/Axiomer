@@ -311,6 +311,42 @@ describe("acceptability (Dung-style defeat analysis)", () => {
   });
 });
 
+describe("value de-duplication (similarity)", () => {
+  it("scores identical (normalized) text as 1", () => {
+    expect(G.similarity("Minimize suffering", "minimize  suffering!")).toBe(1);
+  });
+
+  it("scores unrelated text low and overlapping text higher", () => {
+    expect(G.similarity("Maximize freedom", "Minimize suffering")).toBeLessThan(
+      0.3,
+    );
+    expect(
+      G.similarity("Minimize total suffering", "Minimize suffering"),
+    ).toBeGreaterThanOrEqual(0.5);
+  });
+
+  it("finds similar existing terminals of the same type, best first", () => {
+    // Seed has value 'Minimize total suffering'.
+    const matches = G.findSimilarTerminals(
+      seedGraph,
+      "minimize suffering",
+      "value",
+    );
+    expect(matches[0]?.node.id).toBe("trolley-v1");
+    // Type filter: searching for a principle shouldn't match the value.
+    expect(
+      G.findSimilarTerminals(seedGraph, "minimize suffering", "principle"),
+    ).toHaveLength(0);
+  });
+
+  it("returns nothing for empty or dissimilar input", () => {
+    expect(G.findSimilarTerminals(seedGraph, "", "value")).toHaveLength(0);
+    expect(
+      G.findSimilarTerminals(seedGraph, "quantum chromodynamics", "value"),
+    ).toHaveLength(0);
+  });
+});
+
 describe("depth metrics", () => {
   it("reports depth from root", () => {
     expect(G.getDepth(seedGraph, "trolley-q1")).toBe(0);

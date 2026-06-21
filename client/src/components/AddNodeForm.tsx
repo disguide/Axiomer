@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import type { GraphNode, NodeType } from "@/lib/types";
 import { isTerminalType } from "@/lib/types";
+import { similarity } from "@/lib/graph";
 import { ALLOWED_CHILDREN, NODE_META } from "@/lib/meta";
 
 interface AddNodeFormProps {
   parent: GraphNode;
-  existingValues: GraphNode[];
+  existingTerminals: GraphNode[];
   onAdd: (type: NodeType, content: string) => void;
   onLinkValue: (valueId: string) => void;
   onClose: () => void;
@@ -13,7 +14,7 @@ interface AddNodeFormProps {
 
 export default function AddNodeForm({
   parent,
-  existingValues,
+  existingTerminals,
   onAdd,
   onLinkValue,
   onClose,
@@ -21,19 +22,33 @@ export default function AddNodeForm({
   const options = ALLOWED_CHILDREN[parent.type];
   const [type, setType] = useState<NodeType>(options[0]);
   const [content, setContent] = useState("");
-  // For terminal types: create a new bedrock node, or link an existing value.
+  // For terminal types: create a new bedrock node, or link an existing one.
   const [mode, setMode] = useState<"new" | "existing">("new");
-  const [valueId, setValueId] = useState<string>(existingValues[0]?.id ?? "");
 
   const meta = NODE_META[type];
-  const showLinkOption = useMemo(
-    () => isTerminalType(type) && existingValues.length > 0,
-    [type, existingValues.length],
+  // Existing terminals of the SAME type are the valid link/dedup targets.
+  const sameType = useMemo(
+    () => existingTerminals.filter((t) => t.type === type),
+    [existingTerminals, type],
   );
+  const [valueId, setValueId] = useState<string>("");
+  const showLinkOption = isTerminalType(type) && sameType.length > 0;
+
+  // Near-duplicates of what the user is typing — nudge "link instead".
+  const similar = useMemo(() => {
+    if (!isTerminalType(type) || !content.trim()) return [];
+    return sameType
+      .map((node) => ({ node, score: similarity(content, node.content) }))
+      .filter((m) => m.score >= 0.5)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+  }, [content, type, sameType]);
+
+  const linkTarget = valueId || sameType[0]?.id || "";
 
   const submit = () => {
     if (showLinkOption && mode === "existing") {
-      if (valueId) onLinkValue(valueId);
+      if (linkTarget) onLinkValue(linkTarget);
       onClose();
       return;
     }
@@ -103,21 +118,21 @@ export default function AddNodeForm({
         {showLinkOption && mode === "existing" ? (
           <>
             <label className="mt-3 block text-xs font-medium text-slate-700">
-              Choose an existing value
+              Choose an existing {meta.label.toLowerCase()}
             </label>
             <select
               className="mt-1 w-full rounded border border-slate-300 p-2 text-sm focus:border-slate-500 focus:outline-none"
-              value={valueId}
+              value={linkTarget}
               onChange={(e) => setValueId(e.target.value)}
             >
-              {existingValues.map((v) => (
+              {sameType.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.content}
                 </option>
               ))}
             </select>
             <p className="mt-1 text-[11px] text-slate-400">
-              Reusing a value creates convergence across questions.
+              Reusing a bedrock node creates convergence across questions.
             </p>
           </>
         ) : (
@@ -136,6 +151,37 @@ export default function AddNodeForm({
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
               }}
             />
+            {similar.length > 0 && (
+              <div className="mt-2 rounded-md border border-indigo-200 bg-indigo-50 p-2">
+                <p className="text-[11px] font-medium text-indigo-700">
+                  Similar {meta.label.toLowerCase()}
+                  {similar.length === 1 ? "" : "s"} already exist — link instead
+                  to keep convergence:
+                </p>
+                <ul className="mt-1 space-y-1">
+                  {similar.map(({ node }) => (
+                    <li key={node.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onLinkValue(node.id);
+                          onClose();
+                        }}
+                        className="flex w-full items-center gap-1.5 rounded bg-white px-2 py-1 text-left text-xs text-slate-700 hover:bg-indigo-100"
+                      >
+                        <span style={{ color: meta.color }}>{meta.icon}</span>
+                        <span className="min-w-0 flex-1 truncate">
+                          {node.content}
+                        </span>
+                        <span className="shrink-0 text-[10px] font-medium text-indigo-600">
+                          link
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </>
         )}
 
