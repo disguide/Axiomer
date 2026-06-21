@@ -131,44 +131,43 @@ await page.screenshot({ path: "shot.png" });
 Seed data (Trolley Problem + "Why is the sky blue?") loads automatically on a
 fresh `localStorage`, so there's always content to screenshot.
 
-## The structure at scale (the mirrored convergence tree)
+## The structure at scale (two sections mirrored across a shared value band)
 
-This is the mental model the visuals must serve. As a user works a lot, the
-graph does **not** grow into an even blob — it grows into an **hourglass that
-converges on a small shared core**:
+This is the mental model the visuals must serve. The graph is **two sections
+separated by a central band of shared VALUES** — a mirror across the value line:
 
 ```
-   Q   Q   Q   Q   Q   Q          ← many QUESTIONS (top) — keeps growing
-    \   \  |  /   /  |
-      positions → arguments         build DOWN: argue toward foundations
-         \    \  |  /   /
-   ╔══════════════════════════╗
-   ║   shared VALUES /         ║   ← the WAIST: few, reused, central
-   ║   PRINCIPLES / PREMISES   ║      (this is convergence — it stays small)
-   ╚══════════════════════════╝
-         /    /  |  \   \
-      premise-derived positions / questions    build UP: derive forward
-    /   /  |  \   \  |
-   …   …   …   …   …   …          ← the premise side also grows
+   Q   Q   Q   Q   Q          QUESTIONS (top) — keeps growing
+    \   \  |  /   /
+      arguments                 ↓ built TOP-DOWN, grounding into…
+         \  |  /
+ ═════ shared VALUES — the MIDDLE line / spine ═════   (few, reused, central)
+         /  |  \
+      premise derivations       ↓ built FROM the middle, DOWNWARD
+    /   /  |  \   \
+   …   …   …   …   …            PREMISES & their conclusions (bottom) — also grows
 ```
 
-- **Top-down:** a `question` funnels through positions/arguments and **grounds
-  down** into a `value` / `principle` / `epistemic-limit`.
-- **Bottom-up (mirror):** a `premise` is a base you **build up/forward** from
-  (`entails`) — deriving positions and questions.
-- **The middle band — shared values/premises — is the spine.** Many different
-  questions ground into the **same few** values; that reuse is the whole point
-  (convergence). The top (questions) and the premise-derived side both expand
-  with use, but the **core stays compact**. That asymmetry — wide ends, narrow
-  waist — is the signal a healthy Axiomer graph should *look like*.
+- **Upper section (above the middle):** a `question` funnels through
+  positions/arguments and **grounds DOWN** into the `value` / `principle` /
+  `epistemic-limit` nodes sitting on the **middle line**. Built top-down.
+- **Lower section (below the middle):** a `premise` sits at the middle and is
+  **built DOWNWARD** (`entails`) into its derivations. Built middle-down.
+- **The middle band — the shared values — is the spine, used by BOTH sections.**
+  Many different questions (and premise-derivations) bottom out at the **same
+  few** values; that reuse is the whole point (convergence). Both ends grow with
+  use, but the **core stays small**. A healthy Axiomer graph should *look like*
+  two stacks meeting at a narrow shared value band.
 
-**Design implication:** the layout must make that core legible — shared values
-read as **central convergence hubs** (e.g. sized by how many chains reach them),
-with questions flowing in from one side and premise-derivations from the other.
-A user should be able to *see* "all these questions bottom out at the same three
-values" without reading a single node. (Today's model places terminals strictly
-at the bottom; positioning them as a recognizable convergence band is a layout
-goal, not a data-model change.)
+**Design implication — make it two visibly separate sections.** Render the
+shared values as a recognizable **central band / hub layer**: questions stack
+and flow down into it from above, premise derivations stack and flow down out of
+it below. A user should *see* "all these questions land on the same three
+values" without reading a single node. (Today's layout places terminals strictly
+at the bottom; positioning them as a central, shared convergence band — with the
+question section above and the premise section below — is a **layout** goal, not
+a data-model change. Keep `graph.ts` and the edge semantics untouched; this is
+about where nodes are *drawn*.)
 
 ## Two view modes: Detail and Overview ("brain")
 
