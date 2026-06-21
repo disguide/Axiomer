@@ -311,6 +311,47 @@ describe("acceptability (Dung-style defeat analysis)", () => {
   });
 });
 
+describe("depth metrics", () => {
+  it("reports depth from root", () => {
+    expect(G.getDepth(seedGraph, "trolley-q1")).toBe(0);
+    expect(G.getDepth(seedGraph, "trolley-p1")).toBe(1);
+    expect(G.getDepth(seedGraph, "trolley-a1")).toBe(2);
+    expect(G.getDepth(seedGraph, "trolley-q2")).toBe(3);
+  });
+
+  it("summarizes the graph", () => {
+    const s = G.getGraphStats(seedGraph);
+    expect(s.questions).toBe(4); // 2 roots + 2 child questions
+    expect(s.premises).toBe(0);
+    expect(s.terminals).toBe(3); // v1, v2, el1
+    expect(s.groundedQuestions).toBe(2); // both roots
+    expect(s.openQuestions).toBe(0);
+    expect(s.clashes).toBe(1); // trolley
+    expect(s.maxDepth).toBeGreaterThan(0);
+  });
+
+  it("lists grounding gaps shallowest-first", () => {
+    // Add an ungrounded argument near the top and a deeper one.
+    let g = G.addRootQuestion(seedGraph, "Q?");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "shallow arg", pid);
+    const shallow = lastId(g);
+
+    const gaps = G.getGroundingGaps(g);
+    expect(gaps.length).toBeGreaterThan(0);
+    expect(gaps[0].node.id).toBe(shallow); // depth 2, the weakest link
+    expect(gaps[0].root?.id).toBe(qid);
+    // Seed arguments are all grounded, so they don't appear.
+    expect(gaps.some((x) => x.node.id === "trolley-a2")).toBe(false);
+  });
+
+  it("returns no gaps when everything is grounded", () => {
+    expect(G.getGroundingGaps(seedGraph)).toHaveLength(0);
+  });
+});
+
 describe("premises (reverse / forward-from-a-base authoring)", () => {
   it("treats a premise as a tree root, like a question", () => {
     const g = G.addRootPremise(seedGraph, "All humans have equal worth");

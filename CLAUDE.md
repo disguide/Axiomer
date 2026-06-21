@@ -192,6 +192,18 @@ yet reach a foundation ("NEEDS GROUNDING").
 (nested bordered containers tinted by parent type), **expand/collapse-all**,
 **focus mode** (zoom into one subtree with a breadcrumb back to roots), and the
 ungrounded cue above. Keep these presentational — graph state stays in the model.
+Focus state is **lifted to `Home`** (`focusId`/`setFocusId`) so the `DepthPanel`
+can jump straight to a node; `TreeView` takes it as a controlled prop.
+
+### Depth metrics (insights + weakest link)
+
+The product is about depth, so `graph.ts` surfaces it with read-only queries:
+`getGraphStats` (counts, grounded/open questions, convergent values, clashes,
+deepest chain via a memoized `longestPath`), `getDepth` (steps from a node to
+its root), and `getGroundingGaps` (arguments that don't reach a foundation,
+**shallowest first** — the shallowest is the "weakest link", closest to a root
+and blocking the most). `DepthPanel` (Tree view) renders these; clicking a gap
+focuses that node in the tree.
 
 ### Acceptability (defeat analysis)
 

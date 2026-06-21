@@ -8,6 +8,8 @@ import AddNodeForm from "./AddNodeForm";
 
 interface TreeViewProps {
   graph: Graph;
+  focusId: string | null;
+  onSetFocus: (id: string | null) => void;
   onAddNode: (type: NodeType, content: string, parentId: string) => void;
   onLinkValue: (argumentId: string, valueId: string) => void;
   onEditNode: (nodeId: string, content: string) => void;
@@ -16,6 +18,8 @@ interface TreeViewProps {
 
 export default function TreeView({
   graph,
+  focusId,
+  onSetFocus,
   onAddNode,
   onLinkValue,
   onEditNode,
@@ -26,8 +30,6 @@ export default function TreeView({
     return new Set(G.getRoots(graph).map((n) => n.id));
   });
   const [addingTo, setAddingTo] = useState<GraphNode | null>(null);
-  // Focus mode: when set, only this node's subtree is shown.
-  const [focusId, setFocusId] = useState<string | null>(null);
 
   // Whole-graph acceptability, recomputed when the graph changes.
   const acceptability = useMemo(() => G.getAcceptability(graph), [graph]);
@@ -61,7 +63,7 @@ export default function TreeView({
           }? This cannot be undone.`
         : "Delete this node? This cannot be undone.";
     if (window.confirm(msg)) {
-      if (focusId === node.id) setFocusId(null);
+      if (focusId === node.id) onSetFocus(null);
       onDeleteNode(node.id);
     }
   };
@@ -97,7 +99,7 @@ export default function TreeView({
             canAddChild={!isTerminalType(node.type)}
             canFocus={children.length > 0 && focusId !== node.id}
             onToggle={() => toggle(node.id)}
-            onFocus={() => setFocusId(node.id)}
+            onFocus={() => onSetFocus(node.id)}
             onEdit={(content) => onEditNode(node.id, content)}
             onDelete={() => confirmDelete(node)}
             onAddChild={() => setAddingTo(node)}
@@ -143,7 +145,7 @@ export default function TreeView({
             <div className="mb-3 flex flex-wrap items-center gap-1 text-xs text-slate-500">
               <button
                 type="button"
-                onClick={() => setFocusId(null)}
+                onClick={() => onSetFocus(null)}
                 className="rounded px-1.5 py-0.5 font-medium text-slate-600 hover:bg-slate-100"
               >
                 All roots
@@ -158,7 +160,7 @@ export default function TreeView({
                   ) : (
                     <button
                       type="button"
-                      onClick={() => setFocusId(n.id)}
+                      onClick={() => onSetFocus(n.id)}
                       className="max-w-[10rem] truncate rounded px-1.5 py-0.5 hover:bg-slate-100"
                     >
                       {n.content}
