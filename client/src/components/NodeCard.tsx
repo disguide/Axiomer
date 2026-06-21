@@ -1,11 +1,13 @@
 import { useState } from "react";
 import type { GraphNode } from "@/lib/types";
+import type { Acceptability } from "@/lib/graph";
 import { NODE_META } from "@/lib/meta";
 
 interface NodeCardProps {
   node: GraphNode;
   grounded: boolean | null; // only questions get a badge; null = no badge
   ungrounded?: boolean; // argument/position that doesn't yet reach a foundation
+  acceptance?: Acceptability | null; // defeat status; only when under attack
   childCount?: number;
   hasChildren: boolean;
   expanded: boolean;
@@ -22,6 +24,7 @@ export default function NodeCard({
   node,
   grounded,
   ungrounded = false,
+  acceptance = null,
   childCount = 0,
   hasChildren,
   expanded,
@@ -102,6 +105,30 @@ export default function NodeCard({
                 NEEDS GROUNDING
               </span>
             )}
+            {acceptance === "defeated" && (
+              <span
+                className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700"
+                title="An undefeated attack (objection/attack) currently defeats this node"
+              >
+                DEFEATED
+              </span>
+            )}
+            {acceptance === "defended" && (
+              <span
+                className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700"
+                title="Survives every attack against it (each attacker is itself defeated)"
+              >
+                DEFENDED
+              </span>
+            )}
+            {acceptance === "contested" && (
+              <span
+                className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-600"
+                title="Undecided under grounded semantics (attack cycle)"
+              >
+                CONTESTED
+              </span>
+            )}
             {hasChildren && !expanded && (
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
                 {childCount} hidden
@@ -146,7 +173,13 @@ export default function NodeCard({
               </div>
             </div>
           ) : (
-            <p className="mt-0.5 break-words text-sm text-slate-800">
+            <p
+              className={`mt-0.5 break-words text-sm ${
+                acceptance === "defeated"
+                  ? "text-slate-400 line-through decoration-rose-300"
+                  : "text-slate-800"
+              }`}
+            >
               {node.content}
             </p>
           )}

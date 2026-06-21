@@ -193,6 +193,26 @@ yet reach a foundation ("NEEDS GROUNDING").
 **focus mode** (zoom into one subtree with a breadcrumb back to roots), and the
 ungrounded cue above. Keep these presentational — graph state stays in the model.
 
+### Acceptability (defeat analysis)
+
+Grounding asks "does this reach bedrock?"; **acceptability** asks "does this
+survive its attacks?" — an orthogonal lens. Without it, objections/rebuttals/
+attacks are cosmetic. `getAcceptability(graph)` runs **Dung-style grounded
+semantics** over the attack relation and labels every node `defended`,
+`defeated`, or `contested`. The attack relation is structural: a node is
+attacked by its **attacking-type children** (`argument-attack`, `objection`,
+`rebuttal`, `counter-argument`, `logical-fallacy`) via `getAttackers`. Because
+attacks run child→parent over the tree the attack graph is **acyclic**, so the
+labelling is total (every node is defended or defeated; `contested` is reserved
+for the degenerate cyclic case and shouldn't arise from normal authoring). A
+node is `defended` iff every attacker is `defeated`; `defeated` iff some
+attacker is `defended` — so a rebuttal that defeats an objection *revives* the
+argument the objection had defeated. `TreeView` computes the map once and
+`NodeCard` shows a DEFENDED/DEFEATED badge (only when a node actually has
+attackers) and strikes through defeated content. This is **separate from
+grounding** on purpose — combining them (count only undefeated chains toward
+grounding) is a deliberate future step, not the current behaviour.
+
 ### Reuse of values (convergence)
 
 When grounding an argument, the user can **create a new value** or **link to an

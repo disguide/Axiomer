@@ -390,6 +390,77 @@ export function getGroundingTerminal(
   return undefined;
 }
 
+// --- Acceptability (Dung-style defeat analysis) -----------------------------
+// Attacks are cosmetic until they have consequences. Here we compute, for every
+// node, whether it is DEFENDED, DEFEATED, or CONTESTED under grounded semantics
+// — so an objection can defeat an argument, and a rebuttal can revive it.
+//
+// Attack relation: a node is attacked by its *attacking-type children*. An
+// objection objects-to its parent, a rebuttal rebuts its parent objection, an
+// argument-attack argues-against its parent position, and counter-arguments /
+// logical-fallacies challenge their parent. Because these run child→parent over
+// the tree, the attack graph is acyclic, so grounded labelling is total
+// (every node ends up defended or defeated; CONTESTED is reserved for the
+// degenerate cyclic case and shouldn't arise from normal authoring).
+
+export type Acceptability = "defended" | "defeated" | "contested";
+
+const ATTACKING_TYPES: ReadonlySet<NodeType> = new Set<NodeType>([
+  "argument-attack",
+  "objection",
+  "rebuttal",
+  "counter-argument",
+  "logical-fallacy",
+]);
+
+// The nodes that attack `nodeId` (its attacking-type children).
+export function getAttackers(graph: Graph, nodeId: string): GraphNode[] {
+  return getChildren(graph, nodeId).filter((c) => ATTACKING_TYPES.has(c.type));
+}
+
+// Grounded labelling for the whole graph.
+export function getAcceptability(graph: Graph): Map<string, Acceptability> {
+  const attackers = new Map<string, string[]>();
+  for (const n of graph.nodes) {
+    attackers.set(
+      n.id,
+      getAttackers(graph, n.id).map((a) => a.id),
+    );
+  }
+
+  // "in" = defended, "out" = defeated; unlabelled until decided.
+  const label = new Map<string, "in" | "out">();
+  let changed = true;
+  while (changed) {
+    changed = false;
+    // A node is defended once all of its attackers are defeated.
+    for (const n of graph.nodes) {
+      if (label.has(n.id)) continue;
+      const atk = attackers.get(n.id) as string[];
+      if (atk.every((a) => label.get(a) === "out")) {
+        label.set(n.id, "in");
+        changed = true;
+      }
+    }
+    // A node is defeated once any attacker is defended.
+    for (const n of graph.nodes) {
+      if (label.has(n.id)) continue;
+      const atk = attackers.get(n.id) as string[];
+      if (atk.some((a) => label.get(a) === "in")) {
+        label.set(n.id, "out");
+        changed = true;
+      }
+    }
+  }
+
+  const result = new Map<string, Acceptability>();
+  for (const n of graph.nodes) {
+    const l = label.get(n.id);
+    result.set(n.id, l === "in" ? "defended" : l === "out" ? "defeated" : "contested");
+  }
+  return result;
+}
+
 // --- Convergence ------------------------------------------------------------
 // The product thesis: many questions resolving to the same bedrock values.
 // These read-only queries power the Values index and clash detection.
