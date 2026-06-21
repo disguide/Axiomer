@@ -131,6 +131,80 @@ await page.screenshot({ path: "shot.png" });
 Seed data (Trolley Problem + "Why is the sky blue?") loads automatically on a
 fresh `localStorage`, so there's always content to screenshot.
 
+## The structure at scale (the mirrored convergence tree)
+
+This is the mental model the visuals must serve. As a user works a lot, the
+graph does **not** grow into an even blob — it grows into an **hourglass that
+converges on a small shared core**:
+
+```
+   Q   Q   Q   Q   Q   Q          ← many QUESTIONS (top) — keeps growing
+    \   \  |  /   /  |
+      positions → arguments         build DOWN: argue toward foundations
+         \    \  |  /   /
+   ╔══════════════════════════╗
+   ║   shared VALUES /         ║   ← the WAIST: few, reused, central
+   ║   PRINCIPLES / PREMISES   ║      (this is convergence — it stays small)
+   ╚══════════════════════════╝
+         /    /  |  \   \
+      premise-derived positions / questions    build UP: derive forward
+    /   /  |  \   \  |
+   …   …   …   …   …   …          ← the premise side also grows
+```
+
+- **Top-down:** a `question` funnels through positions/arguments and **grounds
+  down** into a `value` / `principle` / `epistemic-limit`.
+- **Bottom-up (mirror):** a `premise` is a base you **build up/forward** from
+  (`entails`) — deriving positions and questions.
+- **The middle band — shared values/premises — is the spine.** Many different
+  questions ground into the **same few** values; that reuse is the whole point
+  (convergence). The top (questions) and the premise-derived side both expand
+  with use, but the **core stays compact**. That asymmetry — wide ends, narrow
+  waist — is the signal a healthy Axiomer graph should *look like*.
+
+**Design implication:** the layout must make that core legible — shared values
+read as **central convergence hubs** (e.g. sized by how many chains reach them),
+with questions flowing in from one side and premise-derivations from the other.
+A user should be able to *see* "all these questions bottom out at the same three
+values" without reading a single node. (Today's model places terminals strictly
+at the bottom; positioning them as a recognizable convergence band is a layout
+goal, not a data-model change.)
+
+## Two view modes: Detail and Overview ("brain")
+
+The current Map is **detail mode** — great when zoomed in (readable pills,
+labels, inspector), but it becomes unreadable at volume. Add a **second mode**:
+
+- **Detail mode (have it):** compact labelled pills + labelled connections +
+  inspector. The "street view" — read and work a local area.
+- **Overview / "brain" mode (new — requested):** the **whole territory** at a
+  glance, Obsidian-graph-like **but top-down with a clear directional flow** —
+  **not** a radial circle, **not** a hairball. Nodes shrink to **dots sized by
+  importance** (shared values = big hubs; leaves = small), edges thin, labels
+  hidden until you zoom/focus. You should see the *shape*: where convergence
+  happens, where the clashes and dense clusters are, what's sparse or
+  ungrounded. Zooming/clicking transitions smoothly back into detail mode.
+
+Think **map zoom levels**: country view (overview/brain) ↔ street view (detail),
+one continuous, smooth (Mapbox-like) transition — same graph, different altitude.
+Keep a strong **general direction** (top→down flow) at every zoom so it never
+reads as a mess.
+
+## Connecting similar nodes (convergence, made visual)
+
+The product lives or dies on **reuse, not duplication**. The graph already has
+`similarity(a, b)` and `findSimilarTerminals(...)` in `lib/graph.ts`. Use them in
+the views — especially overview mode:
+
+- **Surface near-duplicates:** when two values/concepts are similar, show a
+  candidate **"connect / merge"** affordance (a soft link, a halo, a cluster) so
+  the user can fold them into one shared node. This is how the convergence core
+  stays small as the graph grows.
+- **Cluster similar nodes** visually in overview mode so duplication is obvious
+  at a glance ("these five 'minimize suffering' values should be one").
+- This is the visual front end of the Phase-4 "canonical node merge" work in
+  `docs/ROADMAP.md` — design it so a human can spot-and-merge in one gesture.
+
 ## Definition of done
 
 The Map is a **legible, polished, primary** Obsidian-style **top-down tree** with
