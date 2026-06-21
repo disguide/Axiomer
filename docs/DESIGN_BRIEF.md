@@ -204,6 +204,17 @@ the views — especially overview mode:
 - This is the visual front end of the Phase-4 "canonical node merge" work in
   `docs/ROADMAP.md` — design it so a human can spot-and-merge in one gesture.
 
+## Reference: prototype the feel in Obsidian
+
+`obsidian-vault/` is a throwaway prototype of the *feel* — the seed graph as
+Obsidian notes with typed/labelled links and Breadcrumbs hierarchy, viewable as a
+**top-down, labelled, pinnable** graph via the **Juggl** + **Breadcrumbs**
+plugins (setup in `obsidian-vault/README.md`). Use it to feel the directional /
+typed / pinned interaction and the convergence on a shared value. It is **not**
+the product: no grounding/acceptability/convergence computation, no two-section
+value-band layout, single-user. Study Juggl's hierarchical (dagre) layout as a
+reference; build the real thing on React Flow + `graph.ts`.
+
 ## Definition of done
 
 The Map is a **legible, polished, primary** Obsidian-style **top-down tree** with
