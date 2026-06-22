@@ -23,7 +23,7 @@ export default function Home() {
   const [creating, setCreating] = useState<null | "question" | "premise">(null);
   const [draft, setDraft] = useState("");
   const [showLegend, setShowLegend] = useState(false);
-  const [view, setView] = useState<"tree" | "values" | "map">("tree");
+  const [view, setView] = useState<"tree" | "values" | "map">("map");
   const [focusId, setFocusId] = useState<string | null>(null);
 
   const focusInTree = (nodeId: string) => {
@@ -87,7 +87,13 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-[1fr_18rem]">
+      <main
+        className={
+          view === "map"
+            ? "mx-auto max-w-[96rem] px-4 py-6"
+            : "mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-[1fr_18rem]"
+        }
+      >
         <section>
           <div className="mb-4 inline-flex rounded-md border border-slate-200 bg-white p-0.5 text-sm">
             <button
@@ -213,13 +219,13 @@ export default function Home() {
           </div>
         </section>
 
-        <aside
-          className={`${showLegend ? "block" : "hidden"} lg:block`}
-        >
-          <div className="lg:sticky lg:top-6">
-            <Legend />
-          </div>
-        </aside>
+        {view !== "map" && (
+          <aside className={`${showLegend ? "block" : "hidden"} lg:block`}>
+            <div className="lg:sticky lg:top-6">
+              <Legend />
+            </div>
+          </aside>
+        )}
       </main>
     </div>
   );
