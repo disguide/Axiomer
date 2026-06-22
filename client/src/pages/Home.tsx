@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from "react";
 import { useGraph } from "@/hooks/useGraph";
+import { downloadGraph } from "@/lib/io";
 import TreeView from "@/components/TreeView";
 import ValuesIndex from "@/components/ValuesIndex";
 import DepthPanel from "@/components/DepthPanel";
@@ -8,9 +9,13 @@ import Legend from "@/components/Legend";
 // React Flow is heavy and only used by the Map tab — load it on demand.
 const GraphMap = lazy(() => import("@/components/GraphMap"));
 
+const DONATE_URL = import.meta.env.VITE_DONATE_URL as string | undefined;
+
 export default function Home() {
   const {
     graph,
+    readOnly,
+    loading,
     addRootQuestion,
     addRootPremise,
     addNode,
@@ -23,7 +28,8 @@ export default function Home() {
   const [creating, setCreating] = useState<null | "question" | "premise">(null);
   const [draft, setDraft] = useState("");
   const [showLegend, setShowLegend] = useState(false);
-  const [view, setView] = useState<"tree" | "values" | "map">("tree");
+  // The Map is the primary surface (and what the public read-only viewer leads with).
+  const [view, setView] = useState<"tree" | "values" | "map">("map");
   const [focusId, setFocusId] = useState<string | null>(null);
 
   const focusInTree = (nodeId: string) => {
@@ -69,25 +75,54 @@ export default function Home() {
             >
               {showLegend ? "Hide legend" : "Legend"}
             </button>
-            <button
-              type="button"
-              onClick={() => startCreating("premise")}
-              className="rounded border border-teal-600 px-3 py-1.5 text-sm font-medium text-teal-700 hover:bg-teal-50"
-            >
-              🌱 New Premise
-            </button>
-            <button
-              type="button"
-              onClick={() => startCreating("question")}
-              className="rounded bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
-            >
-              + New Question
-            </button>
+            {readOnly ? (
+              DONATE_URL && (
+                <a
+                  href={DONATE_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded border border-rose-300 px-3 py-1.5 text-sm font-medium text-rose-600 hover:bg-rose-50"
+                >
+                  ♥ Donate
+                </a>
+              )
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => downloadGraph(graph)}
+                  className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+                  title="Export the graph as graph.json (for a pull request)"
+                >
+                  ⤓ Export
+                </button>
+                <button
+                  type="button"
+                  onClick={() => startCreating("premise")}
+                  className="rounded border border-teal-600 px-3 py-1.5 text-sm font-medium text-teal-700 hover:bg-teal-50"
+                >
+                  🌱 New Premise
+                </button>
+                <button
+                  type="button"
+                  onClick={() => startCreating("question")}
+                  className="rounded bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
+                >
+                  + New Question
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-[1fr_18rem]">
+      <main
+        className={
+          view === "map"
+            ? "mx-auto max-w-[96rem] px-4 py-6"
+            : "mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-[1fr_18rem]"
+        }
+      >
         <section>
           <div className="mb-4 inline-flex rounded-md border border-slate-200 bg-white p-0.5 text-sm">
             <button
@@ -125,7 +160,9 @@ export default function Home() {
             </button>
           </div>
 
-          {view === "values" ? (
+          {readOnly && loading ? (
+            <p className="p-8 text-center text-sm text-slate-400">Loading…</p>
+          ) : view === "values" ? (
             <ValuesIndex graph={graph} />
           ) : view === "map" ? (
             <Suspense
@@ -185,6 +222,7 @@ export default function Home() {
 
           <TreeView
             graph={graph}
+            readOnly={readOnly}
             focusId={focusId}
             onSetFocus={setFocusId}
             onAddNode={addNode}
@@ -195,31 +233,48 @@ export default function Home() {
             </>
           )}
 
-          <div className="mt-8 border-t border-slate-200 pt-4">
-            <button
-              type="button"
-              onClick={() => {
-                if (
-                  window.confirm(
-                    "Reset the graph to the seed examples? This discards your current graph.",
+          {!readOnly && (
+            <div className="mt-8 border-t border-slate-200 pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "Reset the graph to the seed examples? This discards your current graph.",
+                    )
                   )
-                )
-                  resetToSeed();
-              }}
-              className="text-xs text-slate-400 hover:text-slate-600"
-            >
-              Reset to seed examples
-            </button>
-          </div>
+                    resetToSeed();
+                }}
+                className="text-xs text-slate-400 hover:text-slate-600"
+              >
+                Reset to seed examples
+              </button>
+            </div>
+          )}
+
+          {readOnly && DONATE_URL && (
+            <footer className="mt-10 border-t border-slate-200 pt-4 text-center text-xs text-slate-400">
+              A free, community-built argument wiki.{" "}
+              <a
+                href={DONATE_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="text-rose-500 hover:underline"
+              >
+                Support it with a donation
+              </a>
+              .
+            </footer>
+          )}
         </section>
 
-        <aside
-          className={`${showLegend ? "block" : "hidden"} lg:block`}
-        >
-          <div className="lg:sticky lg:top-6">
-            <Legend />
-          </div>
-        </aside>
+        {view !== "map" && (
+          <aside className={`${showLegend ? "block" : "hidden"} lg:block`}>
+            <div className="lg:sticky lg:top-6">
+              <Legend />
+            </div>
+          </aside>
+        )}
       </main>
     </div>
   );
