@@ -1,0 +1,47 @@
+name: Deploy viewer
+
+# Publishes the public read-only viewer when the canonical graph (or app)
+# changes on main. Wire the final "deploy" step to your host of choice
+# (Cloudflare Pages / Vercel / Netlify) — or skip this file and use the host's
+# native Git integration with build command `npm run build:viewer`.
+
+on:
+  push:
+    branches: [main]
+
+# Example: GitHub Pages deploy. Remove/replace if using Cloudflare/Vercel/Netlify.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build:viewer
+        env:
+          VITE_DONATE_URL: ${{ vars.VITE_DONATE_URL }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
