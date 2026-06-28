@@ -15,6 +15,7 @@ This file is the orientation. For depth, read `docs/`:
 | Document | Covers |
 |----------|--------|
 | [docs/README.md](docs/README.md) | Index + one-paragraph orientation |
+| [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) | Complete beginner-proof setup walkthrough (shareable) |
 | [docs/DATA_MODEL.md](docs/DATA_MODEL.md) | Node/edge types, frontmatter schema, edge direction in full |
 | [docs/AUTHORING.md](docs/AUTHORING.md) | Create/edit/link/delete rules, validation checklist, grep recipes |
 | [docs/SEMANTICS.md](docs/SEMANTICS.md) | Grounding, convergence, value clash, premises, acceptability |

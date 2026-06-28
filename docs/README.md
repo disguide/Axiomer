@@ -4,6 +4,7 @@ Detailed reference for anyone — human or AI agent — working on this reposito
 
 | Document | Read it when you need to… |
 |----------|---------------------------|
+| [GETTING_STARTED.md](GETTING_STARTED.md) | Set it up from scratch — a complete beginner-proof walkthrough to share with anyone |
 | [DATA_MODEL.md](DATA_MODEL.md) | Understand what a node is, the full type system, and the exact frontmatter schema |
 | [AUTHORING.md](AUTHORING.md) | Create, edit, link, or delete nodes correctly — the rules and validation checklist |
 | [SEMANTICS.md](SEMANTICS.md) | Understand grounding, convergence, value clash, premises, and acceptability |

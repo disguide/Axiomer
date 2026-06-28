@@ -2,11 +2,13 @@
 
 Argument mapping to bedrock values. Explore any question by tracing arguments down to the fundamental values, principles, or epistemic limits they rest on. Different chains converging on the same value reveal agreement beneath disagreement; chains reaching different values reveal the real clash.
 
+**New here?** Follow the complete zero-to-running walkthrough: **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**. The rest of this README is the quick version.
+
 ## How it works
 
 Each node is an Obsidian note. Relationships are typed frontmatter links — `answers`, `argues-for`, `grounds-in`, etc. Juggl renders them as a directed graph; Breadcrumbs enforces the top-down hierarchy. Dataview lets you query across the graph.
 
-## Setup (5 minutes)
+## Setup (quick version)
 
 1. Install [Obsidian](https://obsidian.md)
 2. Open the `obsidian-vault/` folder as a vault
