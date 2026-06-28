@@ -1,11 +1,5 @@
-node_modules
-dist
-dist-ssr
-*.local
 .DS_Store
-.vite
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-*.tsbuildinfo
+# Obsidian local state — keep plugin configs, ignore workspace layout
+obsidian-vault/.obsidian/workspace.json
+obsidian-vault/.obsidian/workspace-mobile.json
