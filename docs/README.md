@@ -11,6 +11,7 @@ Detailed reference for anyone — human or AI agent — working on this reposito
 | [EXAMPLES.md](EXAMPLES.md) | See the two seed graphs fully worked out, node by node and edge by edge |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Set up Obsidian, configure plugins, or publish the public viewer |
 | [AGENT_PLAYBOOK.md](AGENT_PLAYBOOK.md) | Perform common tasks as an AI agent, avoid known gotchas, and verify your work |
+| [AI_AUTHORING.md](AI_AUTHORING.md) | Build nodes automatically from a conversation/essay — let an AI agent write and label them for you |
 
 ## The one-paragraph orientation
 

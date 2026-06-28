@@ -22,6 +22,7 @@ This file is the orientation. For depth, read `docs/`:
 | [docs/EXAMPLES.md](docs/EXAMPLES.md) | The two seed graphs worked out node by node |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Obsidian setup, plugins, Quartz/Cloudflare/Caddy publishing |
 | [docs/AGENT_PLAYBOOK.md](docs/AGENT_PLAYBOOK.md) | Task-oriented guide for AI agents: tasks, gotchas, verification |
+| [docs/AI_AUTHORING.md](docs/AI_AUTHORING.md) | AI layer that builds nodes from a conversation/essay (conversational + script forms) |
 
 **If you are an AI agent, read [docs/AGENT_PLAYBOOK.md](docs/AGENT_PLAYBOOK.md) before editing.**
 
