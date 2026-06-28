@@ -49,6 +49,63 @@ It reproduces the seed graph (Trolley Problem + "Why is the sky blue?") plus a
   premise chain. That single shared node *is* convergence.
 - Try pinning the value band and dragging the questions around.
 
+## In-depth simulation: "Should AI train on copyrighted data?"
+
+`Nodes/AI training debate/` is a **larger, deeper** tree (18 nodes) built to
+stress every feature at once. Start from **`Should AI train on copyrighted
+data`** and explore:
+
+- **Depth** — the permissive side goes question → position → argument →
+  *raises* `Does open AI access reduce suffering` → position → argument → value,
+  six levels down before it grounds.
+- **Defeat / acceptability** — `Training is transformative fair use` is
+  *objected to* by `Precedent doesnt cover commercial scale`, but the objection
+  is itself *rebutted* by `Commercial use can still be fair use` — so the
+  argument is **revived (defended)**. By contrast, `Unlicensed training destroys
+  livelihoods` is objected to by `Income drop has many causes` with **no
+  rebuttal**, so that attack stays **defeated**. (Juggl shows the structure; the
+  *labels* defended/defeated are computed only in the real app.)
+- **Convergence** — `Access to AI tools reduces harm` grounds in
+  **`Minimize total suffering`**, the *same* value the Trolley chain and the
+  `Suffering matters` premise already reach. That node now has **three** incoming
+  `grounds-in`/chains — convergence across unrelated topics.
+- **Value clash** — the root bottoms out at four distinct foundations:
+  `Free flow of knowledge` + `Minimize total suffering` (yes) vs.
+  `Respect creators autonomy` + `Fairness to creators` (no). That spread *is* the
+  disagreement.
+
+## How to author your own simulation
+
+One note = one node. The recipe:
+
+1. **Make a note per node** (anywhere in the vault; `[[links]]` resolve by
+   filename, so keep filenames unique).
+2. **Frontmatter `type:`** — one of the Axiomer node types (`question`,
+   `position`, `argument-support`, `argument-attack`, `evidence-empirical`,
+   `objection`, `rebuttal`, `analogy`, `assumption`, `value`, `principle`,
+   `epistemic-limit`, `premise`, …).
+3. **Add a typed-link property named after the relationship**, pointing at the
+   note it connects to. Use the *semantic* direction (who relates to whom), not
+   the visual top/bottom:
+   - `answers: "[[Question]]"` on a position
+   - `argues-for:` / `argues-against:` on an argument → its position
+   - `supports:` on evidence → the claim it backs
+   - `objects-to:` on an objection → the argument; `rebuts:` on a rebuttal → the
+     objection
+   - `raises: "[[Deeper question]]"` to drill down instead of grounding
+   - `grounds-in: "[[Value]]"` to bottom out (terminal types take no children)
+   - `entails:` on a premise → what it leads to
+4. **Reuse, don't duplicate** — to converge, point a new `grounds-in` at an
+   *existing* value note (that's the whole game). To make a clash, let one
+   question's chains ground in *different* values.
+5. **Register direction once in Breadcrumbs** (Up vs Down list above) so the
+   layout flows top-down, then open in **Juggl → Hierarchy (Dagre)** with edge
+   labels on.
+
+> Reminder: this vault shows *structure and feel* only. Grounding, defeat
+> labels, dedup, and clash detection are computed by the real app
+> (`../client`), not by Obsidian.
+
 ## How the encoding works
 
 Each note is a node. Frontmatter carries:
