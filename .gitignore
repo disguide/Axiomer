@@ -1,11 +1,8 @@
-node_modules
-dist
-dist-ssr
-*.local
+# OS junk
 .DS_Store
-.vite
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-*.tsbuildinfo
+# Obsidian per-machine workspace state (ignore local layout; keep plugin config)
+obsidian-vault/.obsidian/workspace.json
+obsidian-vault/.obsidian/workspace-mobile.json
+obsidian-vault/.obsidian/cache
+.trash/
