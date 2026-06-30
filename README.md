@@ -62,6 +62,7 @@ client/                  ← the app (React + TypeScript)
   src/lib/types.ts        ← node + edge types (the data model)
   src/components/         ← the views (graph map, tree, node cards, …)
 docs/
+  VISION.md               ← the four sections (reasoning · agent · status+skills · prompt)
   PHILOSOPHY.md           ← the stance: why ground, is/ought, clash, the method
   CONCEPTS.md             ← the model: node types, relationships, grounding, convergence
   AGENT.md                ← the AI agent layer: its graph-tools and the review flow

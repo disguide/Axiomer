@@ -95,7 +95,9 @@ foundations). This is what makes the graph lay out top-down.
   silent mutation, never automatic. Capabilities are specced in `docs/AGENT.md`.
 - **Keep the model in sync** across `types.ts`, `meta.ts`, `CONCEPTS.md`, and this
   file when adding/renaming a node type or relationship.
-- **Doc layers:** `PHILOSOPHY.md` = *why*; `CONCEPTS.md` = *what* (the model);
+- **Doc layers:** `VISION.md` = the four sections (reasoning · AI agent ·
+  status+skills · agent prompt) and how they share one substrate;
+  `PHILOSOPHY.md` = *why*; `CONCEPTS.md` = *what* (the model);
   `AGENT.md` = the agent layer; `docs/reference/` = recovered architecture/roadmap
   specs (technical detail, may lag the current framing — treat as reference, not
   gospel). The `obsidian-vault/` is an illustrative model reference + seed source.
