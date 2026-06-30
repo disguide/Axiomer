@@ -1,3 +1,11 @@
+# Build / deps (the recovered app)
+node_modules
+dist
+dist-ssr
+*.local
+.vite
+*.tsbuildinfo
+
 # OS junk
 .DS_Store
 

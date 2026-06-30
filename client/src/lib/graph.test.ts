@@ -1,0 +1,435 @@
+import { describe, expect, it } from "vitest";
+import type { Graph } from "./types";
+import { seedGraph } from "./seed";
+import * as G from "./graph";
+
+// A tiny helper to find the id of the node added last.
+const lastId = (g: Graph) => g.nodes[g.nodes.length - 1].id;
+
+describe("traversal respects semantic edge direction", () => {
+  it("returns exactly the two seeded root questions", () => {
+    const roots = G.getRootQuestions(seedGraph).map((n) => n.id).sort();
+    expect(roots).toEqual(["sky-q1", "trolley-q1"]);
+  });
+
+  it("nests a value (grounds-in, parent→child) under its argument", () => {
+    const children = G.getChildren(seedGraph, "trolley-a2").map((n) => n.id);
+    expect(children).toEqual(["trolley-v1"]);
+    expect(G.getParent(seedGraph, "trolley-v1")?.id).toBe("trolley-a2");
+  });
+
+  it("nests a raised question (raises, parent→child) under its argument", () => {
+    const children = G.getChildren(seedGraph, "trolley-a1").map((n) => n.id);
+    expect(children).toContain("trolley-q2");
+    expect(G.getParent(seedGraph, "trolley-q2")?.id).toBe("trolley-a1");
+  });
+
+  it("nests child→parent edges (answers/supports) correctly", () => {
+    const children = G.getChildren(seedGraph, "trolley-q1").map((n) => n.id);
+    expect(children.sort()).toEqual(["trolley-p1", "trolley-p3"]);
+  });
+});
+
+describe("grounding", () => {
+  it("computes both seed questions as fully grounded", () => {
+    expect(G.isFullyGrounded(seedGraph, "trolley-q1")).toBe(true);
+    expect(G.isFullyGrounded(seedGraph, "sky-q1")).toBe(true);
+  });
+
+  it("treats a position grounding directly in a terminal as grounded", () => {
+    // sky-p2 grounds-in sky-el1 with no intermediate argument.
+    expect(G.isFullyGrounded(seedGraph, "sky-q2")).toBe(true);
+  });
+
+  it("marks a fresh question OPEN until grounded", () => {
+    let g = G.addRootQuestion(seedGraph, "New Q");
+    const qid = lastId(g);
+    expect(G.isFullyGrounded(g, qid)).toBe(false); // no positions
+    g = G.addNode(g, "position", "An answer", qid);
+    expect(G.isFullyGrounded(g, qid)).toBe(false); // position w/o argument
+  });
+
+  it("becomes grounded once an argument grounds in a value", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "A", pid);
+    const aid = lastId(g);
+    expect(G.isFullyGrounded(g, qid)).toBe(false);
+    g = G.addNode(g, "value", "Some value", aid);
+    expect(G.isFullyGrounded(g, qid)).toBe(true);
+  });
+
+  it("does not loop forever on a cyclic raises chain", () => {
+    // Hand-build a cycle: argument raises a question that (transitively) raises
+    // back. The visiting guard must terminate with `false`, not hang.
+    const g: Graph = {
+      nodes: [
+        { id: "q", type: "question", content: "q" },
+        { id: "p", type: "position", content: "p" },
+        { id: "a", type: "argument-support", content: "a" },
+      ],
+      edges: [
+        { id: "e1", from: "p", to: "q", edgeType: "answers" },
+        { id: "e2", from: "a", to: "p", edgeType: "argues-for" },
+        { id: "e3", from: "a", to: "q", edgeType: "raises" }, // a raises its own q
+      ],
+    };
+    expect(G.isFullyGrounded(g, "q")).toBe(false);
+  });
+});
+
+describe("edge construction", () => {
+  it("orients grounds-in as argument→value (parent→child)", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "A", pid);
+    const aid = lastId(g);
+    g = G.addNode(g, "value", "V", aid);
+    const vid = lastId(g);
+    const edge = g.edges.find((e) => e.edgeType === "grounds-in" && e.to === vid);
+    expect(edge?.from).toBe(aid);
+    expect(edge?.to).toBe(vid);
+  });
+
+  it("orients raises as argument→question (parent→child)", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "A", pid);
+    const aid = lastId(g);
+    g = G.addNode(g, "question", "Deeper?", aid);
+    const childQ = lastId(g);
+    const edge = g.edges.find(
+      (e) => e.edgeType === "raises" && e.to === childQ,
+    );
+    expect(edge?.from).toBe(aid);
+    expect(edge?.to).toBe(childQ);
+  });
+});
+
+describe("value reuse (convergence)", () => {
+  it("links to an existing value without creating a duplicate node", () => {
+    const before = G.getValues(seedGraph).length;
+    const g = G.linkToExistingValue(seedGraph, "trolley-a3", "trolley-v1");
+    expect(G.getValues(g).length).toBe(before); // no new value node
+    expect(G.getChildren(g, "trolley-a3").map((n) => n.id)).toContain(
+      "trolley-v1",
+    );
+  });
+
+  it("replaces a prior grounds-in edge rather than stacking them", () => {
+    // a3 already grounds in v2; re-link to v1 should leave exactly one.
+    const g = G.linkToExistingValue(seedGraph, "trolley-a3", "trolley-v1");
+    const groundsIn = g.edges.filter(
+      (e) => e.from === "trolley-a3" && e.edgeType === "grounds-in",
+    );
+    expect(groundsIn).toHaveLength(1);
+    expect(groundsIn[0].to).toBe("trolley-v1");
+  });
+});
+
+describe("deletion", () => {
+  it("removes a node and all descendants", () => {
+    const g = G.deleteNode(seedGraph, "trolley-p1");
+    for (const id of ["trolley-p1", "trolley-a1", "trolley-e1", "trolley-q2"]) {
+      expect(G.getNode(g, id)).toBeUndefined();
+    }
+  });
+
+  it("deletes a non-shared value along with its subtree", () => {
+    const g = G.deleteNode(seedGraph, "trolley-p2");
+    expect(G.getNode(g, "trolley-v1")).toBeUndefined();
+  });
+
+  it("spares a value still grounded by a surviving argument", () => {
+    // Make v1 shared by a3, then delete p2 (which owns a2→v1).
+    let g = G.linkToExistingValue(seedGraph, "trolley-a3", "trolley-v1");
+    g = G.deleteNode(g, "trolley-p2");
+    expect(G.getNode(g, "trolley-v1")).toBeDefined();
+    expect(G.getNode(g, "trolley-a2")).toBeUndefined();
+  });
+
+  it("counts only nodes that will actually be removed", () => {
+    let g = G.linkToExistingValue(seedGraph, "trolley-a3", "trolley-v1");
+    // p2 subtree is p2, a2, (v1 spared) → 2 removed besides... count excludes self.
+    expect(G.countDescendants(g, "trolley-p2")).toBe(1); // just a2
+  });
+});
+
+describe("convergence queries", () => {
+  it("resolves the root a deep node belongs to", () => {
+    // A node with a single parent chain resolves to its top-level root,
+    // even a (non-shared) terminal value.
+    expect(G.getRootFor(seedGraph, "trolley-v1")?.id).toBe("trolley-q1");
+    expect(G.getRootFor(seedGraph, "trolley-a2")?.id).toBe("trolley-q1");
+    expect(G.getRootFor(seedGraph, "sky-p2")?.id).toBe("sky-q1");
+  });
+
+  it("reports a value as convergent once two roots share it", () => {
+    // Build a second question whose argument links to trolley's v1.
+    let g = G.addRootQuestion(seedGraph, "Help refugees?");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "Yes", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "Reduces suffering", pid);
+    const aid = lastId(g);
+    g = G.linkToExistingValue(g, aid, "trolley-v1");
+
+    const usage = G.getValueUsage(g).find((u) => u.value.id === "trolley-v1");
+    expect(usage?.convergent).toBe(true);
+    expect(usage?.roots.map((r) => r.id).sort()).toEqual([qid, "trolley-q1"]);
+  });
+
+  it("detects a value clash within a single question", () => {
+    // trolley-q1 grounds in two different values (v1 via p1 chain, v2 via p3).
+    const clash = G.getValueClashes(seedGraph).find(
+      (c) => c.question.id === "trolley-q1",
+    );
+    expect(clash).toBeDefined();
+    expect(clash?.values.map((v) => v.id).sort()).toEqual([
+      "trolley-v1",
+      "trolley-v2",
+    ]);
+  });
+
+  it("reports no clash for a single-value question", () => {
+    const clash = G.getValueClashes(seedGraph).find(
+      (c) => c.question.id === "sky-q1",
+    );
+    expect(clash).toBeUndefined();
+  });
+});
+
+describe("per-node grounding (isNodeGrounded)", () => {
+  it("flags an argument with no foundation as ungrounded", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "A", pid);
+    const aid = lastId(g);
+    expect(G.isNodeGrounded(g, aid)).toBe(false);
+    expect(G.isNodeGrounded(g, pid)).toBe(false);
+    g = G.addNode(g, "value", "V", aid);
+    expect(G.isNodeGrounded(g, aid)).toBe(true);
+    expect(G.isNodeGrounded(g, pid)).toBe(true);
+  });
+
+  it("treats seeded grounded arguments and terminals as grounded", () => {
+    expect(G.isNodeGrounded(seedGraph, "trolley-a3")).toBe(true);
+    expect(G.isNodeGrounded(seedGraph, "trolley-v2")).toBe(true);
+    // Non-participating types are inherently "grounded".
+    expect(G.isNodeGrounded(seedGraph, "trolley-e1")).toBe(true);
+  });
+});
+
+describe("lineage helpers (map highlight)", () => {
+  it("collects all ancestors that flow into a value", () => {
+    // Share trolley-v1 across a2 and a3, then check who reaches it.
+    const g = G.linkToExistingValue(seedGraph, "trolley-a3", "trolley-v1");
+    const anc = G.getAncestors(g, "trolley-v1");
+    // Both grounding arguments and their upward chains to the root question.
+    for (const id of ["trolley-a2", "trolley-a3", "trolley-p2", "trolley-p3", "trolley-q1"]) {
+      expect(anc.has(id)).toBe(true);
+    }
+    expect(anc.has("trolley-v1")).toBe(false); // excludes the node itself
+  });
+
+  it("collects descendants including the node itself", () => {
+    const desc = G.getDescendantIds(seedGraph, "trolley-q2");
+    expect(desc.has("trolley-q2")).toBe(true);
+    expect(desc.has("trolley-p2")).toBe(true);
+    expect(desc.has("trolley-v1")).toBe(true);
+  });
+
+  it("getParents returns every grounding parent of a shared value", () => {
+    const g = G.linkToExistingValue(seedGraph, "trolley-a3", "trolley-v1");
+    const parents = G.getParents(g, "trolley-v1").map((n) => n.id).sort();
+    expect(parents).toEqual(["trolley-a2", "trolley-a3"]);
+  });
+});
+
+describe("acceptability (Dung-style defeat analysis)", () => {
+  // Build: Q ← P ← A(support). Then attack A with an objection, etc.
+  const baseChain = () => {
+    let g = G.addRootQuestion(seedGraph, "Q?");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "A", pid);
+    const aid = lastId(g);
+    return { g, qid, pid, aid };
+  };
+
+  it("treats a node with no attackers as defended", () => {
+    const { g, aid } = baseChain();
+    expect(G.getAcceptability(g).get(aid)).toBe("defended");
+    expect(G.getAttackers(g, aid)).toHaveLength(0);
+  });
+
+  it("lets an objection defeat its parent argument", () => {
+    let { g, aid } = baseChain();
+    g = G.addNode(g, "objection", "But that's flawed", aid);
+    const oid = lastId(g);
+    const acc = G.getAcceptability(g);
+    expect(acc.get(aid)).toBe("defeated");
+    expect(acc.get(oid)).toBe("defended");
+    expect(G.getAttackers(g, aid).map((n) => n.id)).toEqual([oid]);
+  });
+
+  it("lets a rebuttal to the objection revive the argument", () => {
+    let { g, aid } = baseChain();
+    g = G.addNode(g, "objection", "Flawed", aid);
+    const oid = lastId(g);
+    g = G.addNode(g, "rebuttal", "Not so", oid);
+    const acc = G.getAcceptability(g);
+    expect(acc.get(oid)).toBe("defeated"); // rebutted
+    expect(acc.get(aid)).toBe("defended"); // therefore restored
+  });
+
+  it("stays defeated while any attacker survives", () => {
+    let { g, aid } = baseChain();
+    g = G.addNode(g, "objection", "Flawed", aid);
+    const oid = lastId(g);
+    g = G.addNode(g, "rebuttal", "Not so", oid); // defeats first objection
+    g = G.addNode(g, "objection", "Also wrong", aid); // fresh, undefeated
+    expect(G.getAcceptability(g).get(aid)).toBe("defeated");
+  });
+
+  it("lets an argument-attack defeat a position", () => {
+    let { g, pid } = baseChain();
+    g = G.addNode(g, "argument-attack", "P is harmful", pid);
+    const attackId = lastId(g);
+    const acc = G.getAcceptability(g);
+    expect(acc.get(pid)).toBe("defeated");
+    expect(acc.get(attackId)).toBe("defended");
+  });
+});
+
+describe("value de-duplication (similarity)", () => {
+  it("scores identical (normalized) text as 1", () => {
+    expect(G.similarity("Minimize suffering", "minimize  suffering!")).toBe(1);
+  });
+
+  it("scores unrelated text low and overlapping text higher", () => {
+    expect(G.similarity("Maximize freedom", "Minimize suffering")).toBeLessThan(
+      0.3,
+    );
+    expect(
+      G.similarity("Minimize total suffering", "Minimize suffering"),
+    ).toBeGreaterThanOrEqual(0.5);
+  });
+
+  it("finds similar existing terminals of the same type, best first", () => {
+    // Seed has value 'Minimize total suffering'.
+    const matches = G.findSimilarTerminals(
+      seedGraph,
+      "minimize suffering",
+      "value",
+    );
+    expect(matches[0]?.node.id).toBe("trolley-v1");
+    // Type filter: searching for a principle shouldn't match the value.
+    expect(
+      G.findSimilarTerminals(seedGraph, "minimize suffering", "principle"),
+    ).toHaveLength(0);
+  });
+
+  it("returns nothing for empty or dissimilar input", () => {
+    expect(G.findSimilarTerminals(seedGraph, "", "value")).toHaveLength(0);
+    expect(
+      G.findSimilarTerminals(seedGraph, "quantum chromodynamics", "value"),
+    ).toHaveLength(0);
+  });
+});
+
+describe("depth metrics", () => {
+  it("reports depth from root", () => {
+    expect(G.getDepth(seedGraph, "trolley-q1")).toBe(0);
+    expect(G.getDepth(seedGraph, "trolley-p1")).toBe(1);
+    expect(G.getDepth(seedGraph, "trolley-a1")).toBe(2);
+    expect(G.getDepth(seedGraph, "trolley-q2")).toBe(3);
+  });
+
+  it("summarizes the graph", () => {
+    const s = G.getGraphStats(seedGraph);
+    expect(s.questions).toBe(4); // 2 roots + 2 child questions
+    expect(s.premises).toBe(0);
+    expect(s.terminals).toBe(3); // v1, v2, el1
+    expect(s.groundedQuestions).toBe(2); // both roots
+    expect(s.openQuestions).toBe(0);
+    expect(s.clashes).toBe(1); // trolley
+    expect(s.maxDepth).toBeGreaterThan(0);
+  });
+
+  it("lists grounding gaps shallowest-first", () => {
+    // Add an ungrounded argument near the top and a deeper one.
+    let g = G.addRootQuestion(seedGraph, "Q?");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "shallow arg", pid);
+    const shallow = lastId(g);
+
+    const gaps = G.getGroundingGaps(g);
+    expect(gaps.length).toBeGreaterThan(0);
+    expect(gaps[0].node.id).toBe(shallow); // depth 2, the weakest link
+    expect(gaps[0].root?.id).toBe(qid);
+    // Seed arguments are all grounded, so they don't appear.
+    expect(gaps.some((x) => x.node.id === "trolley-a2")).toBe(false);
+  });
+
+  it("returns no gaps when everything is grounded", () => {
+    expect(G.getGroundingGaps(seedGraph)).toHaveLength(0);
+  });
+});
+
+describe("premises (reverse / forward-from-a-base authoring)", () => {
+  it("treats a premise as a tree root, like a question", () => {
+    const g = G.addRootPremise(seedGraph, "All humans have equal worth");
+    const pid = lastId(g);
+    const rootIds = G.getRoots(g).map((n) => n.id);
+    expect(rootIds).toContain(pid);
+    // getRootQuestions stays question-only.
+    expect(G.getRootQuestions(g).map((n) => n.id)).not.toContain(pid);
+  });
+
+  it("is not a terminal — it can take children", () => {
+    const g = G.addRootPremise(seedGraph, "P");
+    expect(G.getNode(g, lastId(g))?.type).toBe("premise");
+  });
+
+  it("connects children with an `entails` edge (premise→child)", () => {
+    let g = G.addRootPremise(seedGraph, "Equal worth");
+    const pid = lastId(g);
+    g = G.addNode(g, "position", "So we must help refugees", pid);
+    const conclusionId = lastId(g);
+    const edge = g.edges.find((e) => e.edgeType === "entails");
+    expect(edge?.from).toBe(pid); // premise is the parent (DOWNWARD)
+    expect(edge?.to).toBe(conclusionId);
+    // And the conclusion nests under the premise in the tree.
+    expect(G.getChildren(g, pid).map((n) => n.id)).toContain(conclusionId);
+    expect(G.getParent(g, conclusionId)?.id).toBe(pid);
+  });
+
+  it("lets a premise tree bottom out at a shared value (convergence)", () => {
+    // premise → position → argument → grounds-in → existing trolley value.
+    let g = G.addRootPremise(seedGraph, "Suffering matters");
+    const pid = lastId(g);
+    g = G.addNode(g, "position", "Help refugees", pid);
+    const posId = lastId(g);
+    g = G.addNode(g, "argument-support", "It reduces suffering", posId);
+    const argId = lastId(g);
+    g = G.linkToExistingValue(g, argId, "trolley-v1");
+
+    const usage = G.getValueUsage(g).find((u) => u.value.id === "trolley-v1");
+    expect(usage?.convergent).toBe(true);
+    expect(usage?.roots.map((r) => r.id)).toContain(pid);
+    // getRootFor resolves a node in the premise tree back to the premise.
+    expect(G.getRootFor(g, argId)?.id).toBe(pid);
+  });
+});
