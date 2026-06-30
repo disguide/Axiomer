@@ -1,9 +1,11 @@
 # Axiomer — Concepts
 
-This is the model behind Axiomer. It's small on purpose. Everything here is
-expressed in Obsidian using two things only: a note's **`type`** and the
-**labelled links** in its frontmatter. There is no app and no code — the
-conventions *are* the tool.
+This is the model behind Axiomer. It's small on purpose. Every node has a
+**`type`** and a set of **labelled relationships** to other nodes — that's the
+whole model. The app implements it in `client/src/lib/types.ts` and `meta.ts`;
+the `obsidian-vault/` reference expresses the *same* model as note frontmatter.
+The examples below use the frontmatter form because it's the most compact way to
+show the shape.
 
 If you just want to get going, start with the [Tutorial](TUTORIAL.md) and come
 back here when you want to understand the pieces. For *why* the model is shaped
@@ -143,9 +145,11 @@ is right," whose supporting argument `grounds-in` the **same** "Minimize total
 suffering" value the Trolley chain reaches — a premise-built chain and a
 question-built chain meeting at one value.
 
-## Why this and not an app?
+## Why the model is this small
 
-The model is just `type` + labelled links, so plain Obsidian + two plugins draws
-and navigates it with zero custom software. That keeps Axiomer a base layer you
-own and can edit by hand, sync, and back up like any other notes. The
-[Tutorial](TUTORIAL.md) shows the setup.
+Because `type` + labelled links is all you need to express an argument graph —
+and a small model is what lets both a human *and* an on-demand AI agent operate
+on the graph reliably (the agent fills a known structure rather than free-forming;
+see [AGENT.md](AGENT.md)). The same minimal model is what the
+[`obsidian-vault/`](../obsidian-vault/README.md) reference can express in plain
+note frontmatter without any code.

@@ -1,9 +1,11 @@
-# Axiomer — example vault
+# Axiomer — Obsidian reference vault
 
-**This folder is the Axiomer tool.** Open it in [Obsidian](https://obsidian.md)
-(*Open folder as vault*) and it becomes a working argument-tree knowledge graph.
-It ships with a worked example so you can see the conventions before building
-your own.
+**This folder is a conceptual reference, not the product.** The Axiomer product is
+the app in [`../client/`](../client/). This vault expresses the *same* model
+(typed nodes + labelled relationships) as plain Obsidian notes, so you can
+experience the shape with zero code — and it doubles as **seed data** for the app.
+Open it in [Obsidian](https://obsidian.md) (*Open folder as vault*) to explore the
+worked example.
 
 > Full setup is in **[`../docs/TUTORIAL.md`](../docs/TUTORIAL.md)**; the model is
 > in **[`../docs/CONCEPTS.md`](../docs/CONCEPTS.md)**. This file is the quick

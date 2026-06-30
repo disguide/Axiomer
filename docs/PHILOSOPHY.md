@@ -101,12 +101,15 @@ protecting the one thing the map is for.
 ## The human reasons; the tool only holds the structure
 
 Axiomer externalizes reasoning so you can **see** it — the gaps, the leaps, the
-place two chains meet. It does not do the reasoning. This is deliberate, and it's
-why AI is kept to an optional, later, suggestion-only layer
-([`FUTURE.md`](FUTURE.md)): an argument map is only worth anything if the
-commitments in it are *yours*. A graph an AI filled in is a graph nobody actually
-believes. The tool's value is the thinking it forces you to do, not the artifact
-it leaves behind.
+place two chains meet. It does not do the reasoning *for* you. This is why the AI
+agent, though a core part of the product, is strictly **on-demand and
+review-gated**: you invoke it, it *proposes*, you accept or reject
+([`AGENT.md`](AGENT.md)). An argument map is only worth anything if the
+commitments in it are *yours*. A graph an AI filled in by itself is a graph nobody
+actually believes. The agent does the heavy lifting on volume — breaking down
+text, spotting duplicate values, surfacing gaps — but the judgement about what
+enters the graph stays with you. The tool's value is the thinking it forces you to
+do, not the artifact it leaves behind.
 
 ## How the stance becomes a method
 

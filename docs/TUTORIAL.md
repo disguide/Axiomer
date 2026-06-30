@@ -1,4 +1,11 @@
-# Axiomer — Tutorial
+# Axiomer — Tutorial (Obsidian reference vault)
+
+> **Note on scope.** The Axiomer *product* is the app in `client/`. This tutorial
+> covers the **`obsidian-vault/` reference** — a no-code way to experience the
+> exact same model (typed nodes + labelled relationships) by hand. It's the best
+> way to *understand* the model and a source of seed data; it is not the app. The
+> *why* in [Philosophy](PHILOSOPHY.md) and the model in [Concepts](CONCEPTS.md)
+> apply to both.
 
 Build your first argument tree in Obsidian, end to end. About 15 minutes. No
 coding, no account, no AI.

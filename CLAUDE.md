@@ -4,59 +4,53 @@ Guidance for AI assistants (Claude Code and others) working in this repository.
 
 ## What Axiomer is (read this first)
 
-Axiomer is **a simple tool for building argument trees inside
-[Obsidian](https://obsidian.md)** — not an app you build or run. There is **no
-code product**: the "tool" is a set of note conventions plus two Obsidian
-community plugins (**Breadcrumbs** + **Juggl**). A person takes a question, breaks
-it into positions and arguments, and keeps asking "why?" until every chain bottoms
-out at a **bedrock value**, **principle**, or **epistemic limit**.
+Axiomer is **an "IDE for your thinking"**: an app for building **argument
+graphs**. A person takes a question, breaks it into positions and arguments, and
+keeps asking "why?" until every chain bottoms out at a **bedrock value**,
+**principle**, or **epistemic limit**. Different questions ground out at the same
+values — surfacing **convergence** and **clashes**.
 
-Two principles that override any instinct to "build an app":
+Two principles that shape every decision:
 
-1. **Obsidian is the tool.** The deliverable is the vault + the conventions + good
-   docs/tutorial. Do **not** reintroduce a web app, build system, or framework
-   unless the user explicitly asks for one. (An earlier React prototype lived
-   here and was deliberately removed — don't bring it back by reflex.)
-2. **It's a base layer for a human to think with — not an AI that thinks for
-   them.** The person does the reasoning. AI help is a *future, optional* add-on
-   only (see `docs/FUTURE.md`); never make the core tool depend on AI, and never
-   have AI silently edit someone's graph.
+1. **The human-built graph is the source of truth.** The person does the
+   reasoning. The app holds the structure and makes it visible (grounding gaps,
+   convergence, clashes).
+2. **AI is an on-demand, review-gated agent — never autonomous.** Like a coding
+   agent in an editor: the user *invokes* it ("break this text down," "find
+   duplicate values," "restructure this branch," "what's missing here?"), it
+   operates on the graph through a defined tool set, and **every change is a
+   proposal the user accepts or rejects.** It never edits silently, never runs in
+   the background, and the tool is fully usable with it switched off. See
+   `docs/AGENT.md`.
 
-## Repo structure
+> History note: an earlier phase shipped this as a React app; a later phase tried
+> to reduce it to an Obsidian vault; we then recovered the app as the real
+> product. The `obsidian-vault/` and `docs/TUTORIAL.md` are now a **conceptual
+> reference + seed data**, not the deliverable. Don't act on stale "Obsidian is
+> the tool / don't build an app" framing if you find it anywhere — the app is the
+> product.
 
-```
-README.md                 ← top-level intro + pointers
-CLAUDE.md                 ← this file
-obsidian-vault/           ← THE TOOL: open this folder as an Obsidian vault
-  README.md               ← quick setup for the vault
-  Nodes/*.md              ← one note per node (the worked example lives here)
-docs/
-  PHILOSOPHY.md           ← the stance: why ground, is/ought, clash-as-diagnostic, the method
-  TUTORIAL.md             ← step-by-step: install, set up plugins, build a tree
-  CONCEPTS.md             ← the model: node types, relationships, grounding, convergence
-  FUTURE.md               ← optional/later ideas (AI assist, viewer) — NOT core
-```
+## Stack
 
-There is no `package.json`, no build, no test runner, no CI. If you find yourself
-wanting any of those, stop and re-read principle #1.
+- **App:** React 19 + TypeScript + Vite + Tailwind. Graph view uses React Flow
+  (`@xyflow/react`) + dagre, lazy-loaded.
+- **Engine:** `client/src/lib/graph.ts` is **pure** (no React/DOM/network) — the
+  single source of truth for grounding, convergence/similarity, and defeat
+  analysis. Read from it; don't move logic into components.
+- **Planned:** Supabase (Postgres) for persistent storage and a "single-user now,
+  public later" auth path; a Claude-powered agent layer (Haiku for cheap
+  high-volume work like ingestion/dedup, Opus for judging) behind a server
+  function — keys never in the client. See `docs/reference/ARCHITECTURE.md` and
+  `docs/reference/AGENT_TODO.md`.
+
+There is real tooling now: `npm install`, `npm run dev`, `npm test` (vitest),
+`npm run typecheck`, `npm run build`. Keep CI-equivalent checks green:
+`npm run typecheck && npm test && npm run build`.
 
 ## The model (authoritative summary)
 
-The full reference is `docs/CONCEPTS.md`; keep it and this section in sync. Every
-node is one Markdown note. Frontmatter encodes everything:
-
-- `type:` — the node type.
-- **The relationship is the property name**, with a `[[wikilink]]` value pointing
-  at the connected note. A note may carry several relationships.
-
-```markdown
----
-type: argument-support
-argues-for: "[[Yes, pull the lever]]"
-grounds-in: "[[Minimize total suffering]]"
----
-Saving more lives is better.
-```
+Full reference: `docs/CONCEPTS.md`. The data model lives in
+`client/src/lib/types.ts` and `meta.ts`; keep all three in sync.
 
 ### Node types (21)
 
@@ -67,61 +61,49 @@ Saving more lives is better.
 `epistemic-limit`, `premise`.
 
 - **Terminal** (`value`, `principle`, `epistemic-limit`): the bottom of a chain;
-  no outgoing relationships, nothing hangs below them.
-- **`premise`**: a root you build **forward** from (reverse authoring); its
-  children connect via `entails`.
-- `question` and `premise` are the two kinds of **root**.
+  nothing hangs below them.
+- **`premise`**: a root you build **forward** from (reverse authoring), via
+  `entails`. `question` and `premise` are the two kinds of root.
 
-### Relationships and direction (the one real gotcha)
+### Relationships and direction
 
 Direction is **semantic**. Most relationships point **child → parent** ("up",
 toward the question); three point **parent → child** ("down", toward
-foundations). Getting this right is what makes the graph lay out top-down.
+foundations). This is what makes the graph lay out top-down.
 
 - **Up** (child→parent): `answers`, `argues-for`, `argues-against`, `supports`,
   `objects-to`, `rebuts`, `illustrates`, `connects-to`
 - **Down** (parent→child): `raises`, `grounds-in`, `entails`
 
-This Up/Down split is exactly what gets configured in **Breadcrumbs** (Tutorial,
-Part 3). If a value node renders at the **top** of the graph, its `grounds-in` was
-registered as Up instead of Down.
-
 ### Grounding & convergence (the two ideas that matter)
 
 - **Grounding** = every chain under a question reaches a terminal foundation. A
-  chain that dead-ends at an argument is **ungrounded** (a loose end). Obsidian
-  doesn't compute a badge — the value is that you can *see* the gaps in the graph.
-- **Convergence** = different chains `grounds-in` the **same** value note (shown
-  as multiple incoming links to one node). **Reuse existing values; don't write
-  near-duplicates.** This is the soul of the product — protect it in docs and in
-  the example vault.
+  chain that dead-ends at an argument is **ungrounded** (a loose end).
+- **Convergence** = different chains `grounds-in` the **same** value note.
+  **Reuse existing values; don't duplicate.** Protecting convergence at volume is
+  a central job of the AI agent (the dedup/"link to existing" helper).
 - A **value clash** = one question whose chains bottom out at two *different*
-  values (the Trolley example does this on purpose).
+  values (the Trolley seed does this on purpose).
 
 ## Working in this repo
 
-- **Most tasks are documentation/vault edits**, not engineering. Keep the writing
-  simple, concrete, and centred on the human-driven Obsidian workflow.
-- **Keep the doc files consistent with each other**: the node-type list, the
-  relationship/Up-Down table, and the example vault are one source of truth split
-  across `CONCEPTS.md`, `TUTORIAL.md`, `obsidian-vault/README.md`, and this file.
-  Change them together. `PHILOSOPHY.md` is the *why* layer — keep the eight-rule
-  method there in sync with the tutorial's Part 5 method box.
-- **The example vault must stay valid**: every `[[wikilink]]` must resolve to a
-  real note; terminals carry no outgoing links; directions follow the table
-  above. The example is how a newcomer learns the conventions — keep it clean and
-  illustrative (it intentionally shows grounding, a value clash, a premise chain,
-  and convergence on a shared value).
-- If you add/rename a node type or relationship, update **all** of: `CONCEPTS.md`,
-  the Breadcrumbs Up/Down lists in `TUTORIAL.md` and `obsidian-vault/README.md`,
-  and this file.
-- Don't add AI or automation into the core flow. Optional helpers belong in
-  `docs/FUTURE.md` and, if ever built, as a clearly separate layer.
+- **Keep `graph.ts` pure and fully tested.** New pure logic goes there with
+  Vitest coverage. Network/LLM code lives in a server function + a thin client
+  wrapper, never in `graph.ts`.
+- **The AI agent only ever proposes.** Any agent capability must produce a
+  reviewable change (add/edit/merge/restructure) the user approves — never a
+  silent mutation, never automatic. Capabilities are specced in `docs/AGENT.md`.
+- **Keep the model in sync** across `types.ts`, `meta.ts`, `CONCEPTS.md`, and this
+  file when adding/renaming a node type or relationship.
+- **Doc layers:** `PHILOSOPHY.md` = *why*; `CONCEPTS.md` = *what* (the model);
+  `AGENT.md` = the agent layer; `docs/reference/` = recovered architecture/roadmap
+  specs (technical detail, may lag the current framing — treat as reference, not
+  gospel). The `obsidian-vault/` is an illustrative model reference + seed source.
 
 ## Git & branching conventions
 
-- The default branch is `main`. Do **not** push directly to `main`.
-- The GitHub repository is `disguide/axiomer`. Use the GitHub MCP tools for PR and
-  issue operations (no `gh` CLI in this environment).
-- Open **draft** pull requests against `main`.
-- Commit only coherent units; write clear, imperative commit messages.
+- Default branch is `main`. Do **not** push directly to `main`.
+- Repo is `disguide/axiomer`. Use the GitHub MCP tools for PR/issue operations
+  (no `gh` CLI here).
+- Open **draft** pull requests against `main`; commit coherent units with clear,
+  imperative messages.

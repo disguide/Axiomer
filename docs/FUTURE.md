@@ -1,47 +1,47 @@
-# Axiomer — Future ideas (optional, not core)
+# Axiomer — Future (later, not now)
 
-Axiomer's core is deliberately small: notes + labelled links in Obsidian, driven
-by a person. **Everything on this page is optional and additive.** None of it is
-required for the tool to work, and the first principle is that you could remove
-all of it and still have the full base layer.
+What's deliberately deferred. The **AI agent is no longer "future/optional"** —
+it's a core part of the product (an on-demand, review-gated assistant); its design
+lives in [AGENT.md](AGENT.md), not here. This page is for things genuinely past
+the current single-user build.
 
-Keep this order: **make the human base layer excellent first, add helpers later.**
+> Order of operations: get the single-user app + the review-gated agent good
+> first, *then* open up. Nothing here should compromise the rule that the
+> human-built graph is the source of truth and the agent only proposes.
 
-## AI as an optional helper (later)
+## Multi-user & public ("public later")
 
-The rule: **AI assists, it never thinks for you.** Any AI feature is a
-suggestion you accept or reject — it never edits the graph on its own, and the
-tool stays fully usable with it turned off. Candidate helpers, roughly in order
-of usefulness:
+The app is built single-user first but meant to open up:
 
-- **Reuse finder** — when you write a new value, suggest existing values that
-  already say the same thing, so you link instead of duplicate (protects
-  convergence). This is the most valuable helper.
-- **"Next why" prompts** — suggest the deeper question an argument could raise,
-  or a likely foundation it might ground in.
-- **Weak-spot hints** — point out an unsupported claim, a probable fallacy, or an
-  argument with no grounding.
-- **Quality notes** — a short, optional read on how strong an argument looks.
+- **Accounts & a shared canonical graph** — move storage to the planned Supabase
+  backend; one canonical graph many people can read.
+- **Propose-and-review collaboration** — contributions land as reviewed
+  changesets (the same accept/reject flow the AI agent already uses, applied to
+  people). History, attribution, revert.
+- **Read-mostly publishing** — a fast public read view for the many people who
+  only browse. (See `docs/reference/ARCHITECTURE.md` and `ADR-0001`.)
 
-These would be on-demand only (you click for help), and would work on the
-relevant subtree, not your whole vault.
+## Scale & ingestion at volume
 
-## Tooling that stays human-first
+- **Web pulling** — gather arguments from online sources and let the agent
+  structure them into the graph (always review-gated).
+- **Overview / "brain" mode** — a navigable big-picture view for thousands of
+  nodes (dots sized by importance, labels on focus), distinct from the detail
+  view. Design sketch in `docs/reference/DESIGN_BRIEF.md`.
+- **Search & "link to existing" everywhere**, scaled to thousands of nodes — the
+  human + agent defence against duplication at volume.
 
-- **Grounding check** — a small script that reads the vault and lists ungrounded
-  chains and duplicate-looking values, so you can see loose ends without reading
-  the graph by eye. Pure read-only; no AI needed.
-- **A read-only web viewer** — publish a vault as a browseable graph for people
-  who don't use Obsidian. A way to *share* a finished tree, not to build one.
-- **Templates / hotkeys** — Obsidian Templater snippets for each node type to
-  speed up authoring.
+## Deeper analysis (nice-to-have)
 
-## What we are *not* doing
+- **Gradual/weighted strength** — beyond binary acceptability, score how strongly
+  an argument survives its attackers (pure graph logic; spec in
+  `docs/reference/AGENT_TODO.md`, W5).
+- **Agent-legible API / MCP server** so external agents can read/propose against
+  the graph (`docs/reference/AGENT_TODO.md`, W4).
 
-- No requirement on any backend, account, or AI to use the core tool.
-- No automatic AI edits to your graph.
-- No replacing the "you do the reasoning" model with "the AI decides."
+## What stays true at every stage
 
-If and when any of the above gets built, it lands as a clearly separate,
-optional layer — and this repo's README and tutorial stay centred on the plain
-Obsidian tool.
+- The human-built graph is the source of truth; the agent and any automation are
+  layers around it, removable without breaking the tool.
+- The AI only ever **proposes**; a human accepts.
+- **Convergence is the soul** — every stage protects "reuse, don't duplicate."

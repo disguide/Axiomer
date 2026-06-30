@@ -1,52 +1,77 @@
 # Axiomer
 
-**A simple tool for building argument trees in Obsidian.**
+**An IDE for your thinking.** Axiomer is a tool for building **argument graphs**:
+you take a question, break it into positions and arguments, and keep asking
+"why?" until every chain bottoms out at a **bedrock value**, **principle**, or
+**epistemic limit**. As the graph grows, different questions ground out at the
+*same* values — revealing where your thinking **converges**, and where it
+**clashes**.
 
-Axiomer is not an app you install — it's a **way of organising thinking inside
-[Obsidian](https://obsidian.md)** using a small set of conventions and two
-community plugins. You take a question, break it into positions and arguments,
-and keep asking "why?" until every chain bottoms out at a **bedrock value**,
-**principle**, or **epistemic limit**. The result is a top-down, labelled
-knowledge graph you build and explore yourself.
+It works like a code editor with an agent — but the "codebase" is your reasoning:
 
-It's deliberately a **base layer for a person to think with** — *not* an AI that
-thinks for you. You do the reasoning; Obsidian just holds the structure and draws
-the graph. (AI help may come later as an optional add-on — see
-[`docs/FUTURE.md`](docs/FUTURE.md) — but the tool works completely without it.)
+- **You build and own the graph.** It's the source of truth.
+- **An on-demand AI agent helps when you ask it to** — break a pile of text into
+  argument nodes, find duplicate values to merge, restructure a messy branch,
+  surface gaps. Every change it makes is a **proposal you review and accept or
+  reject.** It never edits silently, and you can ignore it entirely and still
+  have the full tool.
 
-## What you get
+The principle behind it: **you do the reasoning; the agent assists.** A graph an
+AI filled in by itself is a graph nobody actually believes. See
+[`docs/PHILOSOPHY.md`](docs/PHILOSOPHY.md) for the full stance.
 
-- **Each idea is a note.** A question, a position, an argument, a piece of
-  evidence, a value — each is one Markdown note.
-- **Each connection is a labelled link** in the note's frontmatter (`answers`,
-  `argues-for`, `grounds-in`, `raises`, …), so the relationships are explicit.
-- **A top-down graph** of the whole argument, drawn automatically by the Juggl +
-  Breadcrumbs plugins.
-- **Convergence**: different questions can ground out in the *same* value note,
-  which reveals where unrelated debates actually share — or clash over — the same
-  underlying value.
+## Status
 
-## Get started
+Early build, **single-user first, designed to open up to others later**. The pure
+graph engine and a working graph view (including click-to-highlight a branch from
+a question down to its foundations) exist today; the database and the AI agent
+layer are the active work. The roadmap and architecture live in
+[`docs/reference/`](docs/reference/).
 
-1. Read the **[Tutorial](docs/TUTORIAL.md)** — install Obsidian, open the example
-   vault, set up the two plugins, and build your first question (~15 min).
-2. Skim the **[Concepts](docs/CONCEPTS.md)** — the node types, the labelled
-   relationships, and what "grounding" and "convergence" mean.
-3. For the *why* — the stance behind the discipline (why reasoning must bottom
-   out, keeping "is" and "ought" apart, and reading a value clash as a diagnosis)
-   — read the **[Philosophy](docs/PHILOSOPHY.md)**.
+## How it works (in brief)
 
-## What's in this repo
+- **Nodes** are typed: `question`, `position`, `argument-support`/`-attack`,
+  `evidence-*`, `value`/`principle`/`epistemic-limit` (the terminal foundations),
+  `premise`, and more.
+- **Edges are labelled relationships** (`answers`, `argues-for`, `grounds-in`,
+  `raises`, `entails`, …) with a direction, so the graph lays out top-down.
+- **Grounding** = every chain under a question reaches a terminal foundation.
+- **Convergence** = different chains ground in the *same* value (reuse, don't
+  duplicate) — the core payoff, and what the AI agent helps protect at volume.
+
+The model is documented in [`docs/CONCEPTS.md`](docs/CONCEPTS.md); the *why* in
+[`docs/PHILOSOPHY.md`](docs/PHILOSOPHY.md).
+
+## Getting started (development)
+
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm test           # graph-engine tests (vitest)
+npm run typecheck
+```
+
+Seed data (a Trolley-Problem tree and "Why is the sky blue?") loads on first run,
+so there's always something to explore.
+
+## Repo structure
 
 ```
-obsidian-vault/      ← the example vault — open THIS folder in Obsidian
-docs/PHILOSOPHY.md   ← why it works this way: foundations, is/ought, clash, the method
-docs/TUTORIAL.md     ← step-by-step setup + your first argument tree
-docs/CONCEPTS.md     ← the model: node types, relationships, grounding, convergence
-docs/FUTURE.md       ← optional ideas (AI assist, a public viewer) — not core
-CLAUDE.md            ← guidance for AI assistants working in this repo
+client/                  ← the app (React + TypeScript)
+  src/lib/graph.ts        ← the pure graph engine (grounding, convergence, defeat)
+  src/lib/types.ts        ← node + edge types (the data model)
+  src/components/         ← the views (graph map, tree, node cards, …)
+docs/
+  PHILOSOPHY.md           ← the stance: why ground, is/ought, clash, the method
+  CONCEPTS.md             ← the model: node types, relationships, grounding, convergence
+  AGENT.md                ← the AI agent layer: its graph-tools and the review flow
+  FUTURE.md               ← later: multi-user/public, scale
+  reference/              ← recovered planning specs (architecture, roadmap, AI contract)
+obsidian-vault/          ← a conceptual reference + seed example (NOT the product)
+CLAUDE.md                ← guidance for AI assistants working in this repo
 ```
 
-The `obsidian-vault/` folder is a ready-to-open Obsidian vault containing a
-worked example (the Trolley Problem and "Why is the sky blue?") so you can see
-the conventions in action before building your own.
+> **About `obsidian-vault/` and `docs/TUTORIAL.md`:** an earlier direction tried
+> to deliver Axiomer purely as an Obsidian vault. That's now kept only as a
+> **conceptual reference and source of seed data** — the real tool is the app
+> here. The vault is a faithful, hand-built illustration of the same model.
