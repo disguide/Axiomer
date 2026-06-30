@@ -6,7 +6,9 @@ expressed in Obsidian using two things only: a note's **`type`** and the
 conventions *are* the tool.
 
 If you just want to get going, start with the [Tutorial](TUTORIAL.md) and come
-back here when you want to understand the pieces.
+back here when you want to understand the pieces. For *why* the model is shaped
+this way — why chains must bottom out, why the three terminal types, why reuse
+matters — see [Philosophy](PHILOSOPHY.md).
 
 ## The core idea
 

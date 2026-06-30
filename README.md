@@ -32,11 +32,15 @@ the graph. (AI help may come later as an optional add-on — see
    vault, set up the two plugins, and build your first question (~15 min).
 2. Skim the **[Concepts](docs/CONCEPTS.md)** — the node types, the labelled
    relationships, and what "grounding" and "convergence" mean.
+3. For the *why* — the stance behind the discipline (why reasoning must bottom
+   out, keeping "is" and "ought" apart, and reading a value clash as a diagnosis)
+   — read the **[Philosophy](docs/PHILOSOPHY.md)**.
 
 ## What's in this repo
 
 ```
 obsidian-vault/      ← the example vault — open THIS folder in Obsidian
+docs/PHILOSOPHY.md   ← why it works this way: foundations, is/ought, clash, the method
 docs/TUTORIAL.md     ← step-by-step setup + your first argument tree
 docs/CONCEPTS.md     ← the model: node types, relationships, grounding, convergence
 docs/FUTURE.md       ← optional ideas (AI assist, a public viewer) — not core

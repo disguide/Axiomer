@@ -8,7 +8,9 @@ graph, and you'll have added your own question that grounds out at a value.
 
 > New to the ideas? You can do this tutorial cold — but the one-page
 > [Concepts](CONCEPTS.md) explains the node types and relationships you'll be
-> using.
+> using, and [Philosophy](PHILOSOPHY.md) explains *why* the discipline below is
+> worth it. Part 5 teaches the method; the short rules there all come from the
+> philosophy doc.
 
 ---
 
@@ -78,6 +80,21 @@ You should now see questions at the top flowing down to values at the bottom.
 
 Now build a small tree of your own. Create each node as a new note in `Nodes/`.
 
+**The method, in eight rules** (each is explained in [Philosophy](PHILOSOPHY.md);
+keep them next to you as you build):
+
+1. Start from **one sharp, answerable question**.
+2. **Name the positions** (candidate answers) before you argue.
+3. **One reason per argument** — two reasons means two notes.
+4. Each **"why?" climbs a level of abstraction** — the child is the more general
+   thing the parent rests on, not a restatement.
+5. **Tag each branch: empirical or normative?** Are you arguing about what's
+   *true* or about what *matters*? Hold it to the matching terminal (next box).
+6. **Stop only at a foundation you can name** — a value, a principle, or an
+   epistemic limit. Can't name it? The chain isn't finished — keep asking why.
+7. **Reuse values; search before you create.**
+8. **A clash is success**, not a bug.
+
 **1. The question.** New note → name it for your question, e.g.
 `Should voting be mandatory`:
 
@@ -146,6 +163,13 @@ Walk each chain from the question down. Every chain should end at a `value`,
 **ungrounded** — a loose end. Either keep asking "why?" until it reaches a
 foundation, or `raises` a deeper question and ground *that*. (The full rule is in
 [Concepts → Grounding](CONCEPTS.md#grounding).)
+
+**Check the terminal matches the branch (is vs. ought).** A chain about *what's
+true* should bottom out at an `epistemic-limit`; a chain about *what matters*
+should bottom out at a `value` or `principle`. If an "ought" chain tries to end
+at an epistemic-limit, you've smuggled a fact in where a value belongs — the
+missing value *is* the node you still owe. (Why this matters:
+[Philosophy → is/ought](PHILOSOPHY.md#keep-is-and-ought-on-separate-chains-humes-guillotine).)
 
 ## You're set
 

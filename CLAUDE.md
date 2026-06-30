@@ -31,6 +31,7 @@ obsidian-vault/           ← THE TOOL: open this folder as an Obsidian vault
   README.md               ← quick setup for the vault
   Nodes/*.md              ← one note per node (the worked example lives here)
 docs/
+  PHILOSOPHY.md           ← the stance: why ground, is/ought, clash-as-diagnostic, the method
   TUTORIAL.md             ← step-by-step: install, set up plugins, build a tree
   CONCEPTS.md             ← the model: node types, relationships, grounding, convergence
   FUTURE.md               ← optional/later ideas (AI assist, viewer) — NOT core
@@ -101,10 +102,11 @@ registered as Up instead of Down.
 
 - **Most tasks are documentation/vault edits**, not engineering. Keep the writing
   simple, concrete, and centred on the human-driven Obsidian workflow.
-- **Keep the four doc files consistent with each other**: the node-type list, the
+- **Keep the doc files consistent with each other**: the node-type list, the
   relationship/Up-Down table, and the example vault are one source of truth split
   across `CONCEPTS.md`, `TUTORIAL.md`, `obsidian-vault/README.md`, and this file.
-  Change them together.
+  Change them together. `PHILOSOPHY.md` is the *why* layer — keep the eight-rule
+  method there in sync with the tutorial's Part 5 method box.
 - **The example vault must stay valid**: every `[[wikilink]]` must resolve to a
   real note; terminals carry no outgoing links; directions follow the table
   above. The example is how a newcomer learns the conventions — keep it clean and
