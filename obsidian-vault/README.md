@@ -1,71 +1,73 @@
-# Axiomer — Obsidian prototype vault
+# Axiomer — Obsidian reference vault
 
-A throwaway **prototype of the *feel*** — not the product. Open this folder in
-Obsidian to experience Axiomer's structure as a **top-down, labelled, pinnable
-node graph** using the **Juggl** + **Breadcrumbs** plugins.
+**This folder is a conceptual reference, not the product.** The Axiomer product is
+the app in [`../client/`](../client/). This vault expresses the *same* model
+(typed nodes + labelled relationships) as plain Obsidian notes, so you can
+experience the shape with zero code — and it doubles as **seed data** for the app.
+Open it in [Obsidian](https://obsidian.md) (*Open folder as vault*) to explore the
+worked example.
 
-It reproduces the seed graph (Trolley Problem + "Why is the sky blue?") plus a
-**premise** chain that converges on a shared value, so you can feel:
-- typed, **labelled connections** (`answers`, `argues for`, `grounds in`, `raises`, `entails`);
-- a **top-down direction** (questions at the top, bedrock values at the bottom);
-- **pinning** nodes in place;
-- **convergence** — "Minimize total suffering" is reached by two different chains;
-- a **value clash** — the Trolley question bottoms out at two different values.
+> Full setup is in **[`../docs/TUTORIAL.md`](../docs/TUTORIAL.md)**; the model is
+> in **[`../docs/CONCEPTS.md`](../docs/CONCEPTS.md)**. This file is the quick
+> version.
 
-> ⚠️ This is the **look/feel only**. It does NOT compute grounding,
-> acceptability/defeat, convergence, clashes, or dedup; it has no two-section
-> value-band layout; and it's single-user. Those are exactly why the real product
-> is built on React Flow + `graph.ts` (see `../docs/DESIGN_BRIEF.md` and
-> `../docs/ROADMAP.md`). Use this to think, not to build on.
+## What's in here
+
+`Nodes/` contains ~20 notes making up two complete examples plus a premise chain:
+
+- **Should you pull the lever?** (the Trolley Problem) — reaches **two different
+  values**, i.e. a **value clash**.
+- **Why is the sky blue?** — fully grounds out at an **epistemic limit**.
+- A **premise** ("Suffering matters") built **forward** into a chain that grounds
+  in the **same** value the Trolley chain uses — i.e. **convergence**.
+
+Each note is one node; its `type` and its labelled links (in frontmatter) define
+the graph.
 
 ## Setup (5 minutes)
 
-1. Install [Obsidian](https://obsidian.md). **Open this `obsidian-vault` folder
-   as a vault** (Open folder as vault).
-2. **Settings → Community plugins →** turn off Restricted Mode → **Browse** and
-   install:
+1. **Open this `obsidian-vault` folder as a vault** in Obsidian.
+2. **Settings → Community plugins** → turn off Restricted Mode → **Browse** and
+   install + enable:
    - **Breadcrumbs** (hierarchy / direction)
    - **Juggl** (the interactive graph view)
-   Enable both.
 3. **Breadcrumbs → Edge fields / hierarchy** — register the relationship fields
-   by direction so the layout flows top-down:
+   by direction:
    - **Up** (child → parent): `answers`, `argues-for`, `argues-against`,
      `supports`, `objects-to`, `rebuts`, `illustrates`, `connects-to`
    - **Down** (parent → child): `raises`, `grounds-in`, `entails`
-   (These are the YAML property names used in every note's frontmatter.)
-4. Open the graph: command palette → **Juggl: Open Juggl** (or right-click a
-   note → *Open in Juggl*). In Juggl's settings/toolbar set the **layout to
-   Hierarchy (Dagre)** — that gives the top-down tree. Turn on **edge labels**
-   to see the relationship types.
-5. **Pin** nodes: right-click a node in Juggl → *Pin*. Pinned nodes stay put
-   under any layout.
+4. Command palette → **Juggl: Open Juggl**. Set layout to **Hierarchy (Dagre)**
+   and turn on **edge labels**.
+5. **Pin** nodes: right-click a node in Juggl → *Pin*.
 
-## What to look at
+## What to look at first
 
 - Start from **`Should you pull the lever`** and follow it down to the two
   values — note they're **different** (the clash).
-- Find **`Minimize total suffering`**: it has **two incoming `grounds-in`**
-  edges — one from the Trolley chain, one from the **`Suffering matters`**
-  premise chain. That single shared node *is* convergence.
+- Find **`Minimize total suffering`**: it has **two incoming `grounds-in`** edges
+  — one from the Trolley chain, one from the **`Suffering matters`** premise
+  chain. That single shared node *is* convergence.
 - Try pinning the value band and dragging the questions around.
 
 ## How the encoding works
 
-Each note is a node. Frontmatter carries:
-- `type:` the Axiomer node type (question, position, argument-support, value, premise, …).
-- A **typed link property named after the relationship**, pointing at the
-  connected node — e.g. a position has `answers: "[[Some question]]"`, an
-  argument has `grounds-in: "[[Some value]]"`. Juggl renders these as **labelled
-  edges**; Breadcrumbs uses them (per the Up/Down config above) to impose the
-  **top-down hierarchy**.
+Each note is a node. Its frontmatter carries:
 
-So the edge *direction* matches Axiomer's semantics: most relations run
-child→parent (Up), while `raises` / `grounds-in` / `entails` run parent→child
-(Down) — see `../CLAUDE.md` for why.
+- `type:` — the Axiomer node type (`question`, `position`, `argument-support`,
+  `value`, `premise`, …).
+- A **typed link named after the relationship**, pointing at the connected note —
+  e.g. a position has `answers: "[[Some question]]"`, an argument has
+  `grounds-in: "[[Some value]]"`. Juggl renders these as **labelled edges**;
+  Breadcrumbs uses them (per the Up/Down config) to impose the **top-down
+  hierarchy**.
 
-## Alternative: Obsidian Canvas (fully manual)
+Most relations run child→parent (Up); `raises` / `grounds-in` / `entails` run
+parent→child (Down). See [`../docs/CONCEPTS.md`](../docs/CONCEPTS.md) for the full
+table and the reasoning.
 
-If you'd rather place nodes by hand with total control of position and labelled
-arrows, Obsidian's core **Canvas** does that — but with no auto-layout from the
-links. Good for sketching a specific picture; Juggl is better for "see the whole
-graph, directional."
+## Make it your own
+
+Copy a note in `Nodes/`, change its `type` and links, and re-open Juggl. Or start
+fresh: the [Tutorial](../docs/TUTORIAL.md) walks through adding your own question
+from scratch. **Reuse existing values rather than writing near-duplicates** — that
+reuse is what makes the graph converge.

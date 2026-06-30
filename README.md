@@ -1,42 +1,78 @@
 # Axiomer
 
-Kialo but deeper — trace questions down to their **bedrock values**.
+**An IDE for your thinking.** Axiomer is a tool for building **argument graphs**:
+you take a question, break it into positions and arguments, and keep asking
+"why?" until every chain bottoms out at a **bedrock value**, **principle**, or
+**epistemic limit**. As the graph grows, different questions ground out at the
+*same* values — revealing where your thinking **converges**, and where it
+**clashes**.
 
-Axiomer is a wiki-style argument-tree platform. You explore a question by adding
-positions, arguments, evidence and more, and every chain must eventually bottom
-out at a fundamental **value**, **principle**, or **epistemic limit**. As you
-answer many questions you reuse the same bedrock values, revealing where
-different questions converge — and where they clash.
+It works like a code editor with an agent — but the "codebase" is your reasoning:
 
-## Stack
+- **You build and own the graph.** It's the source of truth.
+- **An on-demand AI agent helps when you ask it to** — break a pile of text into
+  argument nodes, find duplicate values to merge, restructure a messy branch,
+  surface gaps. Every change it makes is a **proposal you review and accept or
+  reject.** It never edits silently, and you can ignore it entirely and still
+  have the full tool.
 
-React 19 · TypeScript · Vite · Tailwind CSS 4. No backend in V1 — state lives in
-`localStorage`.
+The principle behind it: **you do the reasoning; the agent assists.** A graph an
+AI filled in by itself is a graph nobody actually believes. See
+[`docs/PHILOSOPHY.md`](docs/PHILOSOPHY.md) for the full stance.
 
-## Getting started
+## Status
 
-```bash
-npm install
-npm run dev      # http://localhost:5173
-```
-
-Other scripts: `npm run build`, `npm run preview`, `npm run typecheck`.
-
-## Docs
-
-- `docs/SPECIFICATION.md` — the full V1 master specification.
-- `CLAUDE.md` — architecture, conventions, and guidance for AI assistants
-  (including resolved spec inconsistencies). A good orientation for humans too.
+Early build, **single-user first, designed to open up to others later**. The pure
+graph engine and a working graph view (including click-to-highlight a branch from
+a question down to its foundations) exist today; the database and the AI agent
+layer are the active work. The roadmap and architecture live in
+[`docs/reference/`](docs/reference/).
 
 ## How it works (in brief)
 
-- **21 node types** (question, position, argument, evidence, value, premise, …)
-  and **11 edge types**, defined in `client/src/lib/types.ts` / `meta.ts`.
-- **Reverse authoring:** start from a **premise** (a base assumption) and build
-  conclusions forward from it — premise trees bottom out at the same shared
-  values, feeding the convergence view.
-- **Grounding badge:** each question shows `FULLY GROUNDED` (every chain reaches
-  a terminal) or `OPEN`.
-- **Convergence:** arguments link to *existing* values instead of duplicating
-  them.
-- Two seed examples (Trolley Problem, Why is the sky blue?) load on first visit.
+- **Nodes** are typed: `question`, `position`, `argument-support`/`-attack`,
+  `evidence-*`, `value`/`principle`/`epistemic-limit` (the terminal foundations),
+  `premise`, and more.
+- **Edges are labelled relationships** (`answers`, `argues-for`, `grounds-in`,
+  `raises`, `entails`, …) with a direction, so the graph lays out top-down.
+- **Grounding** = every chain under a question reaches a terminal foundation.
+- **Convergence** = different chains ground in the *same* value (reuse, don't
+  duplicate) — the core payoff, and what the AI agent helps protect at volume.
+
+The model is documented in [`docs/CONCEPTS.md`](docs/CONCEPTS.md); the *why* in
+[`docs/PHILOSOPHY.md`](docs/PHILOSOPHY.md).
+
+## Getting started (development)
+
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm test           # graph-engine tests (vitest)
+npm run typecheck
+```
+
+Seed data (a Trolley-Problem tree and "Why is the sky blue?") loads on first run,
+so there's always something to explore.
+
+## Repo structure
+
+```
+client/                  ← the app (React + TypeScript)
+  src/lib/graph.ts        ← the pure graph engine (grounding, convergence, defeat)
+  src/lib/types.ts        ← node + edge types (the data model)
+  src/components/         ← the views (graph map, tree, node cards, …)
+docs/
+  VISION.md               ← the four sections (reasoning · agent · status+skills · prompt)
+  PHILOSOPHY.md           ← the stance: why ground, is/ought, clash, the method
+  CONCEPTS.md             ← the model: node types, relationships, grounding, convergence
+  AGENT.md                ← the AI agent layer: its graph-tools and the review flow
+  FUTURE.md               ← later: multi-user/public, scale
+  reference/              ← recovered planning specs (architecture, roadmap, AI contract)
+obsidian-vault/          ← a conceptual reference + seed example (NOT the product)
+CLAUDE.md                ← guidance for AI assistants working in this repo
+```
+
+> **About `obsidian-vault/` and `docs/TUTORIAL.md`:** an earlier direction tried
+> to deliver Axiomer purely as an Obsidian vault. That's now kept only as a
+> **conceptual reference and source of seed data** — the real tool is the app
+> here. The vault is a faithful, hand-built illustration of the same model.
