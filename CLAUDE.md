@@ -14,6 +14,15 @@ where they are, this file documents the decision that was actually implemented
 (see "Resolved spec inconsistencies" below). When in doubt, the code in
 `client/src/lib/` is the source of truth for behavior.
 
+**Design-stage v2 docs (approved direction, NOT yet implemented):**
+`docs/PHILOSOPHY.md` (theoretical foundations & design principles),
+`docs/TAXONOMY.md` (v2 taxonomy: 30 node types / 18 edge types / facets + the
+AI labeling procedure), `docs/STATUS_AND_COMMITMENT.md` (node lifecycle:
+retracted/refuted/invalid/superseded; commitment propagation). Do **not**
+treat anything in them as current app behavior, and do **not** extend the
+taxonomy, statuses, or commitment semantics without going through those docs
+(see the growth policy in `TAXONOMY.md §8`).
+
 ## What Axiomer is
 
 Axiomer is a **wiki-style argument-tree platform**. Users explore a question by

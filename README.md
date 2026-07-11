@@ -27,6 +27,14 @@ Other scripts: `npm run build`, `npm run preview`, `npm run typecheck`.
 - `docs/SPECIFICATION.md` — the full V1 master specification.
 - `CLAUDE.md` — architecture, conventions, and guidance for AI assistants
   (including resolved spec inconsistencies). A good orientation for humans too.
+- **Design-stage (v2, not yet implemented):**
+  - `docs/PHILOSOPHY.md` — theoretical foundations (Toulmin, Pollock, Walton,
+    Dung, Carneades, Brandom) and the three-axis design model.
+  - `docs/TAXONOMY.md` — the complete v2 taxonomy: 30 node types, 18 edge
+    types, facets, and the AI labeling procedure.
+  - `docs/STATUS_AND_COMMITMENT.md` — node lifecycle (retracted / refuted /
+    invalid / superseded) and the commitment system ("hold this → you must
+    hold that").
 
 ## How it works (in brief)
 
