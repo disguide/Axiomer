@@ -4,10 +4,11 @@
 //   exposes the same API with mutations as no-ops, so the UI can stay simple.
 
 import { useEffect, useState } from "react";
-import type { Graph, NodeType } from "@/lib/types";
+import type { Graph, NodeStatus, NodeType, ProofStandard } from "@/lib/types";
 import { seedGraph } from "@/lib/seed";
 import { isReadOnly, loadCanonicalGraph } from "@/lib/dataSource";
 import * as G from "@/lib/graph";
+import type { AddNodeOpts } from "@/lib/graph";
 
 const STORAGE_KEY = "axiomer_graph";
 
@@ -34,10 +35,17 @@ export interface UseGraph {
   loading: boolean;
   addRootQuestion: (content: string) => void;
   addRootPremise: (content: string) => void;
-  addNode: (type: NodeType, content: string, parentId: string) => void;
+  addNode: (
+    type: NodeType,
+    content: string,
+    parentId: string,
+    opts?: AddNodeOpts,
+  ) => void;
   editNode: (id: string, content: string) => void;
   deleteNode: (id: string) => void;
   linkToExistingValue: (argumentId: string, valueId: string) => void;
+  setNodeStatus: (id: string, status: NodeStatus, reason?: string) => void;
+  setProofStandard: (questionId: string, standard: ProofStandard) => void;
   resetToSeed: () => void;
 }
 
@@ -84,6 +92,8 @@ export function useGraph(): UseGraph {
       editNode: noop,
       deleteNode: noop,
       linkToExistingValue: noop,
+      setNodeStatus: noop,
+      setProofStandard: noop,
       resetToSeed: noop,
     };
   }
@@ -94,12 +104,16 @@ export function useGraph(): UseGraph {
     loading,
     addRootQuestion: (content) => setGraph((g) => G.addRootQuestion(g, content)),
     addRootPremise: (content) => setGraph((g) => G.addRootPremise(g, content)),
-    addNode: (type, content, parentId) =>
-      setGraph((g) => G.addNode(g, type, content, parentId)),
+    addNode: (type, content, parentId, opts) =>
+      setGraph((g) => G.addNode(g, type, content, parentId, opts)),
     editNode: (id, content) => setGraph((g) => G.editNode(g, id, content)),
     deleteNode: (id) => setGraph((g) => G.deleteNode(g, id)),
     linkToExistingValue: (argumentId, valueId) =>
       setGraph((g) => G.linkToExistingValue(g, argumentId, valueId)),
+    setNodeStatus: (id, status, reason) =>
+      setGraph((g) => G.setNodeStatus(g, id, status, reason ? { reason } : undefined)),
+    setProofStandard: (questionId, standard) =>
+      setGraph((g) => G.setProofStandard(g, questionId, standard)),
     resetToSeed: () => setGraph(seedGraph),
   };
 }

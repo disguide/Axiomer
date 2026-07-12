@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
-import type { Graph, GraphNode, NodeType } from "@/lib/types";
-import { isTerminalType } from "@/lib/types";
+import type { Graph, GraphNode, NodeStatus, NodeType, ProofStandard } from "@/lib/types";
+import { isInert, isTerminalType } from "@/lib/types";
+import type { AddNodeOpts } from "@/lib/graph";
+import type { Stance } from "@/lib/commitment";
 import { NODE_META } from "@/lib/meta";
 import * as G from "@/lib/graph";
 import NodeCard from "./NodeCard";
@@ -10,22 +12,37 @@ interface TreeViewProps {
   graph: Graph;
   readOnly?: boolean;
   focusId: string | null;
+  stance?: Stance;
   onSetFocus: (id: string | null) => void;
-  onAddNode: (type: NodeType, content: string, parentId: string) => void;
+  onAddNode: (
+    type: NodeType,
+    content: string,
+    parentId: string,
+    opts?: AddNodeOpts,
+  ) => void;
   onLinkValue: (argumentId: string, valueId: string) => void;
   onEditNode: (nodeId: string, content: string) => void;
   onDeleteNode: (nodeId: string) => void;
+  onSetStatus?: (nodeId: string, status: NodeStatus, reason?: string) => void;
+  onSetProofStandard?: (questionId: string, standard: ProofStandard) => void;
+  onAccept?: (nodeId: string) => void;
+  onReject?: (nodeId: string) => void;
 }
 
 export default function TreeView({
   graph,
   readOnly = false,
   focusId,
+  stance,
   onSetFocus,
   onAddNode,
   onLinkValue,
   onEditNode,
   onDeleteNode,
+  onSetStatus,
+  onSetProofStandard,
+  onAccept,
+  onReject,
 }: TreeViewProps) {
   const [expanded, setExpanded] = useState<Set<string>>(() => {
     // Expand roots by default so the seed is visible on load.
@@ -35,6 +52,8 @@ export default function TreeView({
 
   // Whole-graph acceptability, recomputed when the graph changes.
   const acceptability = useMemo(() => G.getAcceptability(graph), [graph]);
+  // Active nodes whose parent is inert — flagged for review.
+  const orphans = useMemo(() => G.getInertOrphans(graph), [graph]);
 
   // Every node that has children — the set "expand all" targets.
   const parentIds = useMemo(
@@ -62,8 +81,8 @@ export default function TreeView({
       count > 0
         ? `Delete this node and its ${count} descendant${
             count === 1 ? "" : "s"
-          }? This cannot be undone.`
-        : "Delete this node? This cannot be undone.";
+          }? This cannot be undone. (Tip: “⋯ → Retract” keeps it as a ghost instead.)`
+        : "Delete this node? This cannot be undone. (Tip: “⋯ → Retract” keeps it as a ghost instead.)";
     if (window.confirm(msg)) {
       if (focusId === node.id) onSetFocus(null);
       onDeleteNode(node.id);
@@ -73,8 +92,8 @@ export default function TreeView({
   const renderNode = (node: GraphNode, depth: number) => {
     const children = G.getChildren(graph, node.id);
     const isExpanded = expanded.has(node.id);
-    const grounded =
-      node.type === "question" ? G.isFullyGrounded(graph, node.id) : null;
+    const resolution =
+      node.type === "question" ? G.getResolution(graph, node.id) : null;
     // Flag argument/position nodes that don't yet reach a foundation.
     const ungrounded =
       (node.type === "argument-support" ||
@@ -86,26 +105,45 @@ export default function TreeView({
     const acceptance = attacked
       ? (acceptability.get(node.id) ?? null)
       : null;
+    const nodeStance = stance?.accepted.includes(node.id)
+      ? ("accepted" as const)
+      : stance?.rejected.includes(node.id)
+        ? ("rejected" as const)
+        : null;
 
     return (
       <div key={node.id}>
         <div className="py-1">
           <NodeCard
             node={node}
-            grounded={grounded}
+            resolution={resolution}
             ungrounded={ungrounded}
             acceptance={acceptance}
+            orphaned={orphans.has(node.id)}
+            stance={nodeStance}
             childCount={children.length}
             hasChildren={children.length > 0}
             expanded={isExpanded}
             readOnly={readOnly}
-            canAddChild={!readOnly && !isTerminalType(node.type)}
+            canAddChild={!readOnly && !isTerminalType(node.type) && !isInert(node)}
             canFocus={children.length > 0 && focusId !== node.id}
             onToggle={() => toggle(node.id)}
             onFocus={() => onSetFocus(node.id)}
             onEdit={(content) => onEditNode(node.id, content)}
             onDelete={() => confirmDelete(node)}
             onAddChild={() => setAddingTo(node)}
+            onSetStatus={
+              onSetStatus && !readOnly
+                ? (status, reason) => onSetStatus(node.id, status, reason)
+                : undefined
+            }
+            onSetProofStandard={
+              onSetProofStandard && !readOnly
+                ? (standard) => onSetProofStandard(node.id, standard)
+                : undefined
+            }
+            onAccept={onAccept ? () => onAccept(node.id) : undefined}
+            onReject={onReject ? () => onReject(node.id) : undefined}
           />
         </div>
         {isExpanded && children.length > 0 && (
@@ -199,7 +237,7 @@ export default function TreeView({
         <AddNodeForm
           parent={addingTo}
           existingTerminals={G.getTerminals(graph)}
-          onAdd={(type, content) => onAddNode(type, content, addingTo.id)}
+          onAdd={(type, content, opts) => onAddNode(type, content, addingTo.id, opts)}
           onLinkValue={(valueId) => onLinkValue(addingTo.id, valueId)}
           onClose={() => setAddingTo(null)}
         />

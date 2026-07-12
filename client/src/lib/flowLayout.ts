@@ -5,7 +5,7 @@
 
 import dagre from "dagre";
 import type { Graph } from "./types";
-import { edgeEndpoints } from "./graph";
+import { edgeEndpoints, isStructuralEdge } from "./graph";
 
 export interface NodePosition {
   x: number;
@@ -28,6 +28,9 @@ export function layoutGraph(
     g.setNode(node.id, { width: nodeWidth, height: nodeHeight });
   }
   for (const edge of graph.edges) {
+    // Lateral edges (contradicts/supersedes) are constraints, not hierarchy —
+    // drawing them is fine, ranking by them would corrupt the layout.
+    if (!isStructuralEdge(edge)) continue;
     const { parent, child } = edgeEndpoints(edge);
     g.setEdge(parent, child);
   }

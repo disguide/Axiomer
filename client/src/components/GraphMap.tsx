@@ -14,6 +14,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import type { EdgeType, Graph, GraphNode } from "@/lib/types";
+import { isInert } from "@/lib/types";
 import { NODE_META } from "@/lib/meta";
 import * as G from "@/lib/graph";
 import { layoutGraph } from "@/lib/flowLayout";
@@ -40,14 +41,29 @@ const EDGE_LABEL: Record<EdgeType, string> = {
   "connects-to": "relates to",
   illustrates: "illustrates",
   entails: "entails",
+  undercuts: "undercuts",
+  presupposes: "presupposes",
+  contradicts: "contradicts",
+  exemplifies: "exemplifies",
+  concedes: "concedes",
+  qualifies: "qualifies",
+  supersedes: "supersedes",
 };
 
 // Connection colour by role, so support/attack/foundation read at a glance.
 function edgeColor(type: EdgeType): string {
-  if (type === "supports" || type === "argues-for") return "#16a34a"; // support
-  if (type === "argues-against" || type === "objects-to") return "#dc2626"; // attack
+  if (type === "supports" || type === "argues-for" || type === "exemplifies")
+    return "#16a34a"; // support
+  if (
+    type === "argues-against" ||
+    type === "objects-to" ||
+    type === "undercuts" ||
+    type === "contradicts"
+  )
+    return "#dc2626"; // attack / incompatibility
   if (type === "grounds-in") return "#ca8a04"; // foundation
   if (type === "rebuts") return "#0d9488"; // defends
+  if (type === "entails" || type === "presupposes") return "#7c3aed"; // strict
   return "#94a3b8"; // neutral / structural
 }
 
@@ -58,12 +74,14 @@ type AxiomerNodeData = {
 };
 
 // A compact, well-labelled pill — icon + one-line label, colour-coded by type.
+// Inert nodes (retracted/refuted/…) render as struck-through ghosts.
 function AxiomerFlowNode({ data }: NodeProps<Node<AxiomerNodeData>>) {
   const { node, dim, selected } = data;
   const meta = NODE_META[node.type];
+  const inert = isInert(node);
   return (
     <div
-      title={`${meta.label}: ${node.content}`}
+      title={`${meta.label}${node.status ? ` — ${node.status.toUpperCase()}` : ""}: ${node.content}`}
       className="flex items-center gap-1.5 rounded-full border bg-white px-2.5 shadow-sm"
       style={{
         width: NODE_W,
@@ -71,14 +89,18 @@ function AxiomerFlowNode({ data }: NodeProps<Node<AxiomerNodeData>>) {
         borderColor: selected ? meta.color : "#e2e8f0",
         borderLeft: `4px solid ${meta.color}`,
         boxShadow: selected ? `0 0 0 3px ${meta.color}44` : undefined,
-        opacity: dim ? 0.3 : 1,
+        opacity: dim ? 0.3 : inert ? 0.45 : 1,
       }}
     >
       <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
       <span className="shrink-0 text-sm" style={{ color: meta.color }}>
         {meta.icon}
       </span>
-      <span className="truncate text-[11px] font-medium text-slate-700">
+      <span
+        className={`truncate text-[11px] font-medium ${
+          inert ? "text-slate-400 line-through" : "text-slate-700"
+        }`}
+      >
         {node.content}
       </span>
       <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
@@ -143,6 +165,11 @@ export default function GraphMap({ graph }: GraphMapProps) {
           style: {
             stroke: lit ? color : "#e2e8f0",
             strokeWidth: lit ? 1.75 : 1,
+            // Lateral constraints read differently from tree structure.
+            strokeDasharray:
+              edge.edgeType === "contradicts" || edge.edgeType === "supersedes"
+                ? "6 4"
+                : undefined,
           },
         };
       }),
@@ -214,6 +241,19 @@ export default function GraphMap({ graph }: GraphMapProps) {
             </button>
           </div>
           <p className="mt-1.5 text-sm text-slate-800">{selectedNode.content}</p>
+          {selectedNode.status && selectedNode.status !== "active" && (
+            <p className="mt-1.5 rounded bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600">
+              {selectedNode.status.toUpperCase()}
+              {selectedNode.statusMeta?.reason
+                ? ` — ${selectedNode.statusMeta.reason}`
+                : ""}
+            </p>
+          )}
+          {selectedNode.contentKind && (
+            <p className="mt-1.5 text-[11px] text-slate-400">
+              kind: {selectedNode.contentKind}
+            </p>
+          )}
           <p className="mt-2 text-[11px] text-slate-400">
             Highlighting its full lineage. Click the background to clear.
           </p>

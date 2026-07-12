@@ -433,3 +433,292 @@ describe("premises (reverse / forward-from-a-base authoring)", () => {
     expect(G.getRootFor(g, argId)?.id).toBe(pid);
   });
 });
+
+// ============================ v2 (Taxonomy v2) ==============================
+
+describe("v2 edges & new node types", () => {
+  it("attaches a presupposition below its question (presupposes, DOWNWARD)", () => {
+    let g = G.addRootQuestion(seedGraph, "Have you stopped beating your wife?");
+    const qid = lastId(g);
+    g = G.addNode(g, "presupposition", "You beat your wife", qid);
+    const presupId = lastId(g);
+    const edge = g.edges.find((e) => e.edgeType === "presupposes");
+    expect(edge?.from).toBe(qid); // question is the parent
+    expect(edge?.to).toBe(presupId);
+    expect(G.getParent(g, presupId)?.id).toBe(qid);
+    expect(G.getPresuppositions(g, qid).map((n) => n.id)).toEqual([presupId]);
+  });
+
+  it("generalizes entails beyond premises: position → implication", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "Numbers alone justify killing", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "implication", "Then organ harvesting follows", pid);
+    const impId = lastId(g);
+    const edge = g.edges.find(
+      (e) => e.edgeType === "entails" && e.to === impId,
+    );
+    expect(edge?.from).toBe(pid); // claim is the parent (DOWNWARD)
+    expect(G.getParent(g, impId)?.id).toBe(pid);
+  });
+
+  it("keeps lateral edges (contradicts) OUT of the tree structure", () => {
+    const g = G.addContradiction(seedGraph, "trolley-v1", "trolley-v2");
+    // Neither value becomes the other's child, and deletion doesn't cascade.
+    expect(G.getParent(g, "trolley-v2")?.id).not.toBe("trolley-v1");
+    expect(
+      G.getChildren(g, "trolley-v1").map((n) => n.id),
+    ).not.toContain("trolley-v2");
+    expect(G.getContradictions(g, "trolley-v1").map((n) => n.id)).toEqual([
+      "trolley-v2",
+    ]);
+    // Idempotent, either direction.
+    const g2 = G.addContradiction(g, "trolley-v2", "trolley-v1");
+    expect(
+      g2.edges.filter((e) => e.edgeType === "contradicts"),
+    ).toHaveLength(1);
+  });
+
+  it("counter-examples attack; concessions and examples do not", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "All lying is wrong", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "Lying erodes trust", pid);
+    const aid = lastId(g);
+    g = G.addNode(g, "counter-example", "Lying to the murderer at the door", aid);
+    const ceId = lastId(g);
+    g = G.addNode(g, "concession", "Granted, trust matters", aid);
+    g = G.addNode(g, "example", "Perjury", aid);
+    const attackers = G.getAttackers(g, aid).map((n) => n.id);
+    expect(attackers).toEqual([ceId]);
+    expect(G.getAcceptability(g).get(aid)).toBe("defeated");
+  });
+});
+
+describe("undercutting (Pollock via warrants)", () => {
+  it("an objection undercutting the warrant defeats the licensed argument", () => {
+    let g = G.addRootQuestion(seedGraph, "Is the object red?");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "It is red", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "It looks red", pid);
+    const aid = lastId(g);
+    g = G.addNode(g, "warrant", "Looking red generally means being red", aid);
+    const wid = lastId(g);
+    // Undercut: the light is red — severs the inference, says nothing about
+    // the conclusion.
+    g = G.addNode(g, "objection", "The illumination is red", wid, {
+      edgeType: "undercuts",
+    });
+    const oid = lastId(g);
+    const acc = G.getAcceptability(g);
+    expect(acc.get(wid)).toBe("defeated"); // warrant loses
+    expect(acc.get(aid)).toBe("defeated"); // and takes the argument with it
+    // A rebuttal to the undercutter restores both.
+    g = G.addNode(g, "rebuttal", "We checked: the light is white", oid);
+    const acc2 = G.getAcceptability(g);
+    expect(acc2.get(wid)).toBe("defended");
+    expect(acc2.get(aid)).toBe("defended");
+  });
+
+  it("supports a direct undercut on the argument itself", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "E, therefore P", pid);
+    const aid = lastId(g);
+    g = G.addNode(g, "objection", "E does not establish P here", aid, {
+      edgeType: "undercuts",
+    });
+    expect(G.getAcceptability(g).get(aid)).toBe("defeated");
+  });
+});
+
+describe("status lifecycle (inertness has consequences)", () => {
+  it("retracting an objection revives its target", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "A", pid);
+    const aid = lastId(g);
+    g = G.addNode(g, "objection", "Flawed", aid);
+    const oid = lastId(g);
+    expect(G.getAcceptability(g).get(aid)).toBe("defeated");
+    g = G.setNodeStatus(g, oid, "retracted", { reason: "author withdrew" });
+    expect(G.getAcceptability(g).get(aid)).toBe("defended");
+    expect(G.getAttackers(g, aid)).toHaveLength(0);
+    // The ghost still renders in the tree…
+    expect(G.getChildren(g, aid).map((n) => n.id)).toContain(oid);
+    // …but gets no computed label.
+    expect(G.getAcceptability(g).get(oid)).toBeUndefined();
+  });
+
+  it("retracting the grounding argument honestly reopens the question", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "A", pid);
+    const aid = lastId(g);
+    g = G.addNode(g, "value", "V", aid);
+    expect(G.isFullyGrounded(g, qid)).toBe(true);
+    g = G.setNodeStatus(g, aid, "retracted");
+    expect(G.isFullyGrounded(g, qid)).toBe(false);
+  });
+
+  it("protects a shared terminal from retraction but allows superseding", () => {
+    // trolley-v1 is actively grounding trolley-a2.
+    expect(G.canSetStatus(seedGraph, "trolley-v1", "retracted").ok).toBe(false);
+    expect(
+      G.setNodeStatus(seedGraph, "trolley-v1", "retracted"),
+    ).toBe(seedGraph); // refused: unchanged graph
+    let g = G.addRootQuestion(seedGraph, "tmp");
+    g = G.addNode(g, "value", "Minimize net suffering", "trolley-a2");
+    const successor = lastId(g);
+    g = G.supersedeNode(g, "trolley-v1", successor, { reason: "clearer" });
+    expect(G.getNode(g, "trolley-v1")?.status).toBe("superseded");
+    expect(
+      g.edges.some(
+        (e) =>
+          e.edgeType === "supersedes" &&
+          e.from === successor &&
+          e.to === "trolley-v1",
+      ),
+    ).toBe(true);
+  });
+
+  it("reactivation clears status and restores force", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.setNodeStatus(g, pid, "invalid", { reason: "word salad" });
+    expect(G.getNode(g, pid)?.statusMeta?.reason).toBe("word salad");
+    g = G.setNodeStatus(g, pid, "active");
+    expect(G.getNode(g, pid)?.status).toBeUndefined();
+    expect(G.getNode(g, pid)?.statusMeta).toBeUndefined();
+  });
+
+  it("flags active children of an inert parent for review", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "A", pid);
+    const aid = lastId(g);
+    g = G.setNodeStatus(g, pid, "retracted");
+    expect(G.getInertOrphans(g).has(aid)).toBe(true);
+    expect(G.getInertOrphans(g).has(pid)).toBe(false); // inert itself ≠ orphan
+  });
+
+  it("excludes inert terminals from linking targets and dedup", () => {
+    let g = G.addRootQuestion(seedGraph, "Q2");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "A", pid);
+    const aid = lastId(g);
+    g = G.addNode(g, "value", "Radical honesty", aid);
+    const vid = lastId(g);
+    expect(G.getTerminals(g).map((n) => n.id)).toContain(vid);
+    g = G.setNodeStatus(g, aid, "retracted"); // frees the value of dependents
+    g = G.setNodeStatus(g, vid, "retracted");
+    expect(G.getTerminals(g).map((n) => n.id)).not.toContain(vid);
+    expect(
+      G.findSimilarTerminals(g, "radical honesty", "value"),
+    ).toHaveLength(0);
+  });
+});
+
+describe("resolution (dissolved / resolved / grounded / open)", () => {
+  const chain = () => {
+    let g = G.addRootQuestion(seedGraph, "Q?");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "A", pid);
+    const aid = lastId(g);
+    g = G.addNode(g, "value", "V", aid);
+    return { g, qid, pid, aid };
+  };
+
+  it("reports OPEN before grounding and RESOLVED after (preponderance)", () => {
+    let g = G.addRootQuestion(seedGraph, "Q?");
+    const qid = lastId(g);
+    expect(G.getResolution(g, qid).state).toBe("open");
+    const done = chain();
+    const r = G.getResolution(done.g, done.qid);
+    expect(r.state).toBe("resolved");
+    expect(r.standard).toBe("preponderance");
+    expect(r.survivors.map((n) => n.id)).toEqual([done.pid]);
+  });
+
+  it("a defeated presupposition DISSOLVES the question", () => {
+    let { g, qid } = chain();
+    g = G.addNode(g, "presupposition", "There is a fact of the matter", qid);
+    const presupId = lastId(g);
+    expect(G.getResolution(g, qid).state).toBe("resolved"); // presup unchallenged
+    g = G.addNode(g, "objection", "There is no such fact", presupId);
+    const r = G.getResolution(g, qid);
+    expect(r.state).toBe("dissolved");
+    expect(r.dissolvedBy.map((n) => n.id)).toEqual([presupId]);
+  });
+
+  it("an editorially refuted presupposition also dissolves it", () => {
+    let { g, qid } = chain();
+    g = G.addNode(g, "presupposition", "Assumes X", qid);
+    const presupId = lastId(g);
+    g = G.setNodeStatus(g, presupId, "refuted", { reason: "review verdict" });
+    expect(G.getResolution(g, qid).state).toBe("dissolved");
+  });
+
+  it("grounded-but-defeated positions leave the question GROUNDED, not resolved", () => {
+    let { g, qid, pid } = chain();
+    g = G.addNode(g, "argument-attack", "P is harmful", pid);
+    const attackId = lastId(g);
+    g = G.addNode(g, "value", "V2", attackId); // keep everything grounded
+    const r = G.getResolution(g, qid);
+    expect(r.state).toBe("grounded"); // grounded, but no position survives
+    expect(r.survivors).toHaveLength(0);
+  });
+
+  it("climbs the proof-standard ladder", () => {
+    let { g, qid, aid } = chain();
+    // An objection ANSWERED by a rebuttal: the critical question is closed,
+    // so even dialectical validity passes.
+    g = G.addNode(g, "objection", "Hmm", aid);
+    const oid = lastId(g);
+    g = G.addNode(g, "rebuttal", "Answered", oid);
+    for (const std of [
+      "preponderance",
+      "clear-and-convincing",
+      "beyond-reasonable-doubt",
+      "dialectical-validity",
+    ] as const) {
+      const r = G.getResolution(G.setProofStandard(g, qid, std), qid);
+      expect(r.state).toBe("resolved");
+      expect(r.standard).toBe(std);
+    }
+
+    // Now wound the constructive skeleton: evidence under the argument takes
+    // an unanswered objection. The argument itself still stands (the attack
+    // targets the evidence), so BRD passes — but dialectical validity fails.
+    g = G.addNode(g, "evidence-empirical", "A study", aid);
+    const evId = lastId(g);
+    g = G.addNode(g, "objection", "The study is flawed", evId);
+    const brd = G.getResolution(
+      G.setProofStandard(g, qid, "beyond-reasonable-doubt"),
+      qid,
+    );
+    expect(brd.state).toBe("resolved");
+    const dv = G.getResolution(
+      G.setProofStandard(g, qid, "dialectical-validity"),
+      qid,
+    );
+    expect(dv.state).toBe("grounded");
+  });
+});

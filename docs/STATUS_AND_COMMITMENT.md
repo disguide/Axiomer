@@ -1,11 +1,12 @@
 # Axiomer — Node Status & the Commitment System
 
-> **Status: design-stage.** Specifies (A) the node **lifecycle/validity
+> **Status: implemented.** Specifies (A) the node **lifecycle/validity
 > system** — how a node is marked dead, denied, invalid, superseded — and
 > (B) the **commitment system** — "if you hold this position, you must also
-> hold this branch." Neither is implemented; `client/src/lib/graph.ts`
-> remains authoritative for v1. Foundations: `docs/PHILOSOPHY.md`; type
-> definitions: `docs/TAXONOMY.md`.
+> hold this branch." Both are live: statuses and resolution in
+> `client/src/lib/graph.ts`, the commitment engine in
+> `client/src/lib/commitment.ts`, the UI in `StancePanel`/`NodeCard`.
+> Foundations: `docs/PHILOSOPHY.md`; type definitions: `docs/TAXONOMY.md`.
 
 ---
 
@@ -212,7 +213,7 @@ of each exit explicit.**
 
 ---
 
-## 6. Implementation sketch (when we build — not now)
+## 6. Implementation notes (as built)
 
 Deltas only; everything stays behind the existing pure-function discipline:
 

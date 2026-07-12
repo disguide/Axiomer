@@ -1,11 +1,11 @@
 # Axiomer — Philosophical Foundations
 
-> **Status: design-stage.** This document is the theoretical foundation for
+> **Status: implemented.** This document is the theoretical foundation for
 > Taxonomy v2 (`docs/TAXONOMY.md`) and the status & commitment system
-> (`docs/STATUS_AND_COMMITMENT.md`). Nothing here is implemented yet; the code
-> in `client/src/lib/` remains the source of truth for v1 behavior. This
+> (`docs/STATUS_AND_COMMITMENT.md`), both now live in `client/src/lib/`. This
 > document explains **why** the design is what it is, so future work (human or
-> AI) does not drift.
+> AI) does not drift. When code and this document disagree, treat it as a bug
+> in one of them and reconcile — do not silently fork.
 
 ## 1. What Axiomer is, philosophically
 

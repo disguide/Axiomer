@@ -1,5 +1,6 @@
 // Display metadata and authoring rules for every node type.
 // Single source of truth shared by NodeCard, AddNodeForm, and Legend.
+// v2 additions follow docs/TAXONOMY.md (families, definitions, tests).
 
 import type { NodeType } from "./types";
 
@@ -23,6 +24,16 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     placeholder: "Should you pull the lever?",
     terminal: false,
   },
+  presupposition: {
+    label: "PRESUPPOSITION",
+    icon: "¿",
+    color: "#1d4ed8",
+    description:
+      "What a question assumes true in order to be askable. If it falls, the question dissolves.",
+    prompt: "What does this question assume?",
+    placeholder: "Assumes there is a fact of the matter about moral rightness",
+    terminal: false,
+  },
   position: {
     label: "POSITION",
     icon: "◆",
@@ -30,6 +41,17 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     description: "A candidate answer, stance, or claim.",
     prompt: "What is your position / answer?",
     placeholder: "Yes, pull the lever",
+    terminal: false,
+  },
+  synthesis: {
+    label: "SYNTHESIS",
+    icon: "Σ",
+    color: "#334155",
+    description:
+      "A plain-language verdict on where the question stands: what survives, on what grounds, where the clash is.",
+    prompt: "Summarize where this question currently stands.",
+    placeholder:
+      "Both positions ground out; the disagreement bottoms out at minimizing suffering vs. persons as ends.",
     terminal: false,
   },
   "argument-support": {
@@ -50,6 +72,26 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     placeholder: "But pulling the lever makes you a killer",
     terminal: false,
   },
+  warrant: {
+    label: "WARRANT",
+    icon: "∴",
+    color: "#2f855a",
+    description:
+      "The license of an inference — why this support counts as support (Toulmin). The target of undercutting.",
+    prompt: "Why does the support actually support the conclusion?",
+    placeholder: "Outcomes that harm fewer people are generally preferable",
+    terminal: false,
+  },
+  implication: {
+    label: "IMPLICATION",
+    icon: "⇒",
+    color: "#6d28d9",
+    description:
+      "A consequence that follows from the parent claim — powers reductio, slippery slope, argument from consequences.",
+    prompt: "What follows if the parent claim holds?",
+    placeholder: "If numbers alone justify killing, organ harvesting follows",
+    terminal: false,
+  },
   "evidence-empirical": {
     label: "EVIDENCE (EMPIRICAL)",
     icon: "📊",
@@ -66,6 +108,73 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     description: "Personal stories, examples, or case studies.",
     prompt: "What example or story illustrates this?",
     placeholder: "I knew a refugee who became a doctor...",
+    terminal: false,
+  },
+  example: {
+    label: "EXAMPLE",
+    icon: "◉",
+    color: "#0891b2",
+    description:
+      "A concrete instance of a general claim, offered constructively.",
+    prompt: "What concrete instance shows this?",
+    placeholder: "Consider Socrates refusing to escape prison",
+    terminal: false,
+  },
+  objection: {
+    label: "OBJECTION",
+    icon: "✗",
+    color: "#8B0000",
+    description:
+      "A challenge to a claim (rebutting) or to an inference (undercutting).",
+    prompt: "What is the objection?",
+    placeholder: "This ignores the psychological trauma",
+    terminal: false,
+  },
+  rebuttal: {
+    label: "REBUTTAL",
+    icon: "✓",
+    color: "#006400",
+    description: "A response defending against an objection.",
+    prompt: "How do you respond to this objection?",
+    placeholder: "But the trauma is outweighed by saving 5 lives",
+    terminal: false,
+  },
+  "counter-argument": {
+    label: "COUNTER-ARGUMENT",
+    icon: "⚡",
+    color: "#ff0000",
+    description: "A direct response presenting an opposing view.",
+    prompt: "What is the counter-argument?",
+    placeholder: "But you're ignoring that inaction has consequences",
+    terminal: false,
+  },
+  "counter-example": {
+    label: "COUNTER-EXAMPLE",
+    icon: "◎",
+    color: "#be123c",
+    description:
+      "A concrete instance that contradicts a general claim — the decisive move against universals.",
+    prompt: "What instance does the general claim get wrong?",
+    placeholder: "A surgeon killing one patient to save five with the organs",
+    terminal: false,
+  },
+  concession: {
+    label: "CONCESSION",
+    icon: "🤝",
+    color: "#78716c",
+    description:
+      "Grants an opposing point without abandoning the position — marks what is NOT in dispute.",
+    prompt: "What opposing point do you grant?",
+    placeholder: "Granted, pulling the lever does make you causally involved",
+    terminal: false,
+  },
+  "logical-fallacy": {
+    label: "LOGICAL FALLACY",
+    icon: "⛔",
+    color: "#DC143C",
+    description: "An error in reasoning or flaw in an argument's logic.",
+    prompt: "What logical fallacy is this?",
+    placeholder: "This is a false dilemma because...",
     terminal: false,
   },
   assumption: {
@@ -86,13 +195,14 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     placeholder: "By 'justice' I mean...",
     terminal: false,
   },
-  caveat: {
-    label: "CAVEAT / EXCEPTION",
-    icon: "⚠",
-    color: "#ffcc00",
-    description: "A limitation, condition, or exception to a claim.",
-    prompt: "What is the limitation or exception?",
-    placeholder: "This only applies when...",
+  distinction: {
+    label: "DISTINCTION",
+    icon: "≠",
+    color: "#4338ca",
+    description:
+      "Splits an ambiguous question or claim into senses that must be treated separately — forks the branch.",
+    prompt: "What senses need to be treated separately?",
+    placeholder: "It depends: killing as intending death vs. as foreseeing it",
     terminal: false,
   },
   clarification: {
@@ -104,31 +214,23 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     placeholder: "I don't mean that all punishment is wrong",
     terminal: false,
   },
-  "counter-argument": {
-    label: "COUNTER-ARGUMENT",
-    icon: "⚡",
-    color: "#ff0000",
-    description: "A direct response presenting an opposing view.",
-    prompt: "What is the counter-argument?",
-    placeholder: "But you're ignoring that inaction has consequences",
+  caveat: {
+    label: "CAVEAT / EXCEPTION",
+    icon: "⚠",
+    color: "#ffcc00",
+    description: "A limitation, condition, or exception to a claim.",
+    prompt: "What is the limitation or exception?",
+    placeholder: "This only applies when...",
     terminal: false,
   },
-  objection: {
-    label: "OBJECTION",
-    icon: "✗",
-    color: "#8B0000",
-    description: "A challenge or concern with a position or argument.",
-    prompt: "What is the objection?",
-    placeholder: "This ignores the psychological trauma",
-    terminal: false,
-  },
-  rebuttal: {
-    label: "REBUTTAL",
-    icon: "✓",
-    color: "#006400",
-    description: "A response defending against an objection.",
-    prompt: "How do you respond to this objection?",
-    placeholder: "But the trauma is outweighed by saving 5 lives",
+  criterion: {
+    label: "CRITERION",
+    icon: "📏",
+    color: "#a16207",
+    description:
+      "The standard by which an evaluative question is to be judged — itself groundable and attackable.",
+    prompt: "By what standard should this be judged?",
+    placeholder: "An act is right iff it maximizes expected wellbeing",
     terminal: false,
   },
   analogy: {
@@ -156,15 +258,6 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     description: "A connection to another relevant idea or principle.",
     prompt: "What concept does this relate to?",
     placeholder: "This connects to the principle of double effect",
-    terminal: false,
-  },
-  "logical-fallacy": {
-    label: "LOGICAL FALLACY",
-    icon: "⛔",
-    color: "#DC143C",
-    description: "An error in reasoning or flaw in an argument's logic.",
-    prompt: "What logical fallacy is this?",
-    placeholder: "This is a false dilemma because...",
     terminal: false,
   },
   value: {
@@ -207,11 +300,15 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
 };
 
 // Context-sensitive children: which node types may be added under a given
-// parent type. Terminal types map to an empty list. Mirrors the spec's
-// "Context-Sensitive Dropdowns" section.
+// parent type. Terminal types map to an empty list. v1 matrix mirrors the
+// spec's "Context-Sensitive Dropdowns"; v2 additions per docs/TAXONOMY.md §7.
 export const ALLOWED_CHILDREN: Record<NodeType, NodeType[]> = {
   question: [
     "position",
+    "presupposition",
+    "criterion",
+    "distinction",
+    "synthesis",
     "argument-support",
     "argument-attack",
     "evidence-empirical",
@@ -227,10 +324,24 @@ export const ALLOWED_CHILDREN: Record<NodeType, NodeType[]> = {
     "thought-experiment",
     "related-concept",
     "logical-fallacy",
+  ],
+  presupposition: [
+    "objection",
+    "counter-argument",
+    "counter-example",
+    "rebuttal",
+    "evidence-empirical",
+    "evidence-anecdotal",
+    "clarification",
+    "related-concept",
   ],
   position: [
     "argument-support",
     "argument-attack",
+    "implication",
+    "concession",
+    "distinction",
+    "warrant",
     "evidence-empirical",
     "evidence-anecdotal",
     "assumption",
@@ -245,8 +356,14 @@ export const ALLOWED_CHILDREN: Record<NodeType, NodeType[]> = {
     "related-concept",
     "logical-fallacy",
   ],
+  synthesis: [],
   "argument-support": [
     "question",
+    "warrant",
+    "implication",
+    "example",
+    "counter-example",
+    "concession",
     "evidence-empirical",
     "evidence-anecdotal",
     "assumption",
@@ -265,6 +382,11 @@ export const ALLOWED_CHILDREN: Record<NodeType, NodeType[]> = {
   ],
   "argument-attack": [
     "question",
+    "warrant",
+    "implication",
+    "example",
+    "counter-example",
+    "concession",
     "evidence-empirical",
     "evidence-anecdotal",
     "assumption",
@@ -281,12 +403,82 @@ export const ALLOWED_CHILDREN: Record<NodeType, NodeType[]> = {
     "principle",
     "epistemic-limit",
   ],
-  "evidence-empirical": ["objection", "counter-argument", "related-concept"],
-  "evidence-anecdotal": ["objection", "counter-argument", "related-concept"],
+  warrant: [
+    "objection",
+    "evidence-empirical",
+    "evidence-anecdotal",
+    "assumption",
+    "caveat",
+    "related-concept",
+  ],
+  implication: [
+    "question",
+    "implication",
+    "warrant",
+    "example",
+    "counter-example",
+    "evidence-empirical",
+    "evidence-anecdotal",
+    "assumption",
+    "definition",
+    "caveat",
+    "clarification",
+    "objection",
+    "rebuttal",
+    "counter-argument",
+    "analogy",
+    "thought-experiment",
+    "related-concept",
+    "logical-fallacy",
+    "value",
+    "principle",
+    "epistemic-limit",
+  ],
+  "evidence-empirical": [
+    "objection",
+    "counter-argument",
+    "counter-example",
+    "warrant",
+    "related-concept",
+  ],
+  "evidence-anecdotal": [
+    "objection",
+    "counter-argument",
+    "counter-example",
+    "warrant",
+    "related-concept",
+  ],
+  example: ["objection", "counter-argument", "related-concept"],
+  "counter-example": ["objection", "counter-argument", "related-concept"],
+  concession: ["clarification", "caveat", "related-concept"],
   assumption: ["objection", "counter-argument", "definition", "related-concept"],
   definition: ["objection", "counter-argument", "related-concept"],
+  distinction: [
+    "question",
+    "position",
+    "clarification",
+    "definition",
+    "related-concept",
+  ],
   caveat: ["objection", "counter-argument", "related-concept"],
   clarification: ["objection", "counter-argument", "related-concept"],
+  criterion: [
+    "argument-support",
+    "argument-attack",
+    "example",
+    "counter-example",
+    "evidence-empirical",
+    "evidence-anecdotal",
+    "objection",
+    "counter-argument",
+    "rebuttal",
+    "definition",
+    "clarification",
+    "related-concept",
+    "value",
+    "principle",
+    "epistemic-limit",
+  ],
   "counter-argument": ["rebuttal", "counter-argument", "related-concept"],
   objection: ["rebuttal", "counter-argument", "related-concept"],
   rebuttal: ["objection", "counter-argument", "related-concept"],
@@ -311,9 +503,11 @@ export const ALLOWED_CHILDREN: Record<NodeType, NodeType[]> = {
   // nodes a question can. Edges from a premise to its children are `entails`.
   premise: [
     "position",
+    "implication",
     "argument-support",
     "argument-attack",
     "question",
+    "distinction",
     "evidence-empirical",
     "evidence-anecdotal",
     "assumption",
@@ -330,25 +524,42 @@ export const ALLOWED_CHILDREN: Record<NodeType, NodeType[]> = {
   ],
 };
 
-// Display order for the Legend panel.
+// Display order for the Legend panel — family order (docs/TAXONOMY.md §2).
 export const NODE_ORDER: NodeType[] = [
+  // Inquiry
   "question",
+  "presupposition",
+  // Stance
   "position",
+  "synthesis",
+  // Reasoning
   "argument-support",
   "argument-attack",
+  "warrant",
+  "implication",
+  // Evidence
   "evidence-empirical",
   "evidence-anecdotal",
-  "assumption",
-  "definition",
-  "caveat",
-  "clarification",
-  "counter-argument",
+  "example",
+  // Dialectic
   "objection",
   "rebuttal",
+  "counter-argument",
+  "counter-example",
+  "concession",
+  "logical-fallacy",
+  // Precision
+  "assumption",
+  "definition",
+  "distinction",
+  "clarification",
+  "caveat",
+  "criterion",
+  // Exploration
   "analogy",
   "thought-experiment",
   "related-concept",
-  "logical-fallacy",
+  // Foundation + reverse root
   "value",
   "principle",
   "epistemic-limit",

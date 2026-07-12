@@ -27,7 +27,7 @@ Other scripts: `npm run build`, `npm run preview`, `npm run typecheck`.
 - `docs/SPECIFICATION.md` — the full V1 master specification.
 - `CLAUDE.md` — architecture, conventions, and guidance for AI assistants
   (including resolved spec inconsistencies). A good orientation for humans too.
-- **Design-stage (v2, not yet implemented):**
+- **Taxonomy v2 specs (implemented):**
   - `docs/PHILOSOPHY.md` — theoretical foundations (Toulmin, Pollock, Walton,
     Dung, Carneades, Brandom) and the three-axis design model.
   - `docs/TAXONOMY.md` — the complete v2 taxonomy: 30 node types, 18 edge
@@ -38,13 +38,19 @@ Other scripts: `npm run build`, `npm run preview`, `npm run typecheck`.
 
 ## How it works (in brief)
 
-- **21 node types** (question, position, argument, evidence, value, premise, …)
-  and **11 edge types**, defined in `client/src/lib/types.ts` / `meta.ts`.
+- **30 node types** (question, position, argument, warrant, presupposition,
+  counter-example, value, premise, …) and **18 edge types**, defined in
+  `client/src/lib/types.ts` / `meta.ts` (Taxonomy v2 — `docs/TAXONOMY.md`).
 - **Reverse authoring:** start from a **premise** (a base assumption) and build
   conclusions forward from it — premise trees bottom out at the same shared
   values, feeding the convergence view.
-- **Grounding badge:** each question shows `FULLY GROUNDED` (every chain reaches
-  a terminal) or `OPEN`.
+- **Resolution badge:** each question shows `OPEN`, `FULLY GROUNDED`,
+  `RESOLVED` (a position survives at the question's declared proof standard),
+  or `DISSOLVED` (a presupposition of the question fell).
+- **Status lifecycle:** nodes can be retracted/refuted/invalidated — they stay
+  visible as ghosts but lose all force (no grounding, no attacking).
+- **Stance:** accept/reject claims and see what they commit you to — revealed
+  bedrock values, contradictions, forced choices (the Stance tab).
 - **Convergence:** arguments link to *existing* values instead of duplicating
   them.
 - Two seed examples (Trolley Problem, Why is the sky blue?) load on first visit.

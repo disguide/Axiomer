@@ -5,11 +5,22 @@
 // parseGraph is pure and strict so a malformed or hand-edited file is rejected
 // with a clear error rather than silently corrupting the viewer.
 
-import type { Graph, GraphEdge, GraphNode } from "./types";
-import { EDGE_TYPES, NODE_TYPES } from "./types";
+import type { Graph, GraphEdge, GraphNode, StatusMeta } from "./types";
+import {
+  CONTENT_KINDS,
+  EDGE_TYPES,
+  INFERENCE_STRENGTHS,
+  NODE_STATUSES,
+  NODE_TYPES,
+  PROOF_STANDARDS,
+} from "./types";
 
 const NODE_TYPE_SET = new Set<string>(NODE_TYPES);
 const EDGE_TYPE_SET = new Set<string>(EDGE_TYPES);
+const NODE_STATUS_SET = new Set<string>(NODE_STATUSES);
+const CONTENT_KIND_SET = new Set<string>(CONTENT_KINDS);
+const STRENGTH_SET = new Set<string>(INFERENCE_STRENGTHS);
+const PROOF_STANDARD_SET = new Set<string>(PROOF_STANDARDS);
 
 export function exportGraph(graph: Graph): string {
   return JSON.stringify(graph, null, 2) + "\n";
@@ -21,7 +32,17 @@ function isObject(v: unknown): v is Record<string, unknown> {
 
 function parseNode(value: unknown, i: number): GraphNode {
   if (!isObject(value)) throw new Error(`nodes[${i}] is not an object`);
-  const { id, type, content, createdAt } = value;
+  const {
+    id,
+    type,
+    content,
+    createdAt,
+    status,
+    statusMeta,
+    contentKind,
+    schemeTag,
+    proofStandard,
+  } = value;
   if (typeof id !== "string" || !id) throw new Error(`nodes[${i}].id missing`);
   if (typeof type !== "string" || !NODE_TYPE_SET.has(type))
     throw new Error(`nodes[${i}].type "${String(type)}" is not a valid NodeType`);
@@ -29,12 +50,50 @@ function parseNode(value: unknown, i: number): GraphNode {
     throw new Error(`nodes[${i}].content must be a string`);
   const node: GraphNode = { id, type: type as GraphNode["type"], content };
   if (typeof createdAt === "string") node.createdAt = createdAt;
+  if (status !== undefined) {
+    if (typeof status !== "string" || !NODE_STATUS_SET.has(status))
+      throw new Error(
+        `nodes[${i}].status "${String(status)}" is not a valid NodeStatus`,
+      );
+    node.status = status as GraphNode["status"];
+  }
+  if (statusMeta !== undefined) {
+    if (!isObject(statusMeta))
+      throw new Error(`nodes[${i}].statusMeta must be an object`);
+    const meta: StatusMeta = {};
+    if (typeof statusMeta.by === "string") meta.by = statusMeta.by;
+    if (typeof statusMeta.at === "string") meta.at = statusMeta.at;
+    if (typeof statusMeta.reason === "string") meta.reason = statusMeta.reason;
+    node.statusMeta = meta;
+  }
+  if (contentKind !== undefined) {
+    if (typeof contentKind !== "string" || !CONTENT_KIND_SET.has(contentKind))
+      throw new Error(
+        `nodes[${i}].contentKind "${String(contentKind)}" is not a valid ContentKind`,
+      );
+    node.contentKind = contentKind as GraphNode["contentKind"];
+  }
+  if (schemeTag !== undefined) {
+    if (typeof schemeTag !== "string")
+      throw new Error(`nodes[${i}].schemeTag must be a string`);
+    node.schemeTag = schemeTag;
+  }
+  if (proofStandard !== undefined) {
+    if (
+      typeof proofStandard !== "string" ||
+      !PROOF_STANDARD_SET.has(proofStandard)
+    )
+      throw new Error(
+        `nodes[${i}].proofStandard "${String(proofStandard)}" is not a valid ProofStandard`,
+      );
+    node.proofStandard = proofStandard as GraphNode["proofStandard"];
+  }
   return node;
 }
 
 function parseEdge(value: unknown, i: number): GraphEdge {
   if (!isObject(value)) throw new Error(`edges[${i}] is not an object`);
-  const { id, from, to, edgeType } = value;
+  const { id, from, to, edgeType, strength } = value;
   if (typeof id !== "string" || !id) throw new Error(`edges[${i}].id missing`);
   if (typeof from !== "string" || !from)
     throw new Error(`edges[${i}].from missing`);
@@ -43,7 +102,20 @@ function parseEdge(value: unknown, i: number): GraphEdge {
     throw new Error(
       `edges[${i}].edgeType "${String(edgeType)}" is not a valid EdgeType`,
     );
-  return { id, from, to, edgeType: edgeType as GraphEdge["edgeType"] };
+  const edge: GraphEdge = {
+    id,
+    from,
+    to,
+    edgeType: edgeType as GraphEdge["edgeType"],
+  };
+  if (strength !== undefined) {
+    if (typeof strength !== "string" || !STRENGTH_SET.has(strength))
+      throw new Error(
+        `edges[${i}].strength "${String(strength)}" is not a valid InferenceStrength`,
+      );
+    edge.strength = strength as GraphEdge["strength"];
+  }
+  return edge;
 }
 
 // Validate a parsed/loaded object into a Graph (throws on any problem).

@@ -1,8 +1,10 @@
 import { lazy, Suspense, useState } from "react";
 import { useGraph } from "@/hooks/useGraph";
+import { useStance } from "@/hooks/useStance";
 import { downloadGraph } from "@/lib/io";
 import TreeView from "@/components/TreeView";
 import ValuesIndex from "@/components/ValuesIndex";
+import StancePanel from "@/components/StancePanel";
 import DepthPanel from "@/components/DepthPanel";
 import Legend from "@/components/Legend";
 
@@ -22,14 +24,18 @@ export default function Home() {
     editNode,
     deleteNode,
     linkToExistingValue,
+    setNodeStatus,
+    setProofStandard,
     resetToSeed,
   } = useGraph();
+  // Personal commitment store — works in the read-only viewer too.
+  const { stance, accept, reject, clear: clearStance } = useStance();
 
   const [creating, setCreating] = useState<null | "question" | "premise">(null);
   const [draft, setDraft] = useState("");
   const [showLegend, setShowLegend] = useState(false);
   // The Map is the primary surface (and what the public read-only viewer leads with).
-  const [view, setView] = useState<"tree" | "values" | "map">("map");
+  const [view, setView] = useState<"tree" | "values" | "map" | "stance">("map");
   const [focusId, setFocusId] = useState<string | null>(null);
 
   const focusInTree = (nodeId: string) => {
@@ -158,12 +164,38 @@ export default function Home() {
             >
               Map
             </button>
+            <button
+              type="button"
+              onClick={() => setView("stance")}
+              className={`rounded px-3 py-1 ${
+                view === "stance"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+              title="Your commitments: what you accept, what it entails, where it collides"
+            >
+              Stance
+              {stance.accepted.length + stance.rejected.length > 0 && (
+                <span className="ml-1 rounded-full bg-slate-200 px-1.5 text-[10px] text-slate-600">
+                  {stance.accepted.length + stance.rejected.length}
+                </span>
+              )}
+            </button>
           </div>
 
           {readOnly && loading ? (
             <p className="p-8 text-center text-sm text-slate-400">Loading…</p>
           ) : view === "values" ? (
             <ValuesIndex graph={graph} />
+          ) : view === "stance" ? (
+            <StancePanel
+              graph={graph}
+              stance={stance}
+              onAccept={accept}
+              onReject={reject}
+              onClear={clearStance}
+              onFocus={focusInTree}
+            />
           ) : view === "map" ? (
             <Suspense
               fallback={
@@ -224,11 +256,16 @@ export default function Home() {
             graph={graph}
             readOnly={readOnly}
             focusId={focusId}
+            stance={stance}
             onSetFocus={setFocusId}
             onAddNode={addNode}
             onLinkValue={linkToExistingValue}
             onEditNode={editNode}
             onDeleteNode={deleteNode}
+            onSetStatus={setNodeStatus}
+            onSetProofStandard={setProofStandard}
+            onAccept={accept}
+            onReject={reject}
           />
             </>
           )}

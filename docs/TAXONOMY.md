@@ -1,12 +1,12 @@
 # Axiomer — Taxonomy v2 (node types, edges, facets, and the AI labeling guide)
 
-> **Status: design-stage.** This is the complete v2 taxonomy specification.
-> V1 (implemented) has 21 node types and 11 edge types; v2 extends to **30
-> node types** and **18 edge types**, plus **facets**. Types marked
-> **[NEW]** are not yet in the code. Rationale for every addition:
+> **Status: implemented.** This is the complete v2 taxonomy specification:
+> **30 node types**, **18 edge types**, plus **facets** — all live in
+> `client/src/lib/types.ts` / `meta.ts` / `graph.ts`. Types marked **[NEW]**
+> were added in v2 (vs. the 21/11 of v1). Rationale for every addition:
 > `docs/PHILOSOPHY.md`. Lifecycle status and commitment semantics:
-> `docs/STATUS_AND_COMMITMENT.md`. Until implementation lands, the code in
-> `client/src/lib/` is authoritative for v1 behavior.
+> `docs/STATUS_AND_COMMITMENT.md`. Facets not yet surfaced in the authoring
+> UI (data model + validation only): `schemeTag`, edge `strength`.
 
 This document has two jobs:
 

@@ -14,14 +14,15 @@ where they are, this file documents the decision that was actually implemented
 (see "Resolved spec inconsistencies" below). When in doubt, the code in
 `client/src/lib/` is the source of truth for behavior.
 
-**Design-stage v2 docs (approved direction, NOT yet implemented):**
-`docs/PHILOSOPHY.md` (theoretical foundations & design principles),
-`docs/TAXONOMY.md` (v2 taxonomy: 30 node types / 18 edge types / facets + the
-AI labeling procedure), `docs/STATUS_AND_COMMITMENT.md` (node lifecycle:
-retracted/refuted/invalid/superseded; commitment propagation). Do **not**
-treat anything in them as current app behavior, and do **not** extend the
-taxonomy, statuses, or commitment semantics without going through those docs
-(see the growth policy in `TAXONOMY.md §8`).
+**Taxonomy v2 is implemented.** `docs/PHILOSOPHY.md` (theoretical foundations
+& design principles), `docs/TAXONOMY.md` (30 node types / 18 edge types /
+facets + the AI labeling procedure), and `docs/STATUS_AND_COMMITMENT.md`
+(node lifecycle + commitment propagation) are the design specs the code now
+follows. Do **not** extend the taxonomy, statuses, or commitment semantics
+without going through those docs (see the growth policy in `TAXONOMY.md §8`).
+Not yet surfaced in the UI (model + validation only): `schemeTag`, edge
+`strength`, and authoring `contradicts` edges (`addContradiction` exists in
+`graph.ts`; no form yet).
 
 ## What Axiomer is
 
@@ -64,17 +65,21 @@ Two key user-facing concepts:
 │   │   │   ├── NodeCard.tsx      ← Single node: icon, label, content, badge, actions, inline edit
 │   │   │   ├── AddNodeForm.tsx   ← Modal: context-sensitive type dropdown + value linking
 │   │   │   ├── ValuesIndex.tsx   ← Convergence view: values + clashes (Values tab)
+│   │   │   ├── StancePanel.tsx   ← Commitment audit: closure, revealed values, findings (Stance tab)
 │   │   │   ├── GraphMap.tsx      ← Node-link DAG view (React Flow + dagre, Map tab; lazy-loaded)
 │   │   │   └── Legend.tsx        ← Panel listing all node types
 │   │   ├── lib/
-│   │   │   ├── types.ts          ← NodeType, EdgeType, GraphNode/Edge/Graph, TERMINAL_TYPES
+│   │   │   ├── types.ts          ← NodeType, EdgeType, statuses, facets, TERMINAL_TYPES, runtime lists
 │   │   │   ├── meta.ts           ← NODE_META (labels/icons/colors/prompts), ALLOWED_CHILDREN, NODE_ORDER
 │   │   │   ├── graph.ts          ← Pure graph utilities (see below)
+│   │   │   ├── commitment.ts     ← Pure commitment engine: stances, closure, audit (see below)
 │   │   │   ├── flowLayout.ts     ← dagre top-down layout for the Map view
 │   │   │   ├── graph.test.ts     ← Vitest suite for graph.ts
+│   │   │   ├── commitment.test.ts ← Vitest suite for commitment.ts
 │   │   │   └── seed.ts           ← Seed graphs (Trolley Problem, Sky Blue)
 │   │   ├── hooks/
-│   │   │   └── useGraph.ts       ← Graph state + localStorage persistence + auto-save
+│   │   │   ├── useGraph.ts       ← Graph state + localStorage persistence + auto-save
+│   │   │   └── useStance.ts      ← Per-user stance (accept/reject), separate localStorage key
 │   │   ├── App.tsx               ← Renders Home
 │   │   ├── main.tsx              ← React entry point
 │   │   ├── index.css             ← Tailwind import + base styles
@@ -94,29 +99,46 @@ spec's file list: it centralizes per-type display data and the dropdown matrix.
 ## Core data model
 
 ```typescript
-type NodeType =
-  | "question" | "position"
-  | "argument-support" | "argument-attack"
-  | "evidence-empirical" | "evidence-anecdotal"
-  | "assumption" | "definition" | "caveat" | "clarification"
-  | "counter-argument" | "objection" | "rebuttal"
-  | "analogy" | "thought-experiment" | "related-concept" | "logical-fallacy"
-  | "value" | "principle" | "epistemic-limit";
+type NodeType = // 30 types in 8 families (docs/TAXONOMY.md §2)
+  | "question" | "presupposition"                                    // Inquiry
+  | "position" | "synthesis"                                         // Stance
+  | "argument-support" | "argument-attack" | "warrant" | "implication" // Reasoning
+  | "evidence-empirical" | "evidence-anecdotal" | "example"          // Evidence
+  | "objection" | "rebuttal" | "counter-argument" | "counter-example"
+  | "concession" | "logical-fallacy"                                 // Dialectic
+  | "assumption" | "definition" | "distinction" | "clarification"
+  | "caveat" | "criterion"                                           // Precision
+  | "analogy" | "thought-experiment" | "related-concept"             // Exploration
+  | "value" | "principle" | "epistemic-limit" | "premise";           // Foundation
 
-type EdgeType =
+type EdgeType = // 18 (docs/TAXONOMY.md §3)
   | "answers" | "supports" | "argues-for" | "argues-against"
   | "raises" | "objects-to" | "rebuts" | "grounds-in"
-  | "connects-to" | "illustrates";
+  | "connects-to" | "illustrates" | "entails"
+  | "undercuts" | "presupposes" | "contradicts" | "exemplifies"
+  | "concedes" | "qualifies" | "supersedes";
 
-interface GraphNode { id: string; type: NodeType; content: string; createdAt?: string; }
-interface GraphEdge { id: string; from: string; to: string; edgeType: EdgeType; }
-interface Graph     { nodes: GraphNode[]; edges: GraphEdge[]; }
+interface GraphNode {
+  id: string; type: NodeType; content: string; createdAt?: string;
+  status?: NodeStatus;          // absent = "active"; see Status lifecycle
+  statusMeta?: StatusMeta;      // { by?, at?, reason? }
+  contentKind?: ContentKind;    // empirical | normative | conceptual | …
+  schemeTag?: string;           // Walton scheme name (free-form)
+  proofStandard?: ProofStandard; // questions only; default "preponderance"
+}
+interface GraphEdge {
+  id: string; from: string; to: string; edgeType: EdgeType;
+  strength?: InferenceStrength; // deductive | strong | presumptive | speculative
+}
+interface Graph { nodes: GraphNode[]; edges: GraphEdge[]; }
 ```
 
-There are **21 node types** and **11 edge types** (V1 shipped with 20/10; the
-`premise` type and `entails` edge were added for reverse authoring — see below).
-Don't add or rename them without updating the Legend, the colors table, and the
-context-sensitive dropdown rules together.
+There are **30 node types** and **18 edge types** (Taxonomy v2 — see
+`docs/TAXONOMY.md` for every definition, labeling test, and boundary case).
+Don't add or rename them without updating the Legend, the colors table, the
+context-sensitive dropdown rules, and the runtime `NODE_TYPES`/`EDGE_TYPES`
+validation lists together — and without passing the growth policy in
+`TAXONOMY.md §8`.
 
 ### Terminal nodes
 
@@ -157,18 +179,30 @@ visual flow of the tree. This is the single biggest gotcha in the codebase.
 | `grounds-in` | Argument → Value/Principle/Epistemic-limit | chain bottoms out here |
 | `connects-to` | Any ↔ Any | related concept (bidirectional in meaning) |
 | `illustrates` | Analogy/ThoughtExp → Position/Argument | illustrates it |
-| `entails` | Premise → derived node | the premise leads to / entails this (DOWNWARD) |
+| `entails` | Claim → consequence | strict consequence (DOWNWARD; premises AND any claim → implication) |
+| `undercuts` | Objection → Warrant/Argument/Evidence | attacks the INFERENCE, not the conclusion (Pollock) |
+| `presupposes` | Question/Claim → Presupposition | what it assumes (DOWNWARD) |
+| `contradicts` | Claim ↔ Claim | incompatibility constraint (LATERAL — not tree structure) |
+| `exemplifies` | Example → Claim | instance supports the generalization |
+| `concedes` | Concession → opposing point | grants it without surrendering |
+| `qualifies` | Caveat/Criterion → target | scopes it / sets its standard |
+| `supersedes` | Successor → old node | replaces it (LATERAL; status system) |
 
 **Important traversal subtlety (this bit the first implementation):** most edges
 run **child → parent** (`answers`, `argues-for`, `argues-against`, `supports`,
-`objects-to`, `rebuts`, `illustrates`, `connects-to`), so the child is `from`
-and the parent is `to`. But **`raises` and `grounds-in` run parent → child** —
-the argument is `from`, the question/value is `to`. If you treat all edges the
+`objects-to`, `rebuts`, `illustrates`, `connects-to`, `undercuts`,
+`exemplifies`, `concedes`, `qualifies`), so the child is `from` and the parent
+is `to`. But **`raises`, `grounds-in`, `entails`, and `presupposes` run
+parent → child** — the argument/claim is `from`. If you treat all edges the
 same, value nodes never render and child questions appear as duplicate roots.
 
-`graph.ts` solves this with a `DOWNWARD = ["raises", "grounds-in", "entails"]`
-set and an `endpoints(edge)` helper that returns `{parent, child}` regardless of
-direction.
+`graph.ts` solves this with a `DOWNWARD = ["raises", "grounds-in", "entails",
+"presupposes"]` set and an `endpoints(edge)` helper that returns
+`{parent, child}` regardless of direction. A second set, `LATERAL =
+["contradicts", "supersedes"]`, marks edges that are **constraints, not tree
+structure** — they are invisible to `getChildren`/`getParent`/deletion/layout
+(`isStructuralEdge`). Treating a `contradicts` edge as a parent/child link
+would make one value the other's child and let deletion cascade across it.
 **Always go through `getChildren`/`getParent`/`getRootQuestions`** rather than
 reading `edge.from`/`edge.to` directly when you mean tree structure.
 `makeEdge(parentId, childId, edgeType)` builds edges with the correct
@@ -197,6 +231,35 @@ guard against cycles. `isNodeGrounded(graph, nodeId)` exposes per-node status
 types are `true`) — the tree uses it to flag argument/position nodes that don't
 yet reach a foundation ("NEEDS GROUNDING").
 
+**All computation runs on the ACTIVE subgraph** (`activeGraph(g)`): nodes with
+a non-active status are *inert* — they render as ghosts but cannot ground,
+attack, or commit anyone (see Status lifecycle below). Retracting a grounding
+argument honestly reopens its question.
+
+### Status lifecycle (docs/STATUS_AND_COMMITMENT.md)
+
+`GraphNode.status`: `active` (default, stored as absent) · `retracted` (author
+withdrew) · `refuted` (editorial verdict) · `invalid` (malformed as a move) ·
+`superseded` (successor via `supersedes` edge) · `merged` (dedup). The golden
+rule: **computed standing (defeated) and asserted status (refuted) never
+blur** — the algorithm never writes statuses, people do (`setNodeStatus`,
+guarded by `canSetStatus`: a shared terminal with active dependents can only
+be superseded/merged, mirroring `doomedSet`). `supersedeNode` marks + links.
+`getInertOrphans` flags active children of inert parents ("PARENT INERT"
+badge). Hard `deleteNode` still exists for local authoring but the UI nudges
+toward retraction.
+
+### Resolution (badge logic — supersedes the bare grounding badge)
+
+`getResolution(graph, questionId)` returns one of four states, shown by the
+question badge: `OPEN` (some chain dead-ends) · `FULLY GROUNDED` (bedrock
+reached but no position wins) · `RESOLVED(standard)` (grounded AND ≥1 position
+survives acceptability at the question's declared `proofStandard` —
+preponderance < clear-and-convincing < beyond-reasonable-doubt <
+dialectical-validity) · `DISSOLVED` (a `presupposition` of the question is
+defeated or refuted — the question loses its footing rather than getting an
+answer). The standard is authorable per question in `NodeCard`.
+
 `TreeView` adds reading aids that don't touch the model: depth **guide rails**
 (nested bordered containers tinted by parent type), **expand/collapse-all**,
 **focus mode** (zoom into one subtree with a breadcrumb back to roots), and the
@@ -219,20 +282,41 @@ focuses that node in the tree.
 Grounding asks "does this reach bedrock?"; **acceptability** asks "does this
 survive its attacks?" — an orthogonal lens. Without it, objections/rebuttals/
 attacks are cosmetic. `getAcceptability(graph)` runs **Dung-style grounded
-semantics** over the attack relation and labels every node `defended`,
+semantics** over the attack relation and labels every active node `defended`,
 `defeated`, or `contested`. The attack relation is structural: a node is
-attacked by its **attacking-type children** (`argument-attack`, `objection`,
-`rebuttal`, `counter-argument`, `logical-fallacy`) via `getAttackers`. Because
-attacks run child→parent over the tree the attack graph is **acyclic**, so the
-labelling is total (every node is defended or defeated; `contested` is reserved
-for the degenerate cyclic case and shouldn't arise from normal authoring). A
-node is `defended` iff every attacker is `defeated`; `defeated` iff some
-attacker is `defended` — so a rebuttal that defeats an objection *revives* the
-argument the objection had defeated. `TreeView` computes the map once and
-`NodeCard` shows a DEFENDED/DEFEATED badge (only when a node actually has
-attackers) and strikes through defeated content. This is **separate from
-grounding** on purpose — combining them (count only undefeated chains toward
-grounding) is a deliberate future step, not the current behaviour.
+attacked by its **active attacking-type children** (`argument-attack`,
+`objection`, `rebuttal`, `counter-argument`, `counter-example`,
+`logical-fallacy`) via `getAttackers` — **plus the attackers of its `warrant`
+children**: undercutting a warrant undercuts the node it licenses (Pollock via
+Toulmin). An objection can attach with `objects-to` (rebuts the claim) or
+`undercuts` (severs the inference — `AddNodeForm` offers the choice under
+arguments/warrants/evidence). Because attacks run child→parent over the tree
+the attack graph is **acyclic**, so the labelling is total (every node is
+defended or defeated; `contested` is reserved for the degenerate cyclic case
+and shouldn't arise from normal authoring). A node is `defended` iff every
+attacker is `defeated`; `defeated` iff some attacker is `defended` — so a
+rebuttal that defeats an objection *revives* the argument the objection had
+defeated. `TreeView` computes the map once and `NodeCard` shows a
+DEFENDED/DEFEATED badge (only when a node actually has attackers) and strikes
+through defeated content. This is **separate from grounding** on purpose —
+the two meet only in `getResolution`, where the proof standard decides how
+much winning "resolved" requires.
+
+### Commitment (stances — lib/commitment.ts)
+
+The Hamblin/Brandom layer (docs/STATUS_AND_COMMITMENT.md §5): a **stance** is
+a per-user set of accepted/rejected node ids (✓/✗ on claim-bearing cards;
+`useStance` persists it in localStorage under `axiomer_stance`, separate from
+the graph — it works in the read-only viewer too and never enters
+`graph.json`). `getClosure` propagates along **strict relations only**
+(`entails` forward, `grounds-in` down to bedrock, `presupposes`,
+warrant/assumption dependency, and denial backward along `entails`) — never
+along defeasible support. `auditStance` reports: **value-clash/incoherence**
+(committed pair linked by `contradicts`), **forced-choice** (you reject what
+your acceptances entail — the tollens fork), **undischarged** (committed to
+something defeated or ungrounded). `getRevealedValues` = the bedrock your
+stance actually stands on. `StancePanel` (Stance tab) renders all of it with
+provenance traces. Keep `commitment.ts` pure, like `graph.ts`.
 
 ### Reuse of values (convergence)
 
