@@ -66,16 +66,22 @@ Two key user-facing concepts:
 │   │   │   ├── AddNodeForm.tsx   ← Modal: context-sensitive type dropdown + value linking
 │   │   │   ├── ValuesIndex.tsx   ← Convergence view: values + clashes (Values tab)
 │   │   │   ├── StancePanel.tsx   ← Commitment audit: closure, revealed values, findings (Stance tab)
+│   │   │   ├── OrganizePanel.tsx ← Deterministic worklist + one-click fixes (Organize tab)
+│   │   │   ├── AgentsPanel.tsx   ← BYOK AI: provider config, agent tasks, proposal review (Agents tab)
 │   │   │   ├── GraphMap.tsx      ← Node-link DAG view (React Flow + dagre, Map tab; lazy-loaded)
-│   │   │   └── Legend.tsx        ← Panel listing all node types
+│   │   │   └── Legend.tsx        ← Panel listing all node types (grouped by family)
 │   │   ├── lib/
 │   │   │   ├── types.ts          ← NodeType, EdgeType, statuses, facets, TERMINAL_TYPES, runtime lists
-│   │   │   ├── meta.ts           ← NODE_META (labels/icons/colors/prompts), ALLOWED_CHILDREN, NODE_ORDER
+│   │   │   ├── meta.ts           ← NODE_META, ALLOWED_CHILDREN, NODE_FAMILIES, NODE_ORDER
 │   │   │   ├── graph.ts          ← Pure graph utilities (see below)
 │   │   │   ├── commitment.ts     ← Pure commitment engine: stances, closure, audit (see below)
+│   │   │   ├── organize.ts       ← Pure organize engine: worklist of structural problems (see below)
+│   │   │   ├── proposals.ts      ← Pure proposal schema: parse/validate/apply AI ops (see below)
+│   │   │   ├── ai/
+│   │   │   │   ├── provider.ts   ← BYOK: Anthropic + OpenAI-compatible chat, localStorage config
+│   │   │   │   └── agents.ts     ← Agent tasks; system prompt GENERATED from meta.ts (no drift)
 │   │   │   ├── flowLayout.ts     ← dagre top-down layout for the Map view
-│   │   │   ├── graph.test.ts     ← Vitest suite for graph.ts
-│   │   │   ├── commitment.test.ts ← Vitest suite for commitment.ts
+│   │   │   ├── graph.test.ts commitment.test.ts organize.test.ts proposals.test.ts
 │   │   │   └── seed.ts           ← Seed graphs (Trolley Problem, Sky Blue)
 │   │   ├── hooks/
 │   │   │   ├── useGraph.ts       ← Graph state + localStorage persistence + auto-save
@@ -317,6 +323,36 @@ your acceptances entail — the tollens fork), **undischarged** (committed to
 something defeated or ungrounded). `getRevealedValues` = the bedrock your
 stance actually stands on. `StancePanel` (Stance tab) renders all of it with
 provenance traces. Keep `commitment.ts` pure, like `graph.ts`.
+
+### Organize engine (lib/organize.ts)
+
+A deterministic, read-only audit producing a prioritized worklist
+(`getWorkItems`): near-duplicate terminals (merge candidates), winning attacks
+on **constructive** nodes nobody answered (a rebuttal defeating an objection
+is progress, not a to-do), arguments that never reach bedrock, unbacked
+positions, positionless questions, inert orphans. `OrganizePanel` (Organize
+tab) renders it with one-click actions. The heavy primitive is
+`mergeTerminals(graph, keepId, dropId)` in `graph.ts`: re-points every edge at
+the keeper (skipping duplicates), marks the duplicate `merged`, adds a
+`supersedes` redirect — convergence, enforced. Works entirely without AI.
+
+### BYOK AI agents (lib/ai/ + lib/proposals.ts)
+
+Users plug in **their own key against any provider** (Anthropic Messages API
+or any OpenAI-compatible endpoint — OpenAI, OpenRouter, Groq, local Ollama…).
+Config lives ONLY in localStorage (`axiomer_ai_config`); calls go directly
+from the browser to the configured base URL. Agents are **suggestion-only**
+(ROADMAP principle: remove the AI and the product still works):
+`ai/agents.ts` defines tasks (deepen toward bedrock, stress-test, ground open
+chains, find duplicate bedrock, label raw text) and **generates the system
+prompt from `NODE_META`/`ALLOWED_CHILDREN`/`NODE_FAMILIES` at runtime** so the
+AI's labeling rules can never drift from the code. Model output is parsed by
+`proposals.ts` — the safety boundary: typed ops (`add-node`, `link-value`,
+`merge-terminals`, `set-status`, `add-contradiction`) validated against the
+real graph (attachment matrix, terminals, statuses) both at parse AND at apply
+time; invalid ops are quarantined with reasons, never applied. A human accepts
+ops one by one in `AgentsPanel` (Agents tab). Keep `proposals.ts` pure and
+paranoid — it is the only path from model output to the graph.
 
 ### Reuse of values (convergence)
 

@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { ContentKind, GraphNode, NodeType } from "@/lib/types";
 import { CONTENT_KINDS, isTerminalType } from "@/lib/types";
 import type { AddNodeOpts } from "@/lib/graph";
 import { similarity } from "@/lib/graph";
-import { ALLOWED_CHILDREN, NODE_META } from "@/lib/meta";
+import { ALLOWED_CHILDREN, NODE_FAMILIES, NODE_META } from "@/lib/meta";
 
 // Parents whose objections can target the INFERENCE (undercut) rather than
 // the claim itself (rebut) — arguments, warrants, and evidence.
@@ -51,6 +51,8 @@ export default function AddNodeForm({
   // For objections under an inference-bearing parent: rebut vs undercut.
   const [attackMode, setAttackMode] = useState<"rebut" | "undercut">("rebut");
   const [contentKind, setContentKind] = useState<ContentKind | "">("");
+  const [addedCount, setAddedCount] = useState(0);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const showAttackMode = type === "objection" && UNDERCUTTABLE.has(parent.type);
 
   const meta = NODE_META[type];
@@ -61,6 +63,16 @@ export default function AddNodeForm({
   );
   const [valueId, setValueId] = useState<string>("");
   const showLinkOption = isTerminalType(type) && sameType.length > 0;
+
+  // The picker shows only this parent's allowed types, grouped by family.
+  const families = useMemo(
+    () =>
+      NODE_FAMILIES.map((f) => ({
+        ...f,
+        types: f.types.filter((t) => options.includes(t)),
+      })).filter((f) => f.types.length > 0),
+    [options],
+  );
 
   // Near-duplicates of what the user is typing — nudge "link instead".
   const similar = useMemo(() => {
@@ -74,57 +86,115 @@ export default function AddNodeForm({
 
   const linkTarget = valueId || sameType[0]?.id || "";
 
-  const submit = () => {
+  const pickType = (t: NodeType) => {
+    setType(t);
+    setMode("new");
+    setAttackMode("rebut");
+  };
+
+  // Returns true if something was actually added/linked.
+  const commit = (): boolean => {
     if (showLinkOption && mode === "existing") {
-      if (linkTarget) onLinkValue(linkTarget);
-      onClose();
-      return;
+      if (!linkTarget) return false;
+      onLinkValue(linkTarget);
+      return true;
     }
     const trimmed = content.trim();
-    if (!trimmed) return;
+    if (!trimmed) return false;
     const opts: AddNodeOpts = {};
     if (showAttackMode && attackMode === "undercut") opts.edgeType = "undercuts";
     if (contentKind && KINDED.has(type)) opts.contentKind = contentKind;
     onAdd(type, trimmed, Object.keys(opts).length > 0 ? opts : undefined);
-    onClose();
+    return true;
+  };
+
+  const submitAndClose = () => {
+    if (commit()) onClose();
+  };
+
+  // Keep the modal open for rapid sibling entry (same parent, same type).
+  const submitAndContinue = () => {
+    if (!commit()) return;
+    setContent("");
+    setAddedCount((n) => n + 1);
+    textareaRef.current?.focus();
   };
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onClose();
+      }}
     >
       <div
-        className="w-full max-w-lg rounded-lg bg-white p-5 shadow-xl"
+        className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-sm font-semibold text-slate-900">Add a node</h2>
-        <p className="mt-1 text-xs text-slate-500">
-          Parent:{" "}
-          <span className="font-medium text-slate-700">{parent.content}</span>{" "}
-          <span className="text-slate-400">
-            ({NODE_META[parent.type].label})
-          </span>
-        </p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Add a node</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Under:{" "}
+              <span style={{ color: NODE_META[parent.type].color }}>
+                {NODE_META[parent.type].icon}
+              </span>{" "}
+              <span className="font-medium text-slate-700">{parent.content}</span>{" "}
+              <span className="text-slate-400">
+                ({NODE_META[parent.type].label})
+              </span>
+            </p>
+          </div>
+          {addedCount > 0 && (
+            <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+              {addedCount} added
+            </span>
+          )}
+        </div>
 
-        <label className="mt-4 block text-xs font-medium text-slate-700">
-          Node type
-        </label>
-        <select
-          className="mt-1 w-full rounded border border-slate-300 p-2 text-sm focus:border-slate-500 focus:outline-none"
-          value={type}
-          onChange={(e) => {
-            setType(e.target.value as NodeType);
-            setMode("new");
-            setAttackMode("rebut");
-          }}
-        >
-          {options.map((opt) => (
-            <option key={opt} value={opt}>
-              {NODE_META[opt].icon} {NODE_META[opt].label}
-            </option>
+        {/* Type picker — grouped by family so 20 options stay scannable. */}
+        <div className="mt-3 space-y-2">
+          {families.map((f) => (
+            <div key={f.label}>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                {f.label} <span className="font-normal">— {f.hint}</span>
+              </p>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {f.types.map((t) => {
+                  const m = NODE_META[t];
+                  const active = t === type;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => pickType(t)}
+                      className={`flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors ${
+                        active
+                          ? "border-transparent text-white"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-400"
+                      }`}
+                      style={active ? { backgroundColor: m.color } : undefined}
+                      title={m.description}
+                    >
+                      <span style={active ? undefined : { color: m.color }}>
+                        {m.icon}
+                      </span>
+                      {m.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ))}
-        </select>
+        </div>
+
+        <p className="mt-2 rounded-md bg-slate-50 px-2.5 py-1.5 text-[11px] text-slate-500">
+          <span className="font-medium" style={{ color: meta.color }}>
+            {meta.icon} {meta.label}:
+          </span>{" "}
+          {meta.description}
+        </p>
 
         {showAttackMode && (
           <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-2">
@@ -203,6 +273,7 @@ export default function AddNodeForm({
               {meta.prompt}
             </label>
             <textarea
+              ref={textareaRef}
               className="mt-1 w-full resize-y rounded border border-slate-300 p-2 text-sm focus:border-slate-500 focus:outline-none"
               rows={3}
               autoFocus
@@ -210,7 +281,10 @@ export default function AddNodeForm({
               value={content}
               onChange={(e) => setContent(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  if (e.shiftKey) submitAndContinue();
+                  else submitAndClose();
+                }
               }}
             />
             {KINDED.has(type) && (
@@ -269,17 +343,30 @@ export default function AddNodeForm({
           </>
         )}
 
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <span className="mr-auto text-[10px] text-slate-400">
+            ⌘↵ add · ⌘⇧↵ add &amp; next
+          </span>
           <button
             type="button"
             onClick={onClose}
             className="rounded px-3 py-1.5 text-sm text-slate-500 hover:text-slate-800"
           >
-            Cancel
+            {addedCount > 0 ? "Done" : "Cancel"}
           </button>
+          {!(showLinkOption && mode === "existing") && (
+            <button
+              type="button"
+              onClick={submitAndContinue}
+              className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+              title="Add this node and keep the form open for a sibling"
+            >
+              Add &amp; another
+            </button>
+          )}
           <button
             type="button"
-            onClick={submit}
+            onClick={submitAndClose}
             className="rounded bg-slate-800 px-3 py-1.5 text-sm text-white hover:bg-slate-700"
           >
             {showLinkOption && mode === "existing" ? "Link value" : "Add node"}

@@ -51,6 +51,12 @@ Other scripts: `npm run build`, `npm run preview`, `npm run typecheck`.
   visible as ghosts but lose all force (no grounding, no attacking).
 - **Stance:** accept/reject claims and see what they commit you to — revealed
   bedrock values, contradictions, forced choices (the Stance tab).
+- **Organize:** a deterministic worklist of structural problems — duplicate
+  bedrock to merge, unanswered attacks, ungrounded chains (the Organize tab).
+- **Your own AI agents:** plug in any provider with your own API key
+  (Anthropic, OpenAI, OpenRouter, Groq, local Ollama, any OpenAI-compatible
+  endpoint). Agents propose validated changes — deepen, stress-test, ground,
+  dedup, label — and nothing lands without your accept (the Agents tab).
 - **Convergence:** arguments link to *existing* values instead of duplicating
   them.
 - Two seed examples (Trolley Problem, Why is the sky blue?) load on first visit.

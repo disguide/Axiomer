@@ -9,6 +9,7 @@ import { seedGraph } from "@/lib/seed";
 import { isReadOnly, loadCanonicalGraph } from "@/lib/dataSource";
 import * as G from "@/lib/graph";
 import type { AddNodeOpts } from "@/lib/graph";
+import { applyOp, type ProposalOp } from "@/lib/proposals";
 
 const STORAGE_KEY = "axiomer_graph";
 
@@ -46,6 +47,8 @@ export interface UseGraph {
   linkToExistingValue: (argumentId: string, valueId: string) => void;
   setNodeStatus: (id: string, status: NodeStatus, reason?: string) => void;
   setProofStandard: (questionId: string, standard: ProofStandard) => void;
+  mergeTerminals: (keepId: string, dropId: string) => void;
+  applyProposalOp: (op: ProposalOp) => void;
   resetToSeed: () => void;
 }
 
@@ -94,6 +97,8 @@ export function useGraph(): UseGraph {
       linkToExistingValue: noop,
       setNodeStatus: noop,
       setProofStandard: noop,
+      mergeTerminals: noop,
+      applyProposalOp: noop,
       resetToSeed: noop,
     };
   }
@@ -114,6 +119,9 @@ export function useGraph(): UseGraph {
       setGraph((g) => G.setNodeStatus(g, id, status, reason ? { reason } : undefined)),
     setProofStandard: (questionId, standard) =>
       setGraph((g) => G.setProofStandard(g, questionId, standard)),
+    mergeTerminals: (keepId, dropId) =>
+      setGraph((g) => G.mergeTerminals(g, keepId, dropId)),
+    applyProposalOp: (op) => setGraph((g) => applyOp(g, op)),
     resetToSeed: () => setGraph(seedGraph),
   };
 }

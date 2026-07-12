@@ -5,6 +5,8 @@ import { downloadGraph } from "@/lib/io";
 import TreeView from "@/components/TreeView";
 import ValuesIndex from "@/components/ValuesIndex";
 import StancePanel from "@/components/StancePanel";
+import OrganizePanel from "@/components/OrganizePanel";
+import AgentsPanel from "@/components/AgentsPanel";
 import DepthPanel from "@/components/DepthPanel";
 import Legend from "@/components/Legend";
 
@@ -26,6 +28,8 @@ export default function Home() {
     linkToExistingValue,
     setNodeStatus,
     setProofStandard,
+    mergeTerminals,
+    applyProposalOp,
     resetToSeed,
   } = useGraph();
   // Personal commitment store — works in the read-only viewer too.
@@ -35,7 +39,9 @@ export default function Home() {
   const [draft, setDraft] = useState("");
   const [showLegend, setShowLegend] = useState(false);
   // The Map is the primary surface (and what the public read-only viewer leads with).
-  const [view, setView] = useState<"tree" | "values" | "map" | "stance">("map");
+  const [view, setView] = useState<
+    "tree" | "values" | "map" | "stance" | "organize" | "agents"
+  >("map");
   const [focusId, setFocusId] = useState<string | null>(null);
 
   const focusInTree = (nodeId: string) => {
@@ -181,6 +187,30 @@ export default function Home() {
                 </span>
               )}
             </button>
+            <button
+              type="button"
+              onClick={() => setView("organize")}
+              className={`rounded px-3 py-1 ${
+                view === "organize"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+              title="The graph's structural to-do list: duplicates, unanswered attacks, ungrounded chains"
+            >
+              Organize
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("agents")}
+              className={`rounded px-3 py-1 ${
+                view === "agents"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+              title="Plug in your own AI (any key, any provider) to propose changes you review"
+            >
+              ✨ Agents
+            </button>
           </div>
 
           {readOnly && loading ? (
@@ -194,6 +224,21 @@ export default function Home() {
               onAccept={accept}
               onReject={reject}
               onClear={clearStance}
+              onFocus={focusInTree}
+            />
+          ) : view === "organize" ? (
+            <OrganizePanel
+              graph={graph}
+              readOnly={readOnly}
+              onFocus={focusInTree}
+              onMerge={mergeTerminals}
+              onRetract={(id) => setNodeStatus(id, "retracted")}
+            />
+          ) : view === "agents" ? (
+            <AgentsPanel
+              graph={graph}
+              readOnly={readOnly}
+              onApplyOp={applyProposalOp}
               onFocus={focusInTree}
             />
           ) : view === "map" ? (

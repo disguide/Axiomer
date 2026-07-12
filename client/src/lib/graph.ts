@@ -427,6 +427,69 @@ export function getContradictions(graph: Graph, nodeId: string): GraphNode[] {
     .filter((n): n is GraphNode => Boolean(n));
 }
 
+// --- Canonical merge (convergence, enforced) ---------------------------------
+// Fold a duplicate terminal into the canonical one: every edge touching the
+// duplicate is re-pointed at the keeper (skipping edges that would duplicate
+// an existing one), the duplicate is marked `merged`, and a `supersedes` edge
+// records the redirect (keep → drop). Provenance survives; the convergence
+// core stays small. This is the Phase-4 dedup queue's primitive.
+export function mergeTerminals(
+  graph: Graph,
+  keepId: string,
+  dropId: string,
+): Graph {
+  const keep = getNode(graph, keepId);
+  const drop = getNode(graph, dropId);
+  if (!keep || !drop || keepId === dropId) return graph;
+  if (!isTerminalType(keep.type) || !isTerminalType(drop.type)) return graph;
+  if (keep.type !== drop.type) return graph; // a value is not a principle
+
+  const redirected: GraphEdge[] = [];
+  const exists = (candidate: GraphEdge) =>
+    graph.edges.some(
+      (e) =>
+        e.edgeType === candidate.edgeType &&
+        e.from === candidate.from &&
+        e.to === candidate.to,
+    ) ||
+    redirected.some(
+      (e) =>
+        e.edgeType === candidate.edgeType &&
+        e.from === candidate.from &&
+        e.to === candidate.to,
+    );
+
+  for (const e of graph.edges) {
+    if (e.from !== dropId && e.to !== dropId) {
+      redirected.push(e);
+      continue;
+    }
+    const moved: GraphEdge = {
+      ...e,
+      from: e.from === dropId ? keepId : e.from,
+      to: e.to === dropId ? keepId : e.to,
+    };
+    // Drop self-loops and edges that already exist on the keeper.
+    if (moved.from === moved.to) continue;
+    if (exists(moved)) continue;
+    redirected.push(moved);
+  }
+
+  const merged = setNodeStatus(
+    { nodes: graph.nodes, edges: redirected },
+    dropId,
+    "merged",
+    { reason: `merged into "${keep.content}"` },
+  );
+  return {
+    nodes: merged.nodes,
+    edges: [
+      ...merged.edges,
+      { id: uid("edge"), from: keepId, to: dropId, edgeType: "supersedes" },
+    ],
+  };
+}
+
 // Collect a node and all descendants, EXCEPT shared terminals that are still
 // grounded by an argument outside the deletion set (so reused values survive).
 function doomedSet(graph: Graph, nodeId: string): Set<string> {
@@ -626,7 +689,9 @@ export function getGroundingTerminal(
 
 export type Acceptability = "defended" | "defeated" | "contested";
 
-const ATTACKING_TYPES: ReadonlySet<NodeType> = new Set<NodeType>([
+// Exported for the organize engine: attacks on these types are dialectical
+// moves (a rebuttal defeating an objection is progress, not a problem).
+export const ATTACKING_TYPES: ReadonlySet<NodeType> = new Set<NodeType>([
   "argument-attack",
   "objection",
   "rebuttal",

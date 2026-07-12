@@ -524,6 +524,71 @@ export const ALLOWED_CHILDREN: Record<NodeType, NodeType[]> = {
   ],
 };
 
+// The 8 families of docs/TAXONOMY.md §2 — used to group the type picker and
+// the Legend so 30 types stay scannable.
+export interface NodeFamily {
+  label: string;
+  hint: string; // one-line "what this family is for"
+  types: NodeType[];
+}
+
+export const NODE_FAMILIES: NodeFamily[] = [
+  {
+    label: "Inquiry",
+    hint: "what is being asked",
+    types: ["question", "presupposition"],
+  },
+  {
+    label: "Stance",
+    hint: "what is being claimed",
+    types: ["position", "synthesis"],
+  },
+  {
+    label: "Reasoning",
+    hint: "why to believe it",
+    types: ["argument-support", "argument-attack", "warrant", "implication"],
+  },
+  {
+    label: "Evidence",
+    hint: "what shows it",
+    types: ["evidence-empirical", "evidence-anecdotal", "example"],
+  },
+  {
+    label: "Dialectic",
+    hint: "the back-and-forth",
+    types: [
+      "objection",
+      "rebuttal",
+      "counter-argument",
+      "counter-example",
+      "concession",
+      "logical-fallacy",
+    ],
+  },
+  {
+    label: "Precision",
+    hint: "sharpening the terms",
+    types: [
+      "assumption",
+      "definition",
+      "distinction",
+      "clarification",
+      "caveat",
+      "criterion",
+    ],
+  },
+  {
+    label: "Exploration",
+    hint: "lateral moves",
+    types: ["analogy", "thought-experiment", "related-concept"],
+  },
+  {
+    label: "Foundation",
+    hint: "where the regress ends",
+    types: ["value", "principle", "epistemic-limit", "premise"],
+  },
+];
+
 // Display order for the Legend panel — family order (docs/TAXONOMY.md §2).
 export const NODE_ORDER: NodeType[] = [
   // Inquiry
