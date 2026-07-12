@@ -1,12 +1,16 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import type { Graph } from "@/lib/types";
 import { useGraph } from "@/hooks/useGraph";
 import { useStance } from "@/hooks/useStance";
 import { downloadGraph } from "@/lib/io";
+import { parseShareHash } from "@/lib/share";
+import { saveDraft } from "@/lib/versions";
 import TreeView from "@/components/TreeView";
 import ValuesIndex from "@/components/ValuesIndex";
 import StancePanel from "@/components/StancePanel";
 import OrganizePanel from "@/components/OrganizePanel";
 import AgentsPanel from "@/components/AgentsPanel";
+import SharePanel from "@/components/SharePanel";
 import DepthPanel from "@/components/DepthPanel";
 import Legend from "@/components/Legend";
 
@@ -30,6 +34,7 @@ export default function Home() {
     setProofStandard,
     mergeTerminals,
     applyProposalOp,
+    replaceGraph,
     resetToSeed,
   } = useGraph();
   // Personal commitment store — works in the read-only viewer too.
@@ -40,9 +45,24 @@ export default function Home() {
   const [showLegend, setShowLegend] = useState(false);
   // The Map is the primary surface (and what the public read-only viewer leads with).
   const [view, setView] = useState<
-    "tree" | "values" | "map" | "stance" | "organize" | "agents"
+    "tree" | "values" | "map" | "stance" | "organize" | "agents" | "share"
   >("map");
   const [focusId, setFocusId] = useState<string | null>(null);
+
+  // Incoming share link (#g=…): decode once, offer to import — never clobber.
+  const [incomingShare, setIncomingShare] = useState<Graph | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!window.location.hash.startsWith("#g=")) return;
+    try {
+      const shared = parseShareHash(window.location.hash);
+      if (shared) setIncomingShare(shared);
+    } catch (err) {
+      setShareError(`Shared link could not be opened: ${(err as Error).message}`);
+    }
+    // Clear the hash either way so reloads don't re-prompt.
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  }, []);
 
   const focusInTree = (nodeId: string) => {
     setView("tree");
@@ -211,7 +231,81 @@ export default function Home() {
             >
               ✨ Agents
             </button>
+            <button
+              type="button"
+              onClick={() => setView("share")}
+              className={`rounded px-3 py-1 ${
+                view === "share"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+              title="Export/import, share links, drafts & diffs, propose on GitHub"
+            >
+              Share
+            </button>
           </div>
+
+          {shareError && (
+            <p className="mb-3 rounded-md bg-rose-50 p-2 text-xs text-rose-600">
+              {shareError}{" "}
+              <button
+                type="button"
+                className="underline"
+                onClick={() => setShareError(null)}
+              >
+                dismiss
+              </button>
+            </p>
+          )}
+          {incomingShare && (
+            <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 p-3">
+              <p className="text-xs font-medium text-indigo-800">
+                🔗 Someone shared a graph with you: {incomingShare.nodes.length}{" "}
+                nodes, {incomingShare.edges.length} links.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {!readOnly && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        saveDraft("Received via share link", incomingShare);
+                        setIncomingShare(null);
+                        setView("share");
+                      }}
+                      className="rounded bg-indigo-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-indigo-500"
+                      title="Safest: lands as a draft you can diff before restoring"
+                    >
+                      Save as draft
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            `Replace your current graph (${graph.nodes.length} nodes) with the shared one (${incomingShare.nodes.length} nodes)?`,
+                          )
+                        ) {
+                          replaceGraph(incomingShare);
+                          setIncomingShare(null);
+                        }
+                      }}
+                      className="rounded border border-indigo-300 bg-white px-2.5 py-1 text-[11px] font-medium text-indigo-700 hover:bg-indigo-100"
+                    >
+                      Replace current
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIncomingShare(null)}
+                  className="rounded px-2.5 py-1 text-[11px] text-slate-500 hover:text-slate-700"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
 
           {readOnly && loading ? (
             <p className="p-8 text-center text-sm text-slate-400">Loading…</p>
@@ -240,6 +334,12 @@ export default function Home() {
               readOnly={readOnly}
               onApplyOp={applyProposalOp}
               onFocus={focusInTree}
+            />
+          ) : view === "share" ? (
+            <SharePanel
+              graph={graph}
+              readOnly={readOnly}
+              onReplaceGraph={replaceGraph}
             />
           ) : view === "map" ? (
             <Suspense

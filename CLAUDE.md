@@ -68,6 +68,7 @@ Two key user-facing concepts:
 │   │   │   ├── StancePanel.tsx   ← Commitment audit: closure, revealed values, findings (Stance tab)
 │   │   │   ├── OrganizePanel.tsx ← Deterministic worklist + one-click fixes (Organize tab)
 │   │   │   ├── AgentsPanel.tsx   ← BYOK AI: provider config, agent tasks, proposal review (Agents tab)
+│   │   │   ├── SharePanel.tsx    ← Export/import, share links, drafts+diffs, GitHub flow (Share tab)
 │   │   │   ├── GraphMap.tsx      ← Node-link DAG view (React Flow + dagre, Map tab; lazy-loaded)
 │   │   │   └── Legend.tsx        ← Panel listing all node types (grouped by family)
 │   │   ├── lib/
@@ -77,6 +78,8 @@ Two key user-facing concepts:
 │   │   │   ├── commitment.ts     ← Pure commitment engine: stances, closure, audit (see below)
 │   │   │   ├── organize.ts       ← Pure organize engine: worklist of structural problems (see below)
 │   │   │   ├── proposals.ts      ← Pure proposal schema: parse/validate/apply AI ops (see below)
+│   │   │   ├── share.ts          ← Whole-graph share links (#g=… lz-string; io.ts-validated on decode)
+│   │   │   ├── versions.ts       ← Pure diffGraphs + local drafts (branches/draft-PRs, client-side)
 │   │   │   ├── ai/
 │   │   │   │   ├── provider.ts   ← BYOK: Anthropic + OpenAI-compatible chat, localStorage config
 │   │   │   │   └── agents.ts     ← Agent tasks; system prompt GENERATED from meta.ts (no drift)
@@ -353,6 +356,20 @@ real graph (attachment matrix, terminals, statuses) both at parse AND at apply
 time; invalid ops are quarantined with reasons, never applied. A human accepts
 ops one by one in `AgentsPanel` (Agents tab). Keep `proposals.ts` pure and
 paranoid — it is the only path from model output to the graph.
+
+### Sharing, drafts & the GitHub flow (lib/share.ts, lib/versions.ts)
+
+The Share tab makes the read-mostly architecture usable from inside the app:
+**export/import** graph.json (io.ts-validated; import lands as a draft by
+default, replace needs confirm), **share links** (whole graph compressed into
+the URL hash with lz-string — an incoming `#g=…` shows an import banner,
+never clobbers), **local drafts** (named snapshots in `axiomer_drafts`;
+`diffGraphs` is the pure diff — added/removed/edited nodes, structural edge
+comparison ignoring generated ids — rendered PR-style before restoring), and
+the **guided GitHub proposal flow** (export → edit the canonical
+`client/public/graph.json` on GitHub → paste → draft PR; GitHub auto-forks —
+no backend). `VITE_GITHUB_REPO` overrides the repo URL. Keep `share.ts`
+decoding strict: it feeds `validateGraph`, same gate as file import.
 
 ### Reuse of values (convergence)
 

@@ -49,6 +49,7 @@ export interface UseGraph {
   setProofStandard: (questionId: string, standard: ProofStandard) => void;
   mergeTerminals: (keepId: string, dropId: string) => void;
   applyProposalOp: (op: ProposalOp) => void;
+  replaceGraph: (graph: Graph) => void; // import/restore (already validated)
   resetToSeed: () => void;
 }
 
@@ -99,6 +100,7 @@ export function useGraph(): UseGraph {
       setProofStandard: noop,
       mergeTerminals: noop,
       applyProposalOp: noop,
+      replaceGraph: noop,
       resetToSeed: noop,
     };
   }
@@ -122,6 +124,7 @@ export function useGraph(): UseGraph {
     mergeTerminals: (keepId, dropId) =>
       setGraph((g) => G.mergeTerminals(g, keepId, dropId)),
     applyProposalOp: (op) => setGraph((g) => applyOp(g, op)),
+    replaceGraph: (next) => setGraph(next),
     resetToSeed: () => setGraph(seedGraph),
   };
 }

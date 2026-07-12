@@ -57,6 +57,10 @@ Other scripts: `npm run build`, `npm run preview`, `npm run typecheck`.
   (Anthropic, OpenAI, OpenRouter, Groq, local Ollama, any OpenAI-compatible
   endpoint). Agents propose validated changes — deepen, stress-test, ground,
   dedup, label — and nothing lands without your accept (the Agents tab).
+- **Share, versions & GitHub:** export/import graph.json, send the whole
+  graph as a link, keep local drafts and diff them PR-style before restoring,
+  and propose changes to the canonical graph through a guided GitHub
+  pull-request flow (the Share tab).
 - **Convergence:** arguments link to *existing* values instead of duplicating
   them.
 - Two seed examples (Trolley Problem, Why is the sky blue?) load on first visit.
