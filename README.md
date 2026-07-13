@@ -8,6 +8,15 @@ out at a fundamental **value**, **principle**, or **epistemic limit**. As you
 answer many questions you reuse the same bedrock values, revealing where
 different questions converge — and where they clash.
 
+## The graph lives here
+
+The shared argument graph is a file in this repository:
+[`client/public/graph.json`](client/public/graph.json). It changes only
+through pull requests — build your changes in the app, export, paste over the
+file on GitHub (it auto-forks for you), and open a draft PR. CI validates
+every proposal; merges redeploy the public viewer. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the two-minute walkthrough.
+
 ## Stack
 
 React 19 · TypeScript · Vite · Tailwind CSS 4. No backend in V1 — state lives in
