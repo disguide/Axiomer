@@ -28,11 +28,31 @@ and revert — GitHub is the backend.
    the diff and merges. On merge, the public read-only viewer redeploys with
    your changes.
 
-### The Git path
+### The Git / VS Code path
 
-Fork → clone → run the app locally (`npm install && npm run dev`) → build
-your changes → Share tab → Export → save over `client/public/graph.json` →
-commit → push → open a PR.
+Fork → clone → open in VS Code → `npm install && npm run dev` → build your
+changes in the app → Share tab → Export → save over
+`client/public/graph.json` → commit → push → open a PR. VS Code's Source
+Control panel (or the GitHub Pull Requests extension) handles the branch,
+commit, and PR without leaving the editor.
+
+### The AI-agent path (Claude Code, etc.)
+
+You can have a terminal coding agent build the tree for you. It should go
+through the graph CLI, which enforces the same rules as the app — never
+hand-edit the JSON blind:
+
+```bash
+npm run graph:validate            # strict check of the canonical graph
+npm run graph:doctor              # what needs work (ungrounded, duplicates, …)
+npm run graph:apply -- ops.json   # apply a batch of validated ops (--dry-run to preview)
+npm run graph:add   -- --parent <id> --type <type> --content "…"
+```
+
+Point an agent at **`AGENTS.md`** — it spells out the workflow, the ops
+schema, and the labeling rules. Invalid moves (wrong parent, inventing
+bedrock, dangling ids) are rejected with a reason and never written, so an
+agent can iterate safely. Then open a PR as usual.
 
 ### What CI checks on every graph PR
 

@@ -456,6 +456,17 @@ npm test           # vitest run (unit tests for lib/graph.ts, lib/io.ts)
 npm run test:watch # vitest in watch mode
 ```
 
+### Headless graph CLI (`scripts/graph-cli.ts`, run via tsx)
+
+A terminal door into the same pure engine the app uses, so a coding agent
+(Claude Code, etc.) can build the tree with full guardrails — see `AGENTS.md`.
+`graph:validate` / `graph:doctor` (organize worklist) / `graph:apply <ops.json>`
+/ `graph:add`. `apply`/`add` route every op through `proposals.ts`
+`validateOp`+`applyOp` (attachment matrix, terminals, statuses) and re-validate
+before writing; `--dry-run` previews, `--graph <file>` targets a non-canonical
+file. The ops schema is identical to the in-app AI proposal envelope, so the
+CLI, the Agents tab, and any external agent share one validation boundary.
+
 ### Read-mostly setup (canonical graph + public viewer)
 
 Per `docs/ARCHITECTURE.md` / `docs/adr/0001`, the app runs in two modes from one
