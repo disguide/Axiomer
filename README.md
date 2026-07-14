@@ -62,6 +62,10 @@ Other scripts: `npm run build`, `npm run preview`, `npm run typecheck`.
   bedrock values, contradictions, forced choices (the Stance tab).
 - **Organize:** a deterministic worklist of structural problems — duplicate
   bedrock to merge, unanswered attacks, ungrounded chains (the Organize tab).
+- **Map, two scales:** a **Detail** view (collapse/expand, search-and-jump,
+  level-of-detail) that renders only what you've opened, and a Canvas
+  **Overview "brain"** that shows the whole territory as a field of
+  argument-trees converging on shared bedrock — clean at thousands of nodes.
 - **Write-first authoring:** you don't have to type a node to create it — jot
   the thought as an *unlabeled note* and label it later (or let the AI do it).
 - **Your own AI, three jobs:** plug in any provider with your own API key

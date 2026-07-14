@@ -176,13 +176,16 @@ labels, inspector), but it becomes unreadable at volume. Add a **second mode**:
 
 - **Detail mode (have it):** compact labelled pills + labelled connections +
   inspector. The "street view" — read and work a local area.
-- **Overview / "brain" mode (new — requested):** the **whole territory** at a
-  glance, Obsidian-graph-like **but top-down with a clear directional flow** —
-  **not** a radial circle, **not** a hairball. Nodes shrink to **dots sized by
-  importance** (shared values = big hubs; leaves = small), edges thin, labels
-  hidden until you zoom/focus. You should see the *shape*: where convergence
-  happens, where the clashes and dense clusters are, what's sparse or
-  ungrounded. Zooming/clicking transitions smoothly back into detail mode.
+- **Overview / "brain" mode — ✅ BUILT (`GraphOverview.tsx`, Canvas):** the
+  **whole territory** at a glance, top-down with a clear directional flow —
+  not a radial circle, not a hairball. Rendered on a **Canvas** so it scales to
+  many thousands of nodes (verified clean at ~3.7k). Each root's subtree is a
+  compact cluster, clusters grid-arranged into a field of little argument-trees;
+  nodes are **dots sized by importance** (shared values = big hubs; leaves =
+  small); cross-cluster edges to shared bedrock are the visible convergence.
+  Labels hidden until zoom/hover. Click a dot to dive into detail focused there.
+  Detail mode complements it with collapse/expand, viewport culling, LOD, and
+  search — so the tree "stacks up" instead of rendering everything at once.
 
 Think **map zoom levels**: country view (overview/brain) ↔ street view (detail),
 one continuous, smooth (Mapbox-like) transition — same graph, different altitude.

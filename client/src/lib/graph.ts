@@ -119,6 +119,33 @@ export function getDescendantIds(graph: Graph, nodeId: string): Set<string> {
   return seen;
 }
 
+// Descendant count for EVERY node in one memoized pass (O(V+E)), so large
+// graphs don't pay O(V²) computing subtree sizes node-by-node. Powers the
+// "N hidden" counts on collapsed map nodes and dot sizing in overview mode.
+// Counts distinct descendants (a shared value is counted once per ancestor
+// that reaches it, matching what "hidden below me" means visually).
+export function getSubtreeSizes(graph: Graph): Map<string, number> {
+  const memo = new Map<string, Set<string>>();
+  const visiting = new Set<string>();
+  const collect = (id: string): Set<string> => {
+    const cached = memo.get(id);
+    if (cached) return cached;
+    if (visiting.has(id)) return new Set(); // cycle guard
+    visiting.add(id);
+    const acc = new Set<string>();
+    for (const child of getChildren(graph, id)) {
+      acc.add(child.id);
+      for (const d of collect(child.id)) acc.add(d);
+    }
+    visiting.delete(id);
+    memo.set(id, acc);
+    return acc;
+  };
+  const sizes = new Map<string, number>();
+  for (const n of graph.nodes) sizes.set(n.id, collect(n.id).size);
+  return sizes;
+}
+
 // Every node with a downward path INTO nodeId (its ancestors in the
 // parent→child DAG). For a value, that's everything that grounds in it —
 // the convergence highlight in the map view.

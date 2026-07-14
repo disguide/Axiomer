@@ -69,7 +69,8 @@ Two key user-facing concepts:
 │   │   │   ├── OrganizePanel.tsx ← Deterministic worklist + one-click fixes (Organize tab)
 │   │   │   ├── AgentsPanel.tsx   ← BYOK AI: provider config, agent tasks, proposal review (Agents tab)
 │   │   │   ├── SharePanel.tsx    ← Export/import, share links, drafts+diffs, GitHub flow (Share tab)
-│   │   │   ├── GraphMap.tsx      ← Node-link DAG view (React Flow + dagre, Map tab; lazy-loaded)
+│   │   │   ├── GraphMap.tsx      ← Detail map: React Flow + collapse/cull/LOD/search (Map tab)
+│   │   │   ├── GraphOverview.tsx ← Canvas "brain" overview: clustered dots at scale (Map tab)
 │   │   │   └── Legend.tsx        ← Panel listing all node types (grouped by family)
 │   │   ├── lib/
 │   │   │   ├── types.ts          ← NodeType, EdgeType, statuses, facets, TERMINAL_TYPES, runtime lists
@@ -422,14 +423,33 @@ single question whose chains bottom out at multiple distinct values — the real
 disagreement). `getRootFor` walks a node's parent chain up to its root
 (question or premise).
 
-The **Map view** (`GraphMap.tsx`, Map tab) renders the whole graph as a
-top-down DAG with React Flow; `flowLayout.ts` positions nodes with dagre using
-`edgeEndpoints` (the same parent→child normalization the tree uses), so shared
-values render once with multiple incoming edges — convergence made literal.
-Clicking a node highlights its full lineage via `getAncestors` (everything that
-flows into it) ∪ `getDescendantIds` (everything below it). `getParents` returns
-all parents of a shared value. React Flow is **lazy-loaded** from `Home` so the
-Tree/Values tabs don't pay for it.
+The **Map view** (`GraphMap.tsx`, Map tab) has **two modes for two scales**:
+
+- **Detail** (React Flow + dagre): the working street view. Clicking a node
+  highlights its lineage (`getAncestors` ∪ `getDescendantIds`). To scale, it
+  renders **only the expanded frontier** — a node is collapsible, graphs over
+  60 nodes open collapsed to their roots, and dagre lays out just the visible
+  subgraph (fast). `onlyRenderVisibleElements` culls offscreen nodes; labels
+  fade below a zoom threshold (LOD); a search box expands a node's ancestors
+  and centers it. `flowLayout.ts` skips lateral edges (`isStructuralEdge`).
+  **Expand-all is a foot-gun at volume** (DOM-per-node) and is confirm-gated
+  over 800 nodes — Overview is the whole-graph view.
+- **Overview / "brain"** (`GraphOverview.tsx`, **Canvas**): the country view,
+  scales to many thousands (Canvas, not DOM). Each root's subtree is a compact
+  cluster (local layered layout via `depthMap`), clusters grid-arranged, dots
+  sized by importance (`getSubtreeSizes` + structural in-degree — convergence
+  hubs read big), cross-cluster edges to shared bedrock draw the convergence.
+  Pan/zoom/hover; click a dot to dive into Detail focused there. Verified clean
+  at ~3.7k nodes.
+
+`getSubtreeSizes(graph)` is the shared O(V+E) helper (one memoized pass) behind
+both the "N hidden" counts and dot sizing — never compute subtree sizes
+per-node (O(V²)). Both React Flow and the Canvas overview are **lazy-loaded**
+from `Home`. **Scale boundary:** this is the *rendering* ceiling (tens of
+thousands of nodes, cleanly). Literal Wikipedia *data volume* (millions) is a
+storage/query problem for the Phase-1 backend (`ROADMAP.md`) — `localStorage`
+can't hold it — and needs server-side pagination feeding the same views; the
+renderer and `graph.ts` are designed to accept that swap unchanged.
 
 ### Context-sensitive "add child" options
 

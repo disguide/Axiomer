@@ -634,6 +634,28 @@ describe("status lifecycle (inertness has consequences)", () => {
   });
 });
 
+describe("getSubtreeSizes (scale helper)", () => {
+  it("counts descendants for every node in one pass", () => {
+    const sizes = G.getSubtreeSizes(seedGraph);
+    // Leaves have zero descendants.
+    expect(sizes.get("trolley-v1")).toBe(0);
+    expect(sizes.get("trolley-e1")).toBe(0);
+    // A root counts its whole subtree.
+    expect(sizes.get("trolley-q1")).toBe(
+      G.getDescendantIds(seedGraph, "trolley-q1").size - 1,
+    );
+    // Every node is present.
+    expect(sizes.size).toBe(seedGraph.nodes.length);
+  });
+
+  it("agrees with getDescendantIds for a mid-tree node", () => {
+    const sizes = G.getSubtreeSizes(seedGraph);
+    for (const id of ["trolley-p1", "trolley-a1", "trolley-q2"]) {
+      expect(sizes.get(id)).toBe(G.getDescendantIds(seedGraph, id).size - 1);
+    }
+  });
+});
+
 describe("write-first: unlabeled notes and relabeling", () => {
   it("attaches an unlabeled note with a loose connects-to edge", () => {
     let g = G.addRootQuestion(seedGraph, "Q");
