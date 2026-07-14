@@ -88,6 +88,17 @@ function parseNode(value: unknown, i: number): GraphNode {
       );
     node.proofStandard = proofStandard as GraphNode["proofStandard"];
   }
+  const { x, y } = value;
+  if (x !== undefined) {
+    if (typeof x !== "number" || !Number.isFinite(x))
+      throw new Error(`nodes[${i}].x must be a finite number`);
+    node.x = x;
+  }
+  if (y !== undefined) {
+    if (typeof y !== "number" || !Number.isFinite(y))
+      throw new Error(`nodes[${i}].y must be a finite number`);
+    node.y = y;
+  }
   return node;
 }
 

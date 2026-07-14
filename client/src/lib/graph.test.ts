@@ -634,6 +634,46 @@ describe("status lifecycle (inertness has consequences)", () => {
   });
 });
 
+describe("freeform Canvas authoring", () => {
+  it("adds a floating unlabeled box with a position and no edge", () => {
+    const { graph: g, node } = G.addFloatingNode(seedGraph, "raw idea", 120, 45);
+    expect(node.type).toBe("unlabeled");
+    expect(node.x).toBe(120);
+    expect(node.y).toBe(45);
+    expect(g.nodes).toHaveLength(seedGraph.nodes.length + 1);
+    expect(g.edges).toHaveLength(seedGraph.edges.length); // no connection yet
+    // Floating boxes aren't roots (only questions/premises are) and don't
+    // pollute the Trees gallery.
+    expect(G.getRoots(g).map((n) => n.id)).not.toContain(node.id);
+  });
+
+  it("moves a box and connects two boxes with a loose link", () => {
+    let { graph: g, node: a } = G.addFloatingNode(seedGraph, "A", 0, 0);
+    const b = G.addFloatingNode(g, "B", 200, 0);
+    g = b.graph;
+    g = G.setNodePosition(g, a.id, 50, 60);
+    expect(G.getNode(g, a.id)?.x).toBe(50);
+    g = G.connectNodes(g, a.id, b.node.id);
+    const edge = g.edges.find((e) => e.from === a.id && e.to === b.node.id);
+    expect(edge?.edgeType).toBe("connects-to");
+    // Idempotent; no self-loops.
+    expect(G.connectNodes(g, a.id, b.node.id).edges).toHaveLength(g.edges.length);
+    expect(G.connectNodes(g, a.id, a.id)).toBe(g);
+  });
+
+  it("deletes a single edge without touching nodes", () => {
+    let { graph: g, node: a } = G.addFloatingNode(seedGraph, "A", 0, 0);
+    const b = G.addFloatingNode(g, "B", 1, 1);
+    g = b.graph;
+    g = G.connectNodes(g, a.id, b.node.id);
+    const edgeId = g.edges[g.edges.length - 1].id;
+    g = G.deleteEdge(g, edgeId);
+    expect(g.edges.find((e) => e.id === edgeId)).toBeUndefined();
+    expect(G.getNode(g, a.id)).toBeDefined();
+    expect(G.getNode(g, b.node.id)).toBeDefined();
+  });
+});
+
 describe("getSubtreeSizes (scale helper)", () => {
   it("counts descendants for every node in one pass", () => {
     const sizes = G.getSubtreeSizes(seedGraph);

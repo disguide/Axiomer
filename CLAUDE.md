@@ -61,6 +61,7 @@ Two key user-facing concepts:
 │   │   ├── pages/
 │   │   │   └── Home.tsx          ← Main page: header, New Question, TreeView + Legend
 │   │   ├── components/
+│   │   │   ├── CanvasBoard.tsx   ← Freeform board: drag boxes, draw arrows, AI labels it (Canvas tab)
 │   │   │   ├── TreesGallery.tsx  ← Tree-tab home: each root a card → open its own canvas
 │   │   │   ├── TreeView.tsx      ← Recursive tree; owns expand/collapse + add-modal
 │   │   │   ├── NodeCard.tsx      ← Single node: icon, label, content, badge, actions, inline edit
@@ -356,6 +357,22 @@ tab) renders it with one-click actions. The heavy primitive is
 `mergeTerminals(graph, keepId, dropId)` in `graph.ts`: re-points every edge at
 the keeper (skipping duplicates), marks the duplicate `merged`, adds a
 `supersedes` redirect — convergence, enforced. Works entirely without AI.
+
+### Freeform Canvas (dump boxes → AI organizes)
+
+The **Canvas tab** (`CanvasBoard.tsx`, React Flow editable, lazy-loaded) is the
+simplest capture surface: **+ Add box** (or double-click the pane) drops a
+plain `unlabeled` box, drag to move (position persists via `x?/y?` on the node
+— optional, ignored by auto-layout views), drag between box handles to draw a
+loose `connects-to` link, double-click to edit, Delete to remove (via
+`removeNodeOnly` — no descendant cascade). No types or structure required.
+Then **✨ Label & organize** runs the Labeler agent over the board and shows an
+inline **propose-and-review** panel (approve / skip / approve-all) — the AI
+types the boxes and connections; you accept per-op, exactly like a coding
+agent's plan. Graph helpers: `addFloatingNode` (returns the new id),
+`setNodePosition`, `connectNodes`, `deleteEdge`, `removeNodeOnly`. Floating
+unlabeled boxes aren't roots, so they don't pollute the Trees gallery; they
+surface in Organize as `needs-label`.
 
 ### Write-first authoring & the `unlabeled` staging type
 

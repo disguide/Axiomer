@@ -129,6 +129,8 @@ export interface GraphNode {
   contentKind?: ContentKind;
   schemeTag?: string; // Walton scheme name, free-form (see TAXONOMY §4.3)
   proofStandard?: ProofStandard; // questions only; absent = "preponderance"
+  x?: number; // freeform Canvas position (optional; other views auto-layout)
+  y?: number;
 }
 
 export interface GraphEdge {

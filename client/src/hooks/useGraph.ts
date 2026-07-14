@@ -49,6 +49,11 @@ export interface UseGraph {
   setProofStandard: (questionId: string, standard: ProofStandard) => void;
   mergeTerminals: (keepId: string, dropId: string) => void;
   relabelNode: (nodeId: string, type: NodeType) => void;
+  addBox: (content: string, x: number, y: number) => string; // returns new id
+  moveNode: (nodeId: string, x: number, y: number) => void;
+  connectNodes: (fromId: string, toId: string) => void;
+  deleteEdge: (edgeId: string) => void;
+  removeBox: (nodeId: string) => void; // Canvas delete: node + its edges, no cascade
   applyProposalOp: (op: ProposalOp) => void;
   replaceGraph: (graph: Graph) => void; // import/restore (already validated)
   resetToSeed: () => void;
@@ -101,6 +106,11 @@ export function useGraph(): UseGraph {
       setProofStandard: noop,
       mergeTerminals: noop,
       relabelNode: noop,
+      addBox: () => "",
+      moveNode: noop,
+      connectNodes: noop,
+      deleteEdge: noop,
+      removeBox: noop,
       applyProposalOp: noop,
       replaceGraph: noop,
       resetToSeed: noop,
@@ -126,6 +136,15 @@ export function useGraph(): UseGraph {
     mergeTerminals: (keepId, dropId) =>
       setGraph((g) => G.mergeTerminals(g, keepId, dropId)),
     relabelNode: (nodeId, type) => setGraph((g) => G.relabelNode(g, nodeId, type)),
+    addBox: (content, x, y) => {
+      const { graph: next, node } = G.addFloatingNode(graph, content, x, y);
+      setGraph(next);
+      return node.id;
+    },
+    moveNode: (nodeId, x, y) => setGraph((g) => G.setNodePosition(g, nodeId, x, y)),
+    connectNodes: (fromId, toId) => setGraph((g) => G.connectNodes(g, fromId, toId)),
+    deleteEdge: (edgeId) => setGraph((g) => G.deleteEdge(g, edgeId)),
+    removeBox: (nodeId) => setGraph((g) => G.removeNodeOnly(g, nodeId)),
     applyProposalOp: (op) => setGraph((g) => applyOp(g, op)),
     replaceGraph: (next) => setGraph(next),
     resetToSeed: () => setGraph(seedGraph),

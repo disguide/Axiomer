@@ -66,6 +66,10 @@ Other scripts: `npm run build`, `npm run preview`, `npm run typecheck`.
   level-of-detail) that renders only what you've opened, and a Canvas
   **Overview "brain"** that shows the whole territory as a field of
   argument-trees converging on shared bedrock — clean at thousands of nodes.
+- **Freeform Canvas:** dump plain boxes, drag them around, draw arrows by hand
+  — then hit "Label & organize" and the AI proposes how to type and arrange it,
+  which you approve op by op (like a coding agent's plan). No structure needed
+  up front.
 - **Write-first authoring:** you don't have to type a node to create it — jot
   the thought as an *unlabeled note* and label it later (or let the AI do it).
 - **Your own AI, three jobs:** plug in any provider with your own API key

@@ -15,8 +15,9 @@ import SharePanel from "@/components/SharePanel";
 import DepthPanel from "@/components/DepthPanel";
 import Legend from "@/components/Legend";
 
-// React Flow is heavy and only used by the Map tab — load it on demand.
+// React Flow is heavy and only used by the Map/Canvas tabs — load on demand.
 const GraphMap = lazy(() => import("@/components/GraphMap"));
+const CanvasBoard = lazy(() => import("@/components/CanvasBoard"));
 
 const DONATE_URL = import.meta.env.VITE_DONATE_URL as string | undefined;
 
@@ -35,6 +36,11 @@ export default function Home() {
     setProofStandard,
     mergeTerminals,
     relabelNode,
+    addBox,
+    moveNode,
+    connectNodes,
+    deleteEdge,
+    removeBox,
     applyProposalOp,
     replaceGraph,
     resetToSeed,
@@ -47,7 +53,7 @@ export default function Home() {
   const [showLegend, setShowLegend] = useState(false);
   // The Map is the primary surface (and what the public read-only viewer leads with).
   const [view, setView] = useState<
-    "tree" | "values" | "map" | "stance" | "organize" | "agents" | "share"
+    "canvas" | "tree" | "values" | "map" | "stance" | "organize" | "agents" | "share"
   >("map");
   const [focusId, setFocusId] = useState<string | null>(null);
 
@@ -168,7 +174,19 @@ export default function Home() {
         }
       >
         <section>
-          <div className="mb-4 inline-flex rounded-md border border-slate-200 bg-white p-0.5 text-sm">
+          <div className="mb-4 inline-flex flex-wrap rounded-md border border-slate-200 bg-white p-0.5 text-sm">
+            <button
+              type="button"
+              onClick={() => setView("canvas")}
+              className={`rounded px-3 py-1 ${
+                view === "canvas"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+              title="Freeform board — dump boxes, draw arrows, then let AI organize"
+            >
+              Canvas
+            </button>
             <button
               type="button"
               onClick={() => setView("tree")}
@@ -321,6 +339,27 @@ export default function Home() {
 
           {readOnly && loading ? (
             <p className="p-8 text-center text-sm text-slate-400">Loading…</p>
+          ) : view === "canvas" ? (
+            <Suspense
+              fallback={
+                <p className="p-8 text-center text-sm text-slate-400">
+                  Loading canvas…
+                </p>
+              }
+            >
+              <CanvasBoard
+                graph={graph}
+                readOnly={readOnly}
+                onAddBox={addBox}
+                onMoveNode={moveNode}
+                onConnect={connectNodes}
+                onEditNode={editNode}
+                onRemoveBox={removeBox}
+                onDeleteEdge={deleteEdge}
+                onApplyOp={applyProposalOp}
+                onOpenAgents={() => setView("agents")}
+              />
+            </Suspense>
           ) : view === "values" ? (
             <ValuesIndex graph={graph} onOpenTree={focusInTree} />
           ) : view === "stance" ? (

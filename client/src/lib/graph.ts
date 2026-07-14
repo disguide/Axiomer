@@ -273,6 +273,76 @@ export function addNode(
   };
 }
 
+// --- Freeform Canvas authoring ----------------------------------------------
+// The Canvas is the "just dump boxes and draw arrows" surface: unlabeled nodes
+// with a position, joined by loose `connects-to` links, which the AI Labeler
+// later types and organizes. Positions live on the node (optional; the Tree
+// and Map auto-layout and ignore them).
+
+export function addFloatingNode(
+  graph: Graph,
+  content: string,
+  x: number,
+  y: number,
+): { graph: Graph; node: GraphNode } {
+  const node: GraphNode = {
+    id: uid("node"),
+    type: "unlabeled",
+    content,
+    createdAt: new Date().toISOString(),
+    x,
+    y,
+  };
+  return { graph: { nodes: [...graph.nodes, node], edges: graph.edges }, node };
+}
+
+export function setNodePosition(
+  graph: Graph,
+  nodeId: string,
+  x: number,
+  y: number,
+): Graph {
+  return {
+    ...graph,
+    nodes: graph.nodes.map((n) => (n.id === nodeId ? { ...n, x, y } : n)),
+  };
+}
+
+// A loose, hand-drawn link between two boxes (direction preserved as drawn).
+// The Labeler reinterprets it into the right typed edge.
+export function connectNodes(
+  graph: Graph,
+  fromId: string,
+  toId: string,
+): Graph {
+  if (fromId === toId) return graph;
+  if (!getNode(graph, fromId) || !getNode(graph, toId)) return graph;
+  const exists = graph.edges.some(
+    (e) => e.from === fromId && e.to === toId && e.edgeType === "connects-to",
+  );
+  if (exists) return graph;
+  return {
+    nodes: graph.nodes,
+    edges: [
+      ...graph.edges,
+      { id: uid("edge"), from: fromId, to: toId, edgeType: "connects-to" },
+    ],
+  };
+}
+
+export function deleteEdge(graph: Graph, edgeId: string): Graph {
+  return { nodes: graph.nodes, edges: graph.edges.filter((e) => e.id !== edgeId) };
+}
+
+// Remove a single node and only the edges touching it — NO descendant cascade
+// (the Canvas deletes one box at a time; a loose chain must not vanish).
+export function removeNodeOnly(graph: Graph, nodeId: string): Graph {
+  return {
+    nodes: graph.nodes.filter((n) => n.id !== nodeId),
+    edges: graph.edges.filter((e) => e.from !== nodeId && e.to !== nodeId),
+  };
+}
+
 // Create a brand new root question (no parent edge).
 export function addRootQuestion(graph: Graph, content: string): Graph {
   return addRoot(graph, "question", content);
