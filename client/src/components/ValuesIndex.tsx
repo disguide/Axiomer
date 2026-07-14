@@ -4,9 +4,10 @@ import * as G from "@/lib/graph";
 
 interface ValuesIndexProps {
   graph: Graph;
+  onOpenTree?: (rootId: string) => void; // jump into a converging tree's canvas
 }
 
-export default function ValuesIndex({ graph }: ValuesIndexProps) {
+export default function ValuesIndex({ graph, onOpenTree }: ValuesIndexProps) {
   const usage = G.getValueUsage(graph);
   const clashes = G.getValueClashes(graph);
 
@@ -23,12 +24,13 @@ export default function ValuesIndex({ graph }: ValuesIndexProps) {
     <div className="space-y-6">
       <section>
         <h2 className="text-sm font-semibold text-slate-900">
-          Bedrock values
+          Highways — the values your trees share
         </h2>
         <p className="mt-0.5 text-xs text-slate-500">
-          Where every chain bottoms out. A value used by more than one root
-          shows <span className="font-medium text-indigo-600">convergence</span>{" "}
-          — the shared foundation under different questions and premises.
+          Every chain bottoms out at a value. When several trees land on the
+          same one, that value is a{" "}
+          <span className="font-medium text-indigo-600">highway</span> linking
+          them — click any tree below to drive into its canvas.
         </p>
 
         <ul className="mt-3 space-y-3">
@@ -68,13 +70,21 @@ export default function ValuesIndex({ graph }: ValuesIndexProps) {
                         Grounds {groundingNodes.length} argument
                         {groundingNodes.length === 1 ? "" : "s"} across:
                       </span>
-                      <ul className="mt-1 space-y-0.5">
+                      <ul className="mt-1 flex flex-wrap gap-1.5">
                         {roots.map((r) => (
-                          <li key={r.id} className="flex gap-1.5">
-                            <span style={{ color: NODE_META[r.type].color }}>
-                              {NODE_META[r.type].icon}
-                            </span>
-                            <span>{r.content}</span>
+                          <li key={r.id}>
+                            <button
+                              type="button"
+                              onClick={() => onOpenTree?.(r.id)}
+                              disabled={!onOpenTree}
+                              className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700 enabled:hover:bg-indigo-100 disabled:cursor-default"
+                              title={onOpenTree ? "Open this tree's canvas" : undefined}
+                            >
+                              <span style={{ color: NODE_META[r.type].color }}>
+                                {NODE_META[r.type].icon}
+                              </span>
+                              <span className="max-w-[16rem] truncate">{r.content}</span>
+                            </button>
                           </li>
                         ))}
                       </ul>

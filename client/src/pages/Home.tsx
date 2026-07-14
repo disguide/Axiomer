@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { Graph } from "@/lib/types";
 import { useGraph } from "@/hooks/useGraph";
 import { useStance } from "@/hooks/useStance";
@@ -6,6 +6,7 @@ import { downloadGraph } from "@/lib/io";
 import { parseShareHash } from "@/lib/share";
 import { saveDraft } from "@/lib/versions";
 import TreeView from "@/components/TreeView";
+import TreesGallery from "@/components/TreesGallery";
 import ValuesIndex from "@/components/ValuesIndex";
 import StancePanel from "@/components/StancePanel";
 import OrganizePanel from "@/components/OrganizePanel";
@@ -81,9 +82,19 @@ export default function Home() {
     setCreating(null);
   };
 
+  // After creating a root, drop straight onto its blank canvas.
+  const pendingFocusRoot = useRef(false);
+  useEffect(() => {
+    if (!pendingFocusRoot.current) return;
+    pendingFocusRoot.current = false;
+    const last = graph.nodes[graph.nodes.length - 1];
+    if (last) setFocusId(last.id);
+  }, [graph]);
+
   const submitCreate = () => {
     const trimmed = draft.trim();
     if (!trimmed) return;
+    pendingFocusRoot.current = true;
     if (creating === "premise") addRootPremise(trimmed);
     else addRootQuestion(trimmed);
     cancelCreating();
@@ -311,7 +322,7 @@ export default function Home() {
           {readOnly && loading ? (
             <p className="p-8 text-center text-sm text-slate-400">Loading…</p>
           ) : view === "values" ? (
-            <ValuesIndex graph={graph} />
+            <ValuesIndex graph={graph} onOpenTree={focusInTree} />
           ) : view === "stance" ? (
             <StancePanel
               graph={graph}
@@ -397,22 +408,32 @@ export default function Home() {
             </div>
           )}
 
-          <TreeView
-            graph={graph}
-            readOnly={readOnly}
-            focusId={focusId}
-            stance={stance}
-            onSetFocus={setFocusId}
-            onAddNode={addNode}
-            onLinkValue={linkToExistingValue}
-            onEditNode={editNode}
-            onDeleteNode={deleteNode}
-            onSetStatus={setNodeStatus}
-            onSetProofStandard={setProofStandard}
-            onAccept={accept}
-            onReject={reject}
-            onRelabelNode={relabelNode}
-          />
+          {focusId ? (
+            <TreeView
+              graph={graph}
+              readOnly={readOnly}
+              focusId={focusId}
+              stance={stance}
+              onSetFocus={setFocusId}
+              onAddNode={addNode}
+              onLinkValue={linkToExistingValue}
+              onEditNode={editNode}
+              onDeleteNode={deleteNode}
+              onSetStatus={setNodeStatus}
+              onSetProofStandard={setProofStandard}
+              onAccept={accept}
+              onReject={reject}
+              onRelabelNode={relabelNode}
+            />
+          ) : (
+            <TreesGallery
+              graph={graph}
+              readOnly={readOnly}
+              onOpen={setFocusId}
+              onNew={startCreating}
+              onOpenValues={() => setView("values")}
+            />
+          )}
             </>
           )}
 

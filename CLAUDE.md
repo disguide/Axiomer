@@ -61,6 +61,7 @@ Two key user-facing concepts:
 │   │   ├── pages/
 │   │   │   └── Home.tsx          ← Main page: header, New Question, TreeView + Legend
 │   │   ├── components/
+│   │   │   ├── TreesGallery.tsx  ← Tree-tab home: each root a card → open its own canvas
 │   │   │   ├── TreeView.tsx      ← Recursive tree; owns expand/collapse + add-modal
 │   │   │   ├── NodeCard.tsx      ← Single node: icon, label, content, badge, actions, inline edit
 │   │   │   ├── AddNodeForm.tsx   ← Modal: context-sensitive type dropdown + value linking
@@ -269,6 +270,22 @@ preponderance < clear-and-convincing < beyond-reasonable-doubt <
 dialectical-validity) · `DISSOLVED` (a `presupposition` of the question is
 defeated or refuted — the question loses its footing rather than getting an
 answer). The standard is authorable per question in `NodeCard`.
+
+### Trees workspace (section off, build tree by tree)
+
+The Tree tab is a **workspace of individual trees**, not one giant dump. With
+no focus, `TreesGallery` shows each root (question/premise) as a **card** —
+resolution badge, node count, and the bedrock **values it lands on** as chips
+(the shared foundations that link it to other trees). Opening a card focuses
+that root, so you build one tree on its **own blank canvas** (`TreeView` in
+focus mode, breadcrumb "← All trees"). "New question/premise tree" creates the
+root and drops you straight onto its canvas (`Home` focuses the newest root via
+a `pendingFocusRoot` effect). The **Values tab is the "Highways" view**: each
+value lists the trees converging on it as **clickable on-ramps** (`onOpenTree`
+→ focus that tree) — convergence as the compression that connects separate
+trees. This realizes the "brick by brick, tree by tree, compress into highways"
+model without any engine change (`getRoots`, `getValueUsage`, `getResolution`,
+`getSubtreeSizes`, focus mode already exist).
 
 `TreeView` adds reading aids that don't touch the model: depth **guide rails**
 (nested bordered containers tinted by parent type), **expand/collapse-all**,

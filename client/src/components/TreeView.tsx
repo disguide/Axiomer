@@ -209,7 +209,7 @@ export default function TreeView({
                 onClick={() => onSetFocus(null)}
                 className="rounded px-1.5 py-0.5 font-medium text-slate-600 hover:bg-slate-100"
               >
-                All roots
+                ← All trees
               </button>
               {trail.map((n, i) => (
                 <span key={n.id} className="flex items-center gap-1">
