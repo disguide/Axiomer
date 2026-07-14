@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { GraphNode, NodeStatus, ProofStandard } from "@/lib/types";
+import type { GraphNode, NodeStatus, NodeType, ProofStandard } from "@/lib/types";
 import { PROOF_STANDARDS, isInert } from "@/lib/types";
 import type { Acceptability, Resolution } from "@/lib/graph";
 import { NODE_META } from "@/lib/meta";
@@ -58,6 +58,8 @@ interface NodeCardProps {
   onSetProofStandard?: (standard: ProofStandard) => void;
   onAccept?: () => void;
   onReject?: () => void;
+  relabelOptions?: NodeType[]; // for unlabeled notes: the types you may assign
+  onRelabel?: (type: NodeType) => void;
 }
 
 export default function NodeCard({
@@ -82,6 +84,8 @@ export default function NodeCard({
   onSetProofStandard,
   onAccept,
   onReject,
+  relabelOptions,
+  onRelabel,
 }: NodeCardProps) {
   const meta = NODE_META[node.type];
   const [editing, setEditing] = useState(false);
@@ -317,6 +321,34 @@ export default function NodeCard({
               </select>
             </div>
           )}
+
+          {/* Unlabeled notes: assign a real type (the write-first "label" step). */}
+          {node.type === "unlabeled" &&
+            !readOnly &&
+            !editing &&
+            onRelabel &&
+            relabelOptions &&
+            relabelOptions.length > 0 && (
+              <div className="mt-1.5 flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-1">
+                <span className="text-[10px] font-medium text-slate-500">
+                  Label as
+                </span>
+                <select
+                  className="rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[11px] text-slate-700 focus:border-slate-500 focus:outline-none"
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) onRelabel(e.target.value as NodeType);
+                  }}
+                >
+                  <option value="">choose a type…</option>
+                  {relabelOptions.map((t) => (
+                    <option key={t} value={t}>
+                      {NODE_META[t].icon} {NODE_META[t].label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
         </div>
 
         {!editing && (

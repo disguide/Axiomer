@@ -1,10 +1,11 @@
-// Agent tasks: prompt construction + orchestration for BYOK agents.
+// Agent roles: the AI does three jobs — LABEL, RESEARCH, PARTNER.
 //
-// Everything an agent knows about the taxonomy is GENERATED from the same
-// NODE_META / ALLOWED_CHILDREN the app runs on, so the labeling rules the AI
-// follows can never drift from the code. Agents return a Proposal (JSON);
-// lib/proposals.ts validates every op against the real graph before a human
-// may accept it. Agents never mutate anything.
+// Each role's method/voice lives in a hand-written markdown+XML prompt
+// (./prompts/*.md), edited like prose. The TAXONOMY and ATTACHMENT MATRIX are
+// injected into every prompt from NODE_META / ALLOWED_CHILDREN at runtime, so
+// the rules the AI follows can never drift from the code. Agents return a
+// Proposal (JSON); lib/proposals.ts validates every op against the real graph
+// before a human may accept it. Agents never mutate anything.
 
 import type { Graph, GraphNode } from "../types";
 import { isInert, isTerminalType } from "../types";
@@ -19,64 +20,56 @@ import { ALLOWED_CHILDREN, NODE_FAMILIES, NODE_META } from "../meta";
 import { describeWorkItem, getWorkItems } from "../organize";
 import { parseProposal, type ParsedProposal } from "../proposals";
 import { chatComplete, type AIConfig } from "./provider";
+import labelerPrompt from "./prompts/labeler.md?raw";
+import researcherPrompt from "./prompts/researcher.md?raw";
+import partnerPrompt from "./prompts/partner.md?raw";
 
-export type AgentTaskId = "deepen" | "stress-test" | "ground" | "dedup" | "label";
+export type AgentRoleId = "label" | "research" | "partner";
 
-export interface AgentTask {
-  id: AgentTaskId;
+export interface AgentRole {
+  id: AgentRoleId;
   label: string;
-  description: string;
-  needsTarget: boolean; // operates on a chosen node vs the whole graph
-  needsText: boolean; // takes free-form input (the label task)
+  blurb: string;
+  targetRequired: boolean; // research/partner act on a node; labeler is graph-wide
+  proseKey?: "brief" | "critique"; // the text field this role returns to read
 }
 
-export const AGENT_TASKS: AgentTask[] = [
-  {
-    id: "deepen",
-    label: "🕳 Deepen toward bedrock",
-    description:
-      "Propose the next few nodes under the target — the missing why, warrant, or grounding — preferring links to existing terminals.",
-    needsTarget: true,
-    needsText: false,
-  },
-  {
-    id: "stress-test",
-    label: "⚔ Stress-test",
-    description:
-      "Attack the target like an honest opponent: strongest objections, counter-examples, undercuts of the weakest inference.",
-    needsTarget: true,
-    needsText: false,
-  },
-  {
-    id: "ground",
-    label: "⚓ Ground the open chains",
-    description:
-      "Find arguments that never reach bedrock and propose the value/principle/epistemic-limit each honestly bottoms out at.",
-    needsTarget: false,
-    needsText: false,
-  },
-  {
-    id: "dedup",
-    label: "⧉ Find duplicate bedrock",
-    description:
-      "Scan terminals for near-duplicates the text-similarity nudge missed (same idea, different words) and propose merges.",
-    needsTarget: false,
-    needsText: false,
-  },
+export const AGENT_ROLES: AgentRole[] = [
   {
     id: "label",
-    label: "🏷 Label my text",
-    description:
-      "Take a raw thought and classify it: the right node type, under the target parent, per the labeling procedure.",
-    needsTarget: true,
-    needsText: true,
+    label: "🏷 Labeler",
+    blurb:
+      "Types your raw notes and their connections — turns write-first sketches into a properly typed graph. Runs over the whole graph, or one subtree.",
+    targetRequired: false,
+  },
+  {
+    id: "research",
+    label: "🔍 Researcher",
+    blurb:
+      "Gathers evidence for a claim, weighs both sides honestly, and hands back a cited brief plus evidence nodes to attach. Never fabricates a source.",
+    targetRequired: true,
+    proseKey: "brief",
+  },
+  {
+    id: "partner",
+    label: "🤝 Partner",
+    blurb:
+      "A thinking partner, not a yes-man: names your weakest point, asks the sharp question, and drafts the next move. Co-writes and critiques.",
+    targetRequired: true,
+    proseKey: "critique",
   },
 ];
 
-// --- System prompt (generated, never hand-duplicated) ------------------------
+const PROMPTS: Record<AgentRoleId, string> = {
+  label: labelerPrompt,
+  research: researcherPrompt,
+  partner: partnerPrompt,
+};
 
-export function buildSystemPrompt(): string {
-  const catalog = NODE_FAMILIES.map(
+// --- Injected blocks (generated, never hand-duplicated) ----------------------
+
+function taxonomyBlock(): string {
+  return NODE_FAMILIES.map(
     (f) =>
       `${f.label.toUpperCase()} (${f.hint}):\n` +
       f.types
@@ -87,47 +80,28 @@ export function buildSystemPrompt(): string {
         })
         .join("\n"),
   ).join("\n\n");
-
-  const matrix = Object.entries(ALLOWED_CHILDREN)
-    .filter(([, children]) => children.length > 0)
-    .map(([parent, children]) => `- under ${parent}: ${children.join(", ")}`)
-    .join("\n");
-
-  return `You are a philosophy assistant working inside Axiomer, a wiki-style argument-tree tool. Users trace questions down to bedrock (values, principles, epistemic limits) and build forward from premises. Different questions REUSE the same bedrock nodes — that convergence is the whole point.
-
-NODE TYPES (30, in 8 families):
-${catalog}
-
-ALLOWED CHILDREN (hard constraint — proposals violating this are rejected):
-${matrix}
-
-LABELING RULES:
-1. One claim per node. Split compound thoughts; the "because" half is a child.
-2. Label the ROLE in the dialectic, not the topic. Parent context decides.
-3. Prefer the most specific type (counter-example beats objection; criterion beats assumption).
-4. NEVER invent bedrock. value/principle/epistemic-limit only when a sincere "why?" can no longer be asked and answered. A tired chain is OPEN, not grounded.
-5. PREFER LINKING to an existing terminal over creating a near-duplicate (use the link-value op, or merge-terminals for existing duplicates).
-6. Objections have two modes: attack the CLAIM (default) or attack the INFERENCE — for inference attacks add "edgeType": "undercuts" on the add-node op.
-7. Content is plain natural language, ≤ 2 sentences per node. No markdown.
-
-OUTPUT CONTRACT — respond with ONLY a JSON object, no prose before or after:
-{
-  "summary": "one sentence on what you propose and why",
-  "ops": [
-    {"op": "add-node", "parentId": "<existing node id>", "type": "<node type>", "content": "…", "edgeType": "undercuts (only for inference attacks — otherwise omit)", "contentKind": "empirical|normative|conceptual|metaphysical|logical-mathematical|practical (optional)"},
-    {"op": "link-value", "argumentId": "<existing argument/position id>", "valueId": "<existing terminal id>"},
-    {"op": "merge-terminals", "keepId": "<terminal id>", "dropId": "<terminal id>"},
-    {"op": "set-status", "nodeId": "<id>", "status": "retracted|refuted|invalid", "reason": "…"},
-    {"op": "add-contradiction", "aId": "<claim id>", "bId": "<claim id>"}
-  ]
 }
-Use ONLY node ids that appear in the graph context. Propose 1–5 ops. Quality over quantity.`;
+
+function matrixBlock(): string {
+  return Object.entries(ALLOWED_CHILDREN)
+    .filter(([parent, children]) => children.length > 0 && parent !== "unlabeled")
+    .map(([parent, children]) =>
+      `- under ${parent}: ${children.filter((c) => c !== "unlabeled").join(", ")}`,
+    )
+    .join("\n");
+}
+
+// Fill a role prompt's {{TAXONOMY}} / {{ATTACHMENT_MATRIX}} placeholders.
+export function buildSystemPrompt(role: AgentRoleId): string {
+  return PROMPTS[role]
+    .replace("{{TAXONOMY}}", taxonomyBlock())
+    .replace("{{ATTACHMENT_MATRIX}}", matrixBlock());
 }
 
 // --- Graph context serialization ---------------------------------------------
 
 const MAX_NODES = 250;
-const MAX_CONTENT = 160;
+const MAX_CONTENT = 200;
 
 function clip(s: string): string {
   return s.length > MAX_CONTENT ? `${s.slice(0, MAX_CONTENT)}…` : s;
@@ -143,8 +117,9 @@ function outline(
   if (lines.length >= MAX_NODES || seen.has(node.id)) return;
   seen.add(node.id);
   const status = node.status ? ` [${node.status}]` : "";
+  const flag = node.type === "unlabeled" ? " «UNLABELED — needs a type»" : "";
   lines.push(
-    `${"  ".repeat(depth)}- [${node.id}] ${node.type}${status}: ${clip(node.content)}`,
+    `${"  ".repeat(depth)}- [${node.id}] ${node.type}${status}: ${clip(node.content)}${flag}`,
   );
   for (const child of getChildren(graph, node.id)) {
     outline(graph, child, depth + 1, lines, seen);
@@ -158,7 +133,6 @@ export function buildGraphContext(graph: Graph, targetId?: string): string {
   const seen = new Set<string>();
   const target = targetId ? getNode(graph, targetId) : undefined;
   if (target) {
-    // Locate the target: its parent chain gives the agent the dialectical role.
     const chain: GraphNode[] = [];
     let cur: GraphNode | undefined = target;
     const guard = new Set<string>();
@@ -188,62 +162,72 @@ export function buildGraphContext(graph: Graph, targetId?: string): string {
     }
   }
 
-  const work = getWorkItems(graph).slice(0, 12);
+  const work = getWorkItems(graph).slice(0, 14);
   if (work.length > 0) {
-    lines.push("", "ORGANIZE WORKLIST (known structural problems):");
+    lines.push("", "WORKLIST (known structural problems):");
     for (const item of work) lines.push(`- ${describeWorkItem(item)}`);
   }
 
   return lines.join("\n");
 }
 
-// --- Task prompts -------------------------------------------------------------
+// --- Task line per role -------------------------------------------------------
 
-function taskInstruction(
-  task: AgentTaskId,
-  target: GraphNode | undefined,
-  text: string | undefined,
-): string {
-  switch (task) {
-    case "deepen":
-      return `Deepen the tree under the TARGET node [${target?.id}]. Propose 2–4 children that push its chain toward bedrock: the missing argument, the unstated warrant or assumption, the presupposition worth surfacing, or the grounding itself. If an existing terminal fits, use link-value instead of creating a new one. Every proposed node must be an allowed child of what it attaches to.`;
-    case "stress-test":
-      return `Attack the TARGET node's subtree [${target?.id}] like an honest, rigorous opponent. Propose the 2–4 strongest challenges: objections (use edgeType "undercuts" when attacking the inference rather than the claim), counter-examples against universal claims, or a counter-argument. Attach each to the exact node it challenges. No straw men — attack the strongest reading.`;
-    case "ground":
-      return `The worklist shows arguments that never reach bedrock. For the most important 1–3, propose what each honestly bottoms out at: link-value to an existing terminal when one fits (preferred), otherwise add-node with a new value/principle/epistemic-limit as the child of that argument. Respect rule 4 — if a chain isn't actually near bedrock yet, propose the intermediate argument or raised question instead.`;
-    case "dedup":
-      return `Scan EXISTING TERMINALS for pairs that express the same idea in different words (the text-similarity nudge only catches token overlap — you catch meaning). Propose merge-terminals ops, keeping the terminal with more chains. Only merge genuine duplicates: "minimize suffering" and "reduce net suffering" yes; "minimize suffering" and "respect autonomy" never.`;
+function taskLine(role: AgentRoleId, target: GraphNode | undefined): string {
+  switch (role) {
     case "label":
-      return `Classify this raw text as a node under the TARGET parent [${target?.id}]:\n\n"${text ?? ""}"\n\nApply the labeling rules: find its ROLE relative to the parent, pick the most specific allowed type, split it if it is two claims (multiple add-node ops on the right parents), set contentKind, and use edgeType "undercuts" if it attacks an inference. If it duplicates an existing terminal, propose link-value on the parent instead of a new node.`;
+      return target
+        ? `Label every «UNLABELED» note in the TARGET subtree [${target.id}]: assign each its node type and its connection to its parent, following the method. Split any genuine two-claim note. Emit relabel-node ops (and add-node only for splits).`
+        : "Label every «UNLABELED» note in the graph: assign each its node type and its connection to its parent. Work through them systematically; emit relabel-node ops (and add-node only to split a genuine two-claim note). If a note is too ambiguous to label confidently, leave it and say so.";
+    case "research":
+      return `Research the TARGET claim [${target?.id}]. Run the loop: plan the sub-questions, gather evidence on both sides, evaluate source quality, synthesize a confidence level, and cite. Return the brief and propose evidence/counter-example nodes to attach. Never fabricate a source.`;
+    case "partner":
+      return `Be the thinking partner for the TARGET [${target?.id}] and its subtree. Assess it honestly, name its 1–3 real weak points, ask the sharpest question, and draft the next moves as ops. Lead with the strongest objection, not praise. No flattery.`;
   }
 }
 
 export interface AgentRun {
   parsed: ParsedProposal;
   raw: string; // full model output, shown on demand
+  prose: string; // the role's brief/critique text (empty for labeler)
+}
+
+// Lenient extraction of a text field (brief/critique) from model output.
+function extractProse(raw: string, key: "brief" | "critique" | undefined): string {
+  if (!key) return "";
+  try {
+    const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+    const candidate = fenced ? fenced[1] : raw;
+    const start = candidate.indexOf("{");
+    const end = candidate.lastIndexOf("}");
+    if (start === -1 || end <= start) return "";
+    const obj = JSON.parse(candidate.slice(start, end + 1)) as Record<string, unknown>;
+    const val = obj[key] ?? obj.summary;
+    return typeof val === "string" ? val : "";
+  } catch {
+    return "";
+  }
 }
 
 export async function runAgent(
   config: AIConfig,
   graph: Graph,
-  taskId: AgentTaskId,
+  roleId: AgentRoleId,
   targetId?: string,
-  text?: string,
 ): Promise<AgentRun> {
+  const role = AGENT_ROLES.find((r) => r.id === roleId);
+  if (!role) throw new Error(`unknown role ${roleId}`);
   const target = targetId ? getNode(graph, targetId) : undefined;
-  const task = AGENT_TASKS.find((t) => t.id === taskId);
-  if (!task) throw new Error(`unknown task ${taskId}`);
-  if (task.needsTarget && !target) throw new Error("this task needs a target node");
-  if (task.needsText && !text?.trim()) throw new Error("this task needs input text");
+  if (role.targetRequired && !target) throw new Error("choose a target node for this role");
 
   const user = [
     buildGraphContext(graph, targetId),
     "",
     "TASK:",
-    taskInstruction(taskId, target, text),
+    taskLine(roleId, target),
   ].join("\n");
 
-  const raw = await chatComplete(config, buildSystemPrompt(), user);
+  const raw = await chatComplete(config, buildSystemPrompt(roleId), user);
   const parsed = parseProposal(graph, raw);
-  return { parsed, raw };
+  return { parsed, raw, prose: extractProse(raw, role.proseKey) };
 }

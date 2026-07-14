@@ -48,6 +48,7 @@ export interface UseGraph {
   setNodeStatus: (id: string, status: NodeStatus, reason?: string) => void;
   setProofStandard: (questionId: string, standard: ProofStandard) => void;
   mergeTerminals: (keepId: string, dropId: string) => void;
+  relabelNode: (nodeId: string, type: NodeType) => void;
   applyProposalOp: (op: ProposalOp) => void;
   replaceGraph: (graph: Graph) => void; // import/restore (already validated)
   resetToSeed: () => void;
@@ -99,6 +100,7 @@ export function useGraph(): UseGraph {
       setNodeStatus: noop,
       setProofStandard: noop,
       mergeTerminals: noop,
+      relabelNode: noop,
       applyProposalOp: noop,
       replaceGraph: noop,
       resetToSeed: noop,
@@ -123,6 +125,7 @@ export function useGraph(): UseGraph {
       setGraph((g) => G.setProofStandard(g, questionId, standard)),
     mergeTerminals: (keepId, dropId) =>
       setGraph((g) => G.mergeTerminals(g, keepId, dropId)),
+    relabelNode: (nodeId, type) => setGraph((g) => G.relabelNode(g, nodeId, type)),
     applyProposalOp: (op) => setGraph((g) => applyOp(g, op)),
     replaceGraph: (next) => setGraph(next),
     resetToSeed: () => setGraph(seedGraph),

@@ -62,10 +62,13 @@ Other scripts: `npm run build`, `npm run preview`, `npm run typecheck`.
   bedrock values, contradictions, forced choices (the Stance tab).
 - **Organize:** a deterministic worklist of structural problems — duplicate
   bedrock to merge, unanswered attacks, ungrounded chains (the Organize tab).
-- **Your own AI agents:** plug in any provider with your own API key
+- **Write-first authoring:** you don't have to type a node to create it — jot
+  the thought as an *unlabeled note* and label it later (or let the AI do it).
+- **Your own AI, three jobs:** plug in any provider with your own API key
   (Anthropic, OpenAI, OpenRouter, Groq, local Ollama, any OpenAI-compatible
-  endpoint). Agents propose validated changes — deepen, stress-test, ground,
-  dedup, label — and nothing lands without your accept (the Agents tab).
+  endpoint). The AI **labels** your notes and connections, **researches**
+  claims (cited briefs + evidence), and is a **partner** that critiques and
+  co-writes — suggestion-only, nothing lands without your accept (Agents tab).
 - **Share, versions & GitHub:** export/import graph.json, send the whole
   graph as a link, keep local drafts and diff them PR-style before restoring,
   and propose changes to the canonical graph through a guided GitHub

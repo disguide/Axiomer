@@ -73,7 +73,11 @@ never written.
   {"op": "set-status", "nodeId": "<id>", "status": "retracted", "reason": "…"},
 
   // Declare two claims incompatible (drives clash detection).
-  {"op": "add-contradiction", "aId": "<id>", "bId": "<id>"}
+  {"op": "add-contradiction", "aId": "<id>", "bId": "<id>"},
+
+  // Label a write-first node: assign an `unlabeled` note its real type and fix
+  // its connection to the parent. The Labeler's core move.
+  {"op": "relabel-node", "nodeId": "<id>", "type": "<nodeType>", "edgeType": "<optional>", "contentKind": "<optional>"}
 ]
 ```
 

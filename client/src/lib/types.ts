@@ -47,7 +47,11 @@ export type NodeType =
   | "value"
   | "principle"
   | "epistemic-limit"
-  | "premise";
+  | "premise"
+  // Staging — a raw thought captured before it is labeled. Not a dialectical
+  // role: it is the ABSENCE of one, the write-first state the Labeler resolves
+  // into a real type. Non-terminal, non-participating in all computation.
+  | "unlabeled";
 
 export type EdgeType =
   | "answers"
@@ -180,6 +184,7 @@ export const NODE_TYPES: readonly NodeType[] = [
   "principle",
   "epistemic-limit",
   "premise",
+  "unlabeled",
 ];
 
 export const EDGE_TYPES: readonly EdgeType[] = [
@@ -237,6 +242,11 @@ export const PROOF_STANDARDS: readonly ProofStandard[] = [
 
 export function isTerminalType(type: NodeType): boolean {
   return TERMINAL_TYPES.includes(type);
+}
+
+// A raw thought awaiting a label (the write-first staging state).
+export function isUnlabeled(node: GraphNode): boolean {
+  return node.type === "unlabeled";
 }
 
 // A node participates in computation only while active.

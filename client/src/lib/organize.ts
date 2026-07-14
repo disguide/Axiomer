@@ -44,6 +44,11 @@ export type WorkItem =
       attacker: GraphNode;
     }
   | {
+      // A raw note still awaiting a type (write-first staging).
+      kind: "needs-label";
+      node: GraphNode;
+    }
+  | {
       // Active node under an inert parent — force-less until re-homed.
       kind: "inert-orphan";
       node: GraphNode;
@@ -62,12 +67,13 @@ export type WorkItem =
 
 // Priority order for the worklist (most structural damage first).
 const KIND_PRIORITY: Record<WorkItem["kind"], number> = {
-  "duplicate-terminals": 0, // erodes the product's core
-  "unanswered-attack": 1, // actively defeating something
-  "ungrounded-argument": 2, // blocks FULLY GROUNDED
-  "unsupported-position": 3,
-  "positionless-question": 4,
-  "inert-orphan": 5,
+  "needs-label": 0, // untyped notes don't participate until labeled
+  "duplicate-terminals": 1, // erodes the product's core
+  "unanswered-attack": 2, // actively defeating something
+  "ungrounded-argument": 3, // blocks FULLY GROUNDED
+  "unsupported-position": 4,
+  "positionless-question": 5,
+  "inert-orphan": 6,
 };
 
 export function getWorkItems(graph: Graph, dupThreshold = 0.55): WorkItem[] {
@@ -138,6 +144,11 @@ export function getWorkItems(graph: Graph, dupThreshold = 0.55): WorkItem[] {
     }
   }
 
+  // Raw notes awaiting a type.
+  for (const node of ag.nodes) {
+    if (node.type === "unlabeled") items.push({ kind: "needs-label", node });
+  }
+
   // Ghost orphans.
   for (const id of getInertOrphans(graph)) {
     const node = getNode(graph, id);
@@ -183,6 +194,8 @@ export function describeWorkItem(item: WorkItem): string {
       return `Position "${item.node.content}" has no arguments and no grounding — back it or retract it.`;
     case "positionless-question":
       return `Question "${item.node.content}" has no positions yet.`;
+    case "needs-label":
+      return `Unlabeled note "${item.node.content}" — assign it a type (or ask the Labeler).`;
     case "inert-orphan":
       return `"${item.node.content}" hangs under ${item.parent.status ?? "inert"} parent "${item.parent.content}" — re-home or retract it.`;
   }

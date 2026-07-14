@@ -1,17 +1,17 @@
-// The Agents tab: plug in ANY AI provider with your own API key and run
-// suggestion-only agents against the tree. Agents produce validated
-// proposals; nothing touches the graph until a human accepts each op
-// (propose-and-review, docs/ROADMAP.md — remove the AI and the app still
-// works).
+// The Agents tab: plug in ANY AI provider with your own API key and run the
+// AI's three jobs — Label, Research, Partner. Each produces a validated
+// proposal (and, for research/partner, a brief you read); nothing touches the
+// graph until you accept each op (propose-and-review — remove the AI and the
+// app still works).
 
 import { useMemo, useState } from "react";
 import type { Graph, GraphNode } from "@/lib/types";
 import * as G from "@/lib/graph";
 import {
-  AGENT_TASKS,
+  AGENT_ROLES,
   runAgent,
   type AgentRun,
-  type AgentTaskId,
+  type AgentRoleId,
 } from "@/lib/ai/agents";
 import {
   PROVIDER_PRESETS,
@@ -27,7 +27,6 @@ interface AgentsPanelProps {
   graph: Graph;
   readOnly?: boolean;
   onApplyOp: (op: ProposalOp) => void;
-  onFocus: (nodeId: string) => void;
 }
 
 function describeOp(graph: Graph, op: ProposalOp): string {
@@ -40,6 +39,8 @@ function describeOp(graph: Graph, op: ProposalOp): string {
       return `Add ${NODE_META[op.type]?.label ?? op.type} under ${name(op.parentId)}${
         op.edgeType === "undercuts" ? " (undercutting the inference)" : ""
       }: “${op.content}”`;
+    case "relabel-node":
+      return `Label ${name(op.nodeId)} as ${NODE_META[op.type]?.label ?? op.type}`;
     case "link-value":
       return `Ground ${name(op.argumentId)} in existing terminal ${name(op.valueId)} (convergence, no duplicate)`;
     case "merge-terminals":
@@ -55,7 +56,6 @@ export default function AgentsPanel({
   graph,
   readOnly = false,
   onApplyOp,
-  onFocus,
 }: AgentsPanelProps) {
   const [config, setConfig] = useState<AIConfig | null>(() => loadAIConfig());
   const [editing, setEditing] = useState<AIConfig>(
@@ -68,16 +68,15 @@ export default function AgentsPanel({
       },
   );
   const [showConfig, setShowConfig] = useState(!config);
-  const [taskId, setTaskId] = useState<AgentTaskId>("deepen");
+  const [roleId, setRoleId] = useState<AgentRoleId>("label");
   const [targetId, setTargetId] = useState<string>("");
-  const [labelText, setLabelText] = useState("");
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [run, setRun] = useState<AgentRun | null>(null);
   const [applied, setApplied] = useState<Set<number>>(new Set());
   const [showRaw, setShowRaw] = useState(false);
 
-  const task = AGENT_TASKS.find((t) => t.id === taskId)!;
+  const role = AGENT_ROLES.find((r) => r.id === roleId)!;
 
   // Target picker: active nodes grouped by root.
   const targetGroups = useMemo(() => {
@@ -90,6 +89,11 @@ export default function AgentsPanel({
         .filter((n) => n.status === undefined || n.status === "active"),
     }));
   }, [graph]);
+
+  const unlabeledCount = useMemo(
+    () => graph.nodes.filter((n) => n.type === "unlabeled").length,
+    [graph.nodes],
+  );
 
   const saveConfig = () => {
     saveAIConfig(editing);
@@ -124,9 +128,8 @@ export default function AgentsPanel({
       const result = await runAgent(
         config,
         graph,
-        taskId,
-        task.needsTarget ? targetId || undefined : undefined,
-        task.needsText ? labelText : undefined,
+        roleId,
+        role.targetRequired || targetId ? targetId || undefined : undefined,
       );
       setRun(result);
     } catch (err) {
@@ -143,7 +146,6 @@ export default function AgentsPanel({
 
   const acceptAll = () => {
     if (!run) return;
-    // Re-validate sequentially against the evolving graph.
     let g = graph;
     const done = new Set(applied);
     run.parsed.proposal.ops.forEach((op, i) => {
@@ -163,13 +165,14 @@ export default function AgentsPanel({
         <div className="flex items-start justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold text-slate-900">
-              ✨ Your AI agents
+              ✨ Your AI, three jobs
             </h2>
             <p className="mt-0.5 text-xs text-slate-500">
               Bring your own key — Anthropic, OpenAI, OpenRouter, Groq, local
-              Ollama, or any OpenAI-compatible endpoint. Agents only{" "}
-              <em>propose</em>; every change needs your accept. Remove the AI
-              and Axiomer still works.
+              Ollama, or any OpenAI-compatible endpoint. The AI{" "}
+              <strong>labels</strong> your notes, <strong>researches</strong>{" "}
+              claims, and is a <strong>partner</strong> that critiques and
+              co-writes. It only proposes; every change needs your accept.
             </p>
           </div>
           {config && !showConfig && (
@@ -282,37 +285,39 @@ export default function AgentsPanel({
         )}
       </div>
 
-      {/* Task runner */}
+      {/* Role runner */}
       <div className="rounded-lg border border-slate-200 bg-white p-4">
-        <h3 className="text-xs font-semibold text-slate-700">Run an agent</h3>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {AGENT_TASKS.map((t) => (
+        <div className="grid gap-2 sm:grid-cols-3">
+          {AGENT_ROLES.map((r) => (
             <button
-              key={t.id}
+              key={r.id}
               type="button"
-              onClick={() => setTaskId(t.id)}
-              className={`rounded-md border px-2.5 py-1.5 text-xs ${
-                t.id === taskId
+              onClick={() => setRoleId(r.id)}
+              className={`rounded-lg border p-3 text-left ${
+                r.id === roleId
                   ? "border-slate-700 bg-slate-700 text-white"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-400"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-400"
               }`}
-              title={t.description}
             >
-              {t.label}
+              <div className="text-sm font-semibold">{r.label}</div>
+              <div className={`mt-1 text-[11px] ${r.id === roleId ? "text-slate-200" : "text-slate-500"}`}>
+                {r.blurb}
+              </div>
             </button>
           ))}
         </div>
-        <p className="mt-1.5 text-[11px] text-slate-400">{task.description}</p>
 
-        {task.needsTarget && (
-          <label className="mt-2 block text-[11px] text-slate-600">
-            Target node
+        <div className="mt-3">
+          <label className="block text-[11px] text-slate-600">
+            {role.targetRequired ? "Target node (required)" : "Target subtree (optional — blank = whole graph)"}
             <select
               className="mt-0.5 w-full rounded border border-slate-300 bg-white p-1.5 text-xs"
               value={targetId}
               onChange={(e) => setTargetId(e.target.value)}
             >
-              <option value="">— choose a node —</option>
+              <option value="">
+                {role.targetRequired ? "— choose a node —" : "— whole graph —"}
+              </option>
               {targetGroups.map(({ root, nodes }) => (
                 <optgroup key={root.id} label={root.content.slice(0, 60)}>
                   {nodes.map((n) => (
@@ -324,50 +329,46 @@ export default function AgentsPanel({
               ))}
             </select>
           </label>
-        )}
-
-        {task.needsText && (
-          <label className="mt-2 block text-[11px] text-slate-600">
-            Your raw thought
-            <textarea
-              className="mt-0.5 w-full resize-y rounded border border-slate-300 p-2 text-xs"
-              rows={2}
-              value={labelText}
-              onChange={(e) => setLabelText(e.target.value)}
-              placeholder="e.g. “but what if the five people on the track are all murderers — surely that changes the calculus”"
-            />
-          </label>
-        )}
+          {roleId === "label" && (
+            <p className="mt-1 text-[11px] text-slate-400">
+              {unlabeledCount > 0
+                ? `${unlabeledCount} unlabeled note${unlabeledCount === 1 ? "" : "s"} waiting to be typed.`
+                : "No unlabeled notes right now — the Labeler also fixes mistyped nodes and connections."}
+            </p>
+          )}
+        </div>
 
         <button
           type="button"
           onClick={execute}
-          disabled={
-            running ||
-            (task.needsTarget && !targetId) ||
-            (task.needsText && !labelText.trim())
-          }
+          disabled={running || (role.targetRequired && !targetId)}
           className="mt-3 rounded bg-violet-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-600 disabled:opacity-40"
         >
-          {running ? "Thinking…" : config ? "▶ Run agent" : "Configure a provider first"}
+          {running ? "Thinking…" : config ? `▶ Run ${role.label}` : "Configure a provider first"}
         </button>
         {error && (
-          <p className="mt-2 rounded bg-rose-50 p-2 text-[11px] text-rose-600">
-            {error}
-          </p>
+          <p className="mt-2 rounded bg-rose-50 p-2 text-[11px] text-rose-600">{error}</p>
         )}
       </div>
 
       {/* Proposal review */}
       {run && (
         <div className="rounded-lg border border-violet-200 bg-violet-50/40 p-4">
+          {run.prose && (
+            <div className="mb-3 rounded-md bg-white p-3 text-xs leading-relaxed text-slate-700 ring-1 ring-violet-200/60">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-violet-700">
+                {roleId === "partner" ? "Critique" : "Findings"}
+              </p>
+              <p className="whitespace-pre-wrap">{run.prose}</p>
+            </div>
+          )}
           <div className="flex items-start justify-between gap-2">
             <div>
               <h3 className="text-xs font-semibold text-violet-800">
-                Proposal
+                {run.parsed.proposal.ops.length > 0 ? "Proposed changes" : "No changes proposed"}
               </h3>
               <p className="mt-0.5 text-xs text-slate-600">
-                {run.parsed.proposal.summary || "(no summary)"}
+                {run.parsed.proposal.summary || ""}
               </p>
             </div>
             {!readOnly && run.parsed.proposal.ops.length > 1 && (
@@ -411,11 +412,6 @@ export default function AgentsPanel({
                 </li>
               );
             })}
-            {run.parsed.proposal.ops.length === 0 && (
-              <li className="rounded-md bg-white p-2 text-xs text-slate-400 ring-1 ring-violet-200/60">
-                The agent proposed no valid operations.
-              </li>
-            )}
           </ul>
 
           {run.parsed.invalid.length > 0 && (
@@ -446,23 +442,6 @@ export default function AgentsPanel({
             </pre>
           )}
         </div>
-      )}
-
-      {applied.size > 0 && (
-        <p className="text-center text-[11px] text-slate-400">
-          Applied changes are in the Tree —{" "}
-          <button
-            type="button"
-            className="text-slate-600 underline hover:text-slate-800"
-            onClick={() => {
-              const firstOp = run?.parsed.proposal.ops.find((_, i) => applied.has(i));
-              if (firstOp && "parentId" in firstOp) onFocus(firstOp.parentId);
-            }}
-          >
-            jump there
-          </button>
-          .
-        </p>
       )}
     </div>
   );

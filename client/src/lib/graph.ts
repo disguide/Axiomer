@@ -173,6 +173,8 @@ export function edgeTypeFor(
   childType: NodeType,
   parentType: NodeType,
 ): EdgeType {
+  // A raw note connects loosely until it's labeled — no committed relationship.
+  if (childType === "unlabeled") return "connects-to";
   // Anything built directly on a premise is entailed by it.
   if (parentType === "premise") return "entails";
   if (childType === "position" && parentType === "question") return "answers";
@@ -275,6 +277,47 @@ export function editNode(
       n.id === nodeId ? { ...n, content: newContent } : n,
     ),
   };
+}
+
+// Assign (or reassign) a node's type — the write-first "label it now" move.
+// Retypes the node AND rebuilds the edge to its structural parent with the
+// right relationship and orientation for the new type (a note relabeled to a
+// value needs `grounds-in`, which runs parent→child, not the note's old
+// `connects-to`). A terminal target with existing children is refused (the
+// terminal rule). Roots (no parent) just change type.
+export function relabelNode(
+  graph: Graph,
+  nodeId: string,
+  newType: NodeType,
+  opts?: { edgeType?: EdgeType; contentKind?: ContentKind },
+): Graph {
+  const node = getNode(graph, nodeId);
+  if (!node) return graph;
+  if (isTerminalType(newType) && getChildren(graph, nodeId).length > 0)
+    return graph; // would create a terminal with children
+
+  const parentEdge = graph.edges.find(
+    (e) => isStructuralEdge(e) && endpoints(e).child === nodeId,
+  );
+
+  const nodes = graph.nodes.map((n) => {
+    if (n.id !== nodeId) return n;
+    const next: GraphNode = { ...n, type: newType };
+    if (opts?.contentKind) next.contentKind = opts.contentKind;
+    return next;
+  });
+
+  if (!parentEdge) return { nodes, edges: graph.edges }; // a root — no edge to fix
+
+  const parent = getNode(graph, endpoints(parentEdge).parent);
+  const parentId = endpoints(parentEdge).parent;
+  const edgeType =
+    opts?.edgeType ??
+    (parent ? edgeTypeFor(newType, parent.type) : "connects-to");
+  const edges = graph.edges
+    .filter((e) => e.id !== parentEdge.id)
+    .concat(makeEdge(parentId, nodeId, edgeType));
+  return { nodes, edges };
 }
 
 // Set a question's declared proof standard (Carneades; TAXONOMY §4.4).

@@ -3,6 +3,7 @@
 // v2 additions follow docs/TAXONOMY.md (families, definitions, tests).
 
 import type { NodeType } from "./types";
+import { NODE_TYPES, TERMINAL_TYPES } from "./types";
 
 export interface NodeMeta {
   label: string; // e.g. "ARGUMENT (SUPPORT)"
@@ -297,6 +298,16 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     placeholder: "All humans have equal moral worth",
     terminal: false,
   },
+  unlabeled: {
+    label: "NOTE (UNLABELED)",
+    icon: "✎",
+    color: "#94a3b8",
+    description:
+      "A raw thought, captured now and typed later. Write freely; the Labeler (or you) assigns its real type and connection.",
+    prompt: "Write your thought — you can label it later",
+    placeholder: "Just get the idea down…",
+    terminal: false,
+  },
 };
 
 // Context-sensitive children: which node types may be added under a given
@@ -522,7 +533,21 @@ export const ALLOWED_CHILDREN: Record<NodeType, NodeType[]> = {
     "related-concept",
     "logical-fallacy",
   ],
+  // A raw note can precede anything — you jot freely, then label. Filled in
+  // by the post-process below (all non-terminal types + terminals).
+  unlabeled: [],
 };
+
+// Write-first: an `unlabeled` note may hang under ANY non-terminal parent, and
+// may itself precede ANY type. We inject this rather than hand-editing 27 rows,
+// keeping the matrix DRY and the terminal rule intact (terminals stay childless).
+for (const parent of NODE_TYPES) {
+  if (parent === "unlabeled") continue;
+  if (!TERMINAL_TYPES.includes(parent) && !ALLOWED_CHILDREN[parent].includes("unlabeled")) {
+    ALLOWED_CHILDREN[parent].push("unlabeled");
+  }
+}
+ALLOWED_CHILDREN.unlabeled = NODE_TYPES.filter((t) => t !== "unlabeled");
 
 // The 8 families of docs/TAXONOMY.md §2 — used to group the type picker and
 // the Legend so 30 types stay scannable.
@@ -587,6 +612,11 @@ export const NODE_FAMILIES: NodeFamily[] = [
     hint: "where the regress ends",
     types: ["value", "principle", "epistemic-limit", "premise"],
   },
+  {
+    label: "Staging",
+    hint: "write now, label later",
+    types: ["unlabeled"],
+  },
 ];
 
 // Display order for the Legend panel — family order (docs/TAXONOMY.md §2).
@@ -629,4 +659,6 @@ export const NODE_ORDER: NodeType[] = [
   "principle",
   "epistemic-limit",
   "premise",
+  // Staging
+  "unlabeled",
 ];

@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import type { Graph, GraphNode, NodeStatus, NodeType, ProofStandard } from "@/lib/types";
-import { isInert, isTerminalType } from "@/lib/types";
+import { NODE_TYPES, isInert, isTerminalType } from "@/lib/types";
 import type { AddNodeOpts } from "@/lib/graph";
 import type { Stance } from "@/lib/commitment";
-import { NODE_META } from "@/lib/meta";
+import { ALLOWED_CHILDREN, NODE_META } from "@/lib/meta";
 import * as G from "@/lib/graph";
 import NodeCard from "./NodeCard";
 import AddNodeForm from "./AddNodeForm";
@@ -27,6 +27,17 @@ interface TreeViewProps {
   onSetProofStandard?: (questionId: string, standard: ProofStandard) => void;
   onAccept?: (nodeId: string) => void;
   onReject?: (nodeId: string) => void;
+  onRelabelNode?: (nodeId: string, type: NodeType) => void;
+}
+
+// A raw note may be labeled as anything its parent legally allows (or, at a
+// root, any real type).
+function relabelChoices(graph: Graph, nodeId: string): NodeType[] {
+  const parent = G.getParent(graph, nodeId);
+  const pool = parent
+    ? ALLOWED_CHILDREN[parent.type]
+    : NODE_TYPES;
+  return pool.filter((t) => t !== "unlabeled");
 }
 
 export default function TreeView({
@@ -43,6 +54,7 @@ export default function TreeView({
   onSetProofStandard,
   onAccept,
   onReject,
+  onRelabelNode,
 }: TreeViewProps) {
   const [expanded, setExpanded] = useState<Set<string>>(() => {
     // Expand roots by default so the seed is visible on load.
@@ -144,6 +156,14 @@ export default function TreeView({
             }
             onAccept={onAccept ? () => onAccept(node.id) : undefined}
             onReject={onReject ? () => onReject(node.id) : undefined}
+            relabelOptions={
+              node.type === "unlabeled" ? relabelChoices(graph, node.id) : undefined
+            }
+            onRelabel={
+              onRelabelNode && !readOnly
+                ? (type) => onRelabelNode(node.id, type)
+                : undefined
+            }
           />
         </div>
         {isExpanded && children.length > 0 && (

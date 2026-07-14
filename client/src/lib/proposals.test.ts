@@ -185,6 +185,40 @@ describe("applyOp", () => {
     expect(g).toBe(seedGraph);
   });
 
+  it("applies relabel-node, rewiring the parent edge", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = g.nodes[g.nodes.length - 1].id;
+    g = G.addNode(g, "unlabeled", "Yes we should", qid);
+    const noteId = g.nodes[g.nodes.length - 1].id;
+    const relabeled = applyOp(g, {
+      op: "relabel-node",
+      nodeId: noteId,
+      type: "position",
+    });
+    expect(G.getNode(relabeled, noteId)?.type).toBe("position");
+    expect(
+      relabeled.edges.some(
+        (e) => e.from === noteId && e.to === qid && e.edgeType === "answers",
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects a relabel that violates the attachment matrix", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = g.nodes[g.nodes.length - 1].id;
+    g = G.addNode(g, "unlabeled", "note", qid);
+    const noteId = g.nodes[g.nodes.length - 1].id;
+    // value is not an allowed child of a question.
+    const check = validateOp(g, {
+      op: "relabel-node",
+      nodeId: noteId,
+      type: "value",
+    });
+    expect(check.ok).toBe(false);
+    expect(check.reason).toMatch(/not an allowed child/);
+    expect(applyOp(g, { op: "relabel-node", nodeId: noteId, type: "value" })).toBe(g);
+  });
+
   it("applies merge-terminals end to end", () => {
     let g = G.addRootQuestion(seedGraph, "Q");
     const qid = g.nodes[g.nodes.length - 1].id;

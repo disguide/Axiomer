@@ -40,6 +40,11 @@ const KIND_META: Record<
   WorkItem["kind"],
   { title: string; tone: string; icon: string }
 > = {
+  "needs-label": {
+    title: "Note awaiting a type",
+    tone: "border-slate-300 bg-slate-50",
+    icon: "✎",
+  },
   "duplicate-terminals": {
     title: "Possible duplicate bedrock",
     tone: "border-indigo-200 bg-indigo-50/60",
@@ -205,6 +210,23 @@ export default function OrganizePanel({
                     {item.kind === "unsupported-position"
                       ? "Open to back it"
                       : "Open to answer it"}
+                  </button>
+                </>
+              )}
+              {item.kind === "needs-label" && (
+                <>
+                  <Chip node={item.node} onFocus={onFocus} />
+                  <p className="text-[11px] text-slate-500">
+                    A raw note with no type yet — it doesn't ground, attack, or
+                    count until labeled. Open it to pick a type, or ask the
+                    Labeler agent to type every note at once.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => onFocus(item.node.id)}
+                    className="rounded bg-slate-700 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-slate-600"
+                  >
+                    Open to label
                   </button>
                 </>
               )}

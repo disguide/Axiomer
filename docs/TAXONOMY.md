@@ -101,6 +101,17 @@ Terminal types (may never have children) are marked ⚓.
 | `epistemic-limit` ⚓ [v1] | The recognition that the chain ends because knowledge gives out ("why these physical constants — no one knows"). | Is the honest end "this cannot (currently) be known," not "I choose this"? |
 | `premise` [v1] | A foundational assumption used as a **root to build forward from** (`entails` children). The reverse-direction entry point; non-terminal. | Is it a base someone adopts to explore its consequences? |
 
+### Staging (not a dialectical role)
+
+| Type | Definition | Test |
+|---|---|---|
+| `unlabeled` **[NEW]** | A raw thought captured **write-first**, before it is typed. Not a role in the dialectic — the *absence* of one, a staging state the Labeler (human or AI) resolves into a real type via `relabel-node`. Non-terminal, non-participating in grounding/acceptability/commitment. Connects to its parent with `connects-to` until labeled. | Is this a thought someone jotted without yet deciding what it *is*? |
+
+`unlabeled` may hang under any non-terminal parent and may precede any type; it
+is the one type exempt from the role-based growth policy because it encodes no
+role. It never appears in a finished graph — the `needs-label` worklist item
+and the Labeler exist to drain it.
+
 **The terminal rule (unchanged, absolute):** only `value`, `principle`,
 `epistemic-limit` end a chain. If a branch "just stops" anywhere else, the
 question is OPEN. Test for genuine bedrock: *can a sincere "why?" still be

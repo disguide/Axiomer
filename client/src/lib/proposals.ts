@@ -30,9 +30,12 @@ import {
   addContradiction,
   addNode,
   canSetStatus,
+  getChildren,
   getNode,
+  getParent,
   linkToExistingValue,
   mergeTerminals,
+  relabelNode,
   setNodeStatus,
 } from "./graph";
 
@@ -48,7 +51,16 @@ export type ProposalOp =
   | { op: "link-value"; argumentId: string; valueId: string }
   | { op: "merge-terminals"; keepId: string; dropId: string }
   | { op: "set-status"; nodeId: string; status: NodeStatus; reason?: string }
-  | { op: "add-contradiction"; aId: string; bId: string };
+  | { op: "add-contradiction"; aId: string; bId: string }
+  | {
+      // Assign/reassign a node's type — the Labeler's core move (usually on an
+      // `unlabeled` note). Rebuilds the parent edge for the new type.
+      op: "relabel-node";
+      nodeId: string;
+      type: NodeType;
+      edgeType?: EdgeType;
+      contentKind?: ContentKind;
+    };
 
 export interface Proposal {
   summary: string;
@@ -138,6 +150,27 @@ export function validateOp(
         return { ok: false, reason: "a node cannot contradict itself" };
       return { ok: true };
     }
+    case "relabel-node": {
+      const node = getNode(graph, op.nodeId);
+      if (!node) return { ok: false, reason: `node ${op.nodeId} not found` };
+      if (isInert(node)) return { ok: false, reason: "cannot relabel an inert node" };
+      if (!NODE_TYPES.includes(op.type))
+        return { ok: false, reason: `unknown type "${op.type}"` };
+      if (op.type === "unlabeled")
+        return { ok: false, reason: "relabel must assign a real type" };
+      // The new type must be a legal child of the current parent.
+      const parent = getParent(graph, op.nodeId);
+      if (parent && !ALLOWED_CHILDREN[parent.type].includes(op.type))
+        return {
+          ok: false,
+          reason: `${op.type} is not an allowed child of ${parent.type}`,
+        };
+      if (isTerminalType(op.type) && getChildren(graph, op.nodeId).length > 0)
+        return { ok: false, reason: "a terminal cannot have children" };
+      if (op.edgeType !== undefined && !EDGE_TYPES.includes(op.edgeType))
+        return { ok: false, reason: `unknown edge "${op.edgeType}"` };
+      return { ok: true };
+    }
   }
 }
 
@@ -163,6 +196,11 @@ export function applyOp(graph: Graph, op: ProposalOp): Graph {
       );
     case "add-contradiction":
       return addContradiction(graph, op.aId, op.bId);
+    case "relabel-node":
+      return relabelNode(graph, op.nodeId, op.type, {
+        edgeType: op.edgeType,
+        contentKind: op.contentKind,
+      });
   }
 }
 
@@ -224,6 +262,21 @@ function coerceOp(raw: unknown): ProposalOp | string {
       const bId = str(raw.bId);
       if (!aId || !bId) return "add-contradiction needs aId, bId";
       return { op: "add-contradiction", aId, bId };
+    }
+    case "relabel-node": {
+      const nodeId = str(raw.nodeId);
+      const type = str(raw.type);
+      if (!nodeId || !type) return "relabel-node needs nodeId, type";
+      const op: ProposalOp = {
+        op: "relabel-node",
+        nodeId,
+        type: type as NodeType,
+      };
+      const edgeType = str(raw.edgeType);
+      if (edgeType) op.edgeType = edgeType as EdgeType;
+      const contentKind = str(raw.contentKind);
+      if (contentKind) op.contentKind = contentKind as ContentKind;
+      return op;
     }
     default:
       return `unknown op "${String(raw.op)}"`;

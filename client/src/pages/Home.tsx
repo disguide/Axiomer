@@ -33,6 +33,7 @@ export default function Home() {
     setNodeStatus,
     setProofStandard,
     mergeTerminals,
+    relabelNode,
     applyProposalOp,
     replaceGraph,
     resetToSeed,
@@ -333,7 +334,6 @@ export default function Home() {
               graph={graph}
               readOnly={readOnly}
               onApplyOp={applyProposalOp}
-              onFocus={focusInTree}
             />
           ) : view === "share" ? (
             <SharePanel
@@ -411,6 +411,7 @@ export default function Home() {
             onSetProofStandard={setProofStandard}
             onAccept={accept}
             onReject={reject}
+            onRelabelNode={relabelNode}
           />
             </>
           )}

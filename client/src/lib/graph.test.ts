@@ -634,6 +634,76 @@ describe("status lifecycle (inertness has consequences)", () => {
   });
 });
 
+describe("write-first: unlabeled notes and relabeling", () => {
+  it("attaches an unlabeled note with a loose connects-to edge", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = lastId(g);
+    g = G.addNode(g, "unlabeled", "some raw thought", qid);
+    const noteId = lastId(g);
+    const edge = g.edges.find((e) => e.from === noteId || e.to === noteId);
+    expect(edge?.edgeType).toBe("connects-to");
+    // It nests under the question in the tree…
+    expect(G.getChildren(g, qid).map((n) => n.id)).toContain(noteId);
+    // …but participates in nothing: the question stays OPEN, note is "grounded"
+    // only in the vacuous non-participating sense.
+    expect(G.isFullyGrounded(g, qid)).toBe(false);
+    expect(G.isNodeGrounded(g, noteId)).toBe(true);
+  });
+
+  it("relabels a note to a position and rewires the edge to `answers`", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = lastId(g);
+    g = G.addNode(g, "unlabeled", "Yes, we should", qid);
+    const noteId = lastId(g);
+    g = G.relabelNode(g, noteId, "position");
+    expect(G.getNode(g, noteId)?.type).toBe("position");
+    const edge = g.edges.find((e) => e.from === noteId && e.to === qid);
+    expect(edge?.edgeType).toBe("answers");
+    // Still a child of the question, now as a real position.
+    expect(G.getChildren(g, qid).map((n) => n.id)).toContain(noteId);
+  });
+
+  it("relabels to a terminal and flips the edge to grounds-in (parent→child)", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = lastId(g);
+    g = G.addNode(g, "position", "P", qid);
+    const pid = lastId(g);
+    g = G.addNode(g, "argument-support", "A", pid);
+    const aid = lastId(g);
+    g = G.addNode(g, "unlabeled", "minimize suffering", aid);
+    const noteId = lastId(g);
+    expect(G.isFullyGrounded(g, qid)).toBe(false);
+    g = G.relabelNode(g, noteId, "value");
+    const edge = g.edges.find(
+      (e) => e.edgeType === "grounds-in" && e.to === noteId,
+    );
+    expect(edge?.from).toBe(aid); // grounds-in runs argument→value
+    // Labeling the note as the bedrock now grounds the whole question.
+    expect(G.isFullyGrounded(g, qid)).toBe(true);
+  });
+
+  it("refuses to relabel into a terminal that already has children", () => {
+    let g = G.addRootQuestion(seedGraph, "Q");
+    const qid = lastId(g);
+    g = G.addNode(g, "unlabeled", "note with a child", qid);
+    const noteId = lastId(g);
+    g = G.addNode(g, "unlabeled", "child note", noteId);
+    const before = g;
+    g = G.relabelNode(g, noteId, "value");
+    expect(g).toBe(before); // unchanged
+  });
+
+  it("relabels a root note by just changing its type (no parent edge)", () => {
+    let g: Graph = {
+      nodes: [{ id: "n", type: "unlabeled", content: "a floating idea" }],
+      edges: [],
+    };
+    g = G.relabelNode(g, "n", "premise");
+    expect(G.getNode(g, "n")?.type).toBe("premise");
+    expect(g.edges).toHaveLength(0);
+  });
+});
+
 describe("resolution (dissolved / resolved / grounded / open)", () => {
   const chain = () => {
     let g = G.addRootQuestion(seedGraph, "Q?");

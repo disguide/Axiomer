@@ -43,7 +43,13 @@ export default function AddNodeForm({
   onLinkValue,
   onClose,
 }: AddNodeFormProps) {
-  const options = ALLOWED_CHILDREN[parent.type];
+  // Typeable options exclude the write-first "unlabeled" staging type.
+  const options: NodeType[] = ALLOWED_CHILDREN[parent.type].filter(
+    (t) => t !== "unlabeled",
+  );
+  // Write-first is the default: you capture the thought, label later. Type is
+  // "unlabeled" until you choose to "pick a type now".
+  const [labelNow, setLabelNow] = useState(false);
   const [type, setType] = useState<NodeType>(options[0]);
   const [content, setContent] = useState("");
   // For terminal types: create a new bedrock node, or link an existing one.
@@ -53,16 +59,19 @@ export default function AddNodeForm({
   const [contentKind, setContentKind] = useState<ContentKind | "">("");
   const [addedCount, setAddedCount] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const showAttackMode = type === "objection" && UNDERCUTTABLE.has(parent.type);
 
-  const meta = NODE_META[type];
+  const effectiveType: NodeType = labelNow ? type : "unlabeled";
+  const showAttackMode =
+    labelNow && type === "objection" && UNDERCUTTABLE.has(parent.type);
+
+  const meta = NODE_META[effectiveType];
   // Existing terminals of the SAME type are the valid link/dedup targets.
   const sameType = useMemo(
-    () => existingTerminals.filter((t) => t.type === type),
-    [existingTerminals, type],
+    () => existingTerminals.filter((t) => t.type === effectiveType),
+    [existingTerminals, effectiveType],
   );
   const [valueId, setValueId] = useState<string>("");
-  const showLinkOption = isTerminalType(type) && sameType.length > 0;
+  const showLinkOption = isTerminalType(effectiveType) && sameType.length > 0;
 
   // The picker shows only this parent's allowed types, grouped by family.
   const families = useMemo(
@@ -76,18 +85,19 @@ export default function AddNodeForm({
 
   // Near-duplicates of what the user is typing — nudge "link instead".
   const similar = useMemo(() => {
-    if (!isTerminalType(type) || !content.trim()) return [];
+    if (!isTerminalType(effectiveType) || !content.trim()) return [];
     return sameType
       .map((node) => ({ node, score: similarity(content, node.content) }))
       .filter((m) => m.score >= 0.5)
       .sort((a, b) => b.score - a.score)
       .slice(0, 3);
-  }, [content, type, sameType]);
+  }, [content, effectiveType, sameType]);
 
   const linkTarget = valueId || sameType[0]?.id || "";
 
   const pickType = (t: NodeType) => {
     setType(t);
+    setLabelNow(true);
     setMode("new");
     setAttackMode("rebut");
   };
@@ -103,8 +113,8 @@ export default function AddNodeForm({
     if (!trimmed) return false;
     const opts: AddNodeOpts = {};
     if (showAttackMode && attackMode === "undercut") opts.edgeType = "undercuts";
-    if (contentKind && KINDED.has(type)) opts.contentKind = contentKind;
-    onAdd(type, trimmed, Object.keys(opts).length > 0 ? opts : undefined);
+    if (contentKind && KINDED.has(effectiveType)) opts.contentKind = contentKind;
+    onAdd(effectiveType, trimmed, Object.keys(opts).length > 0 ? opts : undefined);
     return true;
   };
 
@@ -153,41 +163,66 @@ export default function AddNodeForm({
           )}
         </div>
 
-        {/* Type picker — grouped by family so 20 options stay scannable. */}
-        <div className="mt-3 space-y-2">
-          {families.map((f) => (
-            <div key={f.label}>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                {f.label} <span className="font-normal">— {f.hint}</span>
-              </p>
-              <div className="mt-1 flex flex-wrap gap-1">
-                {f.types.map((t) => {
-                  const m = NODE_META[t];
-                  const active = t === type;
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => pickType(t)}
-                      className={`flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors ${
-                        active
-                          ? "border-transparent text-white"
-                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-400"
-                      }`}
-                      style={active ? { backgroundColor: m.color } : undefined}
-                      title={m.description}
-                    >
-                      <span style={active ? undefined : { color: m.color }}>
-                        {m.icon}
-                      </span>
-                      {m.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+        {/* Write-first by default: capture the thought, label later. The type
+            picker only appears if you choose to type it now. */}
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <p className="text-[11px] text-slate-500">
+            {labelNow
+              ? "Pick the type that fits."
+              : "Just write your thought — you (or the Labeler) can type it later."}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              if (labelNow) {
+                setLabelNow(false);
+              } else {
+                setLabelNow(true);
+                setType(options[0]);
+              }
+            }}
+            className="shrink-0 rounded border border-slate-200 px-2 py-1 text-[11px] text-slate-600 hover:bg-slate-100"
+          >
+            {labelNow ? "← Just write, label later" : "Pick a type now →"}
+          </button>
         </div>
+
+        {labelNow && (
+          <div className="mt-2 space-y-2">
+            {families.map((f) => (
+              <div key={f.label}>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  {f.label} <span className="font-normal">— {f.hint}</span>
+                </p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {f.types.map((t) => {
+                    const m = NODE_META[t];
+                    const active = t === type;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => pickType(t)}
+                        className={`flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors ${
+                          active
+                            ? "border-transparent text-white"
+                            : "border-slate-200 bg-white text-slate-600 hover:border-slate-400"
+                        }`}
+                        style={active ? { backgroundColor: m.color } : undefined}
+                        title={m.description}
+                      >
+                        <span style={active ? undefined : { color: m.color }}>
+                          {m.icon}
+                        </span>
+                        {m.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <p className="mt-2 rounded-md bg-slate-50 px-2.5 py-1.5 text-[11px] text-slate-500">
           <span className="font-medium" style={{ color: meta.color }}>
@@ -287,7 +322,7 @@ export default function AddNodeForm({
                 }
               }}
             />
-            {KINDED.has(type) && (
+            {labelNow && KINDED.has(effectiveType) && (
               <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-500">
                 <label
                   className="shrink-0"
@@ -369,7 +404,11 @@ export default function AddNodeForm({
             onClick={submitAndClose}
             className="rounded bg-slate-800 px-3 py-1.5 text-sm text-white hover:bg-slate-700"
           >
-            {showLinkOption && mode === "existing" ? "Link value" : "Add node"}
+            {showLinkOption && mode === "existing"
+              ? "Link value"
+              : labelNow
+                ? "Add node"
+                : "Add note"}
           </button>
         </div>
       </div>

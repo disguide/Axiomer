@@ -339,23 +339,46 @@ tab) renders it with one-click actions. The heavy primitive is
 the keeper (skipping duplicates), marks the duplicate `merged`, adds a
 `supersedes` redirect — convergence, enforced. Works entirely without AI.
 
-### BYOK AI agents (lib/ai/ + lib/proposals.ts)
+### Write-first authoring & the `unlabeled` staging type
+
+Typing a node is **labeling**, and labeling is deferrable. `AddNodeForm`
+defaults to **write-first**: you capture a raw thought and it lands as an
+`unlabeled` note (edge `connects-to`) — no type decision required. "Pick a
+type now →" reveals the family grid for those who want it. `unlabeled` is the
+31st node type but **not a dialectical role** — it's the absence of one, a
+staging state: non-terminal, non-participating in grounding/acceptability/
+commitment (the `default` cases already ignore it), allowed under any
+non-terminal parent and able to precede any type (injected into
+`ALLOWED_CHILDREN` by a loop in `meta.ts`, keeping terminals childless).
+`relabelNode(graph, id, type, opts?)` in `graph.ts` assigns the real type AND
+rebuilds the parent edge with the right relationship and orientation (a note
+relabeled to a `value` needs `grounds-in`, parent→child, not its old
+`connects-to`); a terminal target with children is refused. `NodeCard` shows a
+"Label as…" picker on notes; `OrganizePanel` lists them as `needs-label`.
+
+### BYOK AI agents — three jobs (lib/ai/ + lib/proposals.ts)
 
 Users plug in **their own key against any provider** (Anthropic Messages API
 or any OpenAI-compatible endpoint — OpenAI, OpenRouter, Groq, local Ollama…).
 Config lives ONLY in localStorage (`axiomer_ai_config`); calls go directly
-from the browser to the configured base URL. Agents are **suggestion-only**
-(ROADMAP principle: remove the AI and the product still works):
-`ai/agents.ts` defines tasks (deepen toward bedrock, stress-test, ground open
-chains, find duplicate bedrock, label raw text) and **generates the system
-prompt from `NODE_META`/`ALLOWED_CHILDREN`/`NODE_FAMILIES` at runtime** so the
-AI's labeling rules can never drift from the code. Model output is parsed by
-`proposals.ts` — the safety boundary: typed ops (`add-node`, `link-value`,
-`merge-terminals`, `set-status`, `add-contradiction`) validated against the
-real graph (attachment matrix, terminals, statuses) both at parse AND at apply
-time; invalid ops are quarantined with reasons, never applied. A human accepts
-ops one by one in `AgentsPanel` (Agents tab). Keep `proposals.ts` pure and
-paranoid — it is the only path from model output to the graph.
+from the browser to the configured base URL. The AI does **three jobs**
+(`AGENT_ROLES` in `ai/agents.ts`): **Labeler** (types unlabeled notes + their
+connections via `relabel-node`), **Researcher** (gathers evidence for a claim,
+returns a cited brief + evidence-node proposals; never fabricates a source),
+**Partner** (anti-sycophantic co-writer/critic — names the weakest point, asks
+the sharp question, drafts the next move). Each role's method/voice is a
+hand-written **markdown+XML prompt** in `ai/prompts/{labeler,researcher,
+partner}.md` (imported `?raw`); `{{TAXONOMY}}`/`{{ATTACHMENT_MATRIX}}` are
+injected from `NODE_META`/`ALLOWED_CHILDREN` at runtime so labeling rules can
+never drift from the code. Agents are **suggestion-only** (ROADMAP principle:
+remove the AI and the product still works). Model output is parsed by
+`proposals.ts` — the safety boundary: typed ops (`add-node`, `relabel-node`,
+`link-value`, `merge-terminals`, `set-status`, `add-contradiction`) validated
+against the real graph (attachment matrix, terminals, statuses) both at parse
+AND at apply time; invalid ops are quarantined with reasons, never applied. A
+human accepts ops one by one in `AgentsPanel` (Agents tab). Keep
+`proposals.ts` pure and paranoid — it is the only path from model output to
+the graph.
 
 ### Sharing, drafts & the GitHub flow (lib/share.ts, lib/versions.ts)
 
