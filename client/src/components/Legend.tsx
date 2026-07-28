@@ -2,11 +2,10 @@ import { NODE_META, NODE_ORDER } from "@/lib/meta";
 
 export default function Legend() {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-slate-900">Node types</h2>
+    <div className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-md shadow-lg">
+      <h2 className="text-sm font-semibold text-slate-200">Node types</h2>
       <p className="mt-0.5 text-[11px] text-slate-400">
-        {NODE_ORDER.length} node types. Value, Principle, and Epistemic Limit are
-        terminal — they end a chain. Premise is a root you reason forward from.
+        {NODE_ORDER.length} node types. Value, Limit, and Source are terminal — they end a chain. Premise is a root you reason forward from.
       </p>
       <ul className="mt-3 space-y-2">
         {NODE_ORDER.map((type) => {
@@ -27,10 +26,10 @@ export default function Legend() {
                 >
                   {meta.label}
                   {meta.terminal && (
-                    <span className="ml-1 text-slate-400">(terminal)</span>
+                    <span className="ml-1 text-slate-500">(terminal)</span>
                   )}
                 </span>
-                <p className="text-[11px] leading-snug text-slate-500">
+                <p className="text-[11px] leading-snug text-slate-400">
                   {meta.description}
                 </p>
               </div>

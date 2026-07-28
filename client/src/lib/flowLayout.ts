@@ -1,6 +1,6 @@
 // Lay out the argument DAG top-down with dagre, returning a position per node.
 // Edges run parent → child (semantic direction normalized via edgeEndpoints),
-// so values/child-questions sit below the arguments that lead to them and
+// so values/child-claims sit below the arguments that lead to them and
 // shared values become real convergence points.
 
 import dagre from "dagre";

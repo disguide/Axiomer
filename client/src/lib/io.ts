@@ -6,7 +6,7 @@
 // with a clear error rather than silently corrupting the viewer.
 
 import type { Graph, GraphEdge, GraphNode } from "./types";
-import { EDGE_TYPES, NODE_TYPES } from "./types";
+import { EDGE_TYPES, NODE_TYPES, migrateGraph } from "./types";
 
 const NODE_TYPE_SET = new Set<string>(NODE_TYPES);
 const EDGE_TYPE_SET = new Set<string>(EDGE_TYPES);
@@ -51,8 +51,9 @@ export function validateGraph(value: unknown): Graph {
   if (!isObject(value)) throw new Error("graph is not an object");
   if (!Array.isArray(value.nodes)) throw new Error("graph.nodes must be an array");
   if (!Array.isArray(value.edges)) throw new Error("graph.edges must be an array");
-  const nodes = value.nodes.map(parseNode);
-  const edges = value.edges.map(parseEdge);
+  const migrated = migrateGraph(value as { nodes: any[]; edges: any[] });
+  const nodes = migrated.nodes.map(parseNode);
+  const edges = migrated.edges.map(parseEdge);
   // Referential integrity: every edge endpoint must exist.
   const ids = new Set(nodes.map((n) => n.id));
   for (const [i, e] of edges.entries()) {

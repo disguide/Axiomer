@@ -5,39 +5,39 @@ import type { Graph } from "./types";
 
 // Example 1: Trolley Problem — OPEN (two distinct values at the bottom).
 const trolleyNodes: Graph["nodes"] = [
-  { id: "trolley-q1", type: "question", content: "Should you pull the lever?" },
-  { id: "trolley-p1", type: "position", content: "Yes, pull the lever" },
+  { id: "trolley-q1", type: "claim", content: "Should you pull the lever?" },
+  { id: "trolley-p1", type: "claim", content: "Yes, pull the lever" },
   {
     id: "trolley-a1",
-    type: "argument-support",
+    type: "support",
     content: "Saving more lives is better",
   },
   {
     id: "trolley-e1",
-    type: "evidence-empirical",
+    type: "support",
     content: "Pulling saves 5 lives vs 1",
   },
   {
     id: "trolley-c1",
-    type: "caveat",
+    type: "note",
     content: "This assumes the trolley will definitely hit someone",
   },
   {
     id: "trolley-q2",
-    type: "question",
+    type: "claim",
     content: "Why does saving lives matter?",
   },
   {
     id: "trolley-p2",
-    type: "position",
+    type: "claim",
     content: "Because minimizing suffering is the goal",
   },
-  { id: "trolley-a2", type: "argument-support", content: "Suffering is bad" },
+  { id: "trolley-a2", type: "support", content: "Suffering is bad" },
   { id: "trolley-v1", type: "value", content: "Minimize total suffering" },
-  { id: "trolley-p3", type: "position", content: "No, don't pull the lever" },
+  { id: "trolley-p3", type: "claim", content: "No, don't pull the lever" },
   {
     id: "trolley-a3",
-    type: "argument-support",
+    type: "support",
     content: "Using people as means is wrong",
   },
   {
@@ -48,91 +48,91 @@ const trolleyNodes: Graph["nodes"] = [
 ];
 
 const trolleyEdges: Graph["edges"] = [
-  { id: "t-edge-1", from: "trolley-p1", to: "trolley-q1", edgeType: "answers" },
+  { id: "t-edge-1", from: "trolley-p1", to: "trolley-q1", edgeType: "supports" },
   {
     id: "t-edge-2",
     from: "trolley-a1",
     to: "trolley-p1",
-    edgeType: "argues-for",
+    edgeType: "supports",
   },
   { id: "t-edge-3", from: "trolley-e1", to: "trolley-a1", edgeType: "supports" },
   {
     id: "t-edge-4",
     from: "trolley-c1",
     to: "trolley-a1",
-    edgeType: "connects-to",
+    edgeType: "annotates",
   },
-  { id: "t-edge-5", from: "trolley-a1", to: "trolley-q2", edgeType: "raises" },
-  { id: "t-edge-6", from: "trolley-p2", to: "trolley-q2", edgeType: "answers" },
+  { id: "t-edge-5", from: "trolley-a1", to: "trolley-q2", edgeType: "annotates" },
+  { id: "t-edge-6", from: "trolley-p2", to: "trolley-q2", edgeType: "supports" },
   {
     id: "t-edge-7",
     from: "trolley-a2",
     to: "trolley-p2",
-    edgeType: "argues-for",
+    edgeType: "supports",
   },
   {
     id: "t-edge-8",
     from: "trolley-a2",
     to: "trolley-v1",
-    edgeType: "grounds-in",
+    edgeType: "grounds",
   },
-  { id: "t-edge-9", from: "trolley-p3", to: "trolley-q1", edgeType: "answers" },
+  { id: "t-edge-9", from: "trolley-p3", to: "trolley-q1", edgeType: "supports" },
   {
     id: "t-edge-10",
     from: "trolley-a3",
     to: "trolley-p3",
-    edgeType: "argues-for",
+    edgeType: "supports",
   },
   {
     id: "t-edge-11",
     from: "trolley-a3",
     to: "trolley-v2",
-    edgeType: "grounds-in",
+    edgeType: "grounds",
   },
 ];
 
 // Example 2: Why is the sky blue? — FULLY GROUNDED (reaches an epistemic limit).
 const skyNodes: Graph["nodes"] = [
-  { id: "sky-q1", type: "question", content: "Why is the sky blue?" },
+  { id: "sky-q1", type: "claim", content: "Why is the sky blue?" },
   {
     id: "sky-p1",
-    type: "position",
+    type: "claim",
     content: "Because of Rayleigh scattering",
   },
   {
     id: "sky-e1",
-    type: "evidence-empirical",
+    type: "support",
     content: "Shorter wavelengths scatter more",
   },
   {
     id: "sky-a1",
-    type: "argument-support",
+    type: "support",
     content: "Scattering intensity is proportional to wavelength^-4",
   },
   {
     id: "sky-q2",
-    type: "question",
+    type: "claim",
     content: "Why is it proportional to wavelength^-4?",
   },
   {
     id: "sky-p2",
-    type: "position",
+    type: "claim",
     content: "That's derived from Maxwell's equations",
   },
   {
     id: "sky-el1",
-    type: "epistemic-limit",
+    type: "limit",
     content: "That's our best current scientific theory",
   },
 ];
 
 const skyEdges: Graph["edges"] = [
-  { id: "s-edge-1", from: "sky-p1", to: "sky-q1", edgeType: "answers" },
+  { id: "s-edge-1", from: "sky-p1", to: "sky-q1", edgeType: "supports" },
   { id: "s-edge-2", from: "sky-e1", to: "sky-p1", edgeType: "supports" },
-  { id: "s-edge-3", from: "sky-a1", to: "sky-p1", edgeType: "argues-for" },
-  { id: "s-edge-4", from: "sky-a1", to: "sky-q2", edgeType: "raises" },
-  { id: "s-edge-5", from: "sky-p2", to: "sky-q2", edgeType: "answers" },
-  { id: "s-edge-6", from: "sky-p2", to: "sky-el1", edgeType: "grounds-in" },
+  { id: "s-edge-3", from: "sky-a1", to: "sky-p1", edgeType: "supports" },
+  { id: "s-edge-4", from: "sky-a1", to: "sky-q2", edgeType: "annotates" },
+  { id: "s-edge-5", from: "sky-p2", to: "sky-q2", edgeType: "supports" },
+  { id: "s-edge-6", from: "sky-p2", to: "sky-el1", edgeType: "grounds" },
 ];
 
 export const seedGraph: Graph = {

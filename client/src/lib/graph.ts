@@ -1,20 +1,13 @@
 // Pure graph utilities. No mutation — every transform returns a new Graph.
 //
-// EDGE DIRECTION IS SEMANTIC, NOT VISUAL.
-// An edge `from -> to` encodes a relationship. Most relationships run
-// child -> parent (a position `answers` a question; an argument `argues-for` a
-// position). Two run the other way, parent -> child:
-//   - `raises`     : argument -> question  (the argument drills into a question)
-//   - `grounds-in` : argument -> value     (the argument bottoms out at a value)
-// `childEndpoints` normalizes this so the rest of the tree logic is direction
-// agnostic.
+// EDGE DIRECTION: `supports`, `attacks`, `annotates` run child→parent.
+// `grounds` and `cites` run parent→child (downward).
 
 import type { EdgeType, Graph, GraphEdge, GraphNode, NodeType } from "./types";
 import { isTerminalType } from "./types";
 
-// Edge types whose direction runs parent(from) -> child(to).
-// `entails` joins this set: a premise (parent) entails what it leads to (child).
-const DOWNWARD: readonly EdgeType[] = ["raises", "grounds-in", "entails"];
+// Edge types whose direction runs parent(from) → child(to).
+const DOWNWARD: readonly EdgeType[] = ["grounds", "cites"];
 
 function endpoints(edge: GraphEdge): { parent: string; child: string } {
   return DOWNWARD.includes(edge.edgeType)
@@ -76,9 +69,7 @@ export function getDescendantIds(graph: Graph, nodeId: string): Set<string> {
   return seen;
 }
 
-// Every node with a downward path INTO nodeId (its ancestors in the
-// parent→child DAG). For a value, that's everything that grounds in it —
-// the convergence highlight in the map view.
+// Every node with a downward path INTO nodeId (its ancestors).
 export function getAncestors(graph: Graph, nodeId: string): Set<string> {
   const result = new Set<string>();
   const queue = [nodeId];
@@ -96,22 +87,20 @@ export function getAncestors(graph: Graph, nodeId: string): Set<string> {
   return result;
 }
 
-// Root questions: questions that are nobody's child. (Grounding/clash logic is
-// question-centric, so it uses this rather than getRoots.)
+// Root claims: claims that are nobody's child.
 export function getRootQuestions(graph: Graph): GraphNode[] {
   return graph.nodes.filter(
     (n) =>
-      n.type === "question" &&
+      n.type === "claim" &&
       !graph.edges.some((e) => endpoints(e).child === n.id),
   );
 }
 
-// Tree entry points: top-level questions AND premises (nobody's child).
-// Premises are forward-reasoning roots — you build conclusions down from them.
+// Tree entry points: top-level claims AND premises (nobody's child).
 export function getRoots(graph: Graph): GraphNode[] {
   return graph.nodes.filter(
     (n) =>
-      (n.type === "question" || n.type === "premise") &&
+      (n.type === "claim" || n.type === "premise") &&
       !graph.edges.some((e) => endpoints(e).child === n.id),
   );
 }
@@ -121,25 +110,18 @@ export function getValues(graph: Graph): GraphNode[] {
   return graph.nodes.filter((n) => n.type === "value");
 }
 
-// Edge type connecting a new child of `childType` to a parent of `parentType`.
+// Edge type connecting a new child to its parent — auto-inferred from types.
 export function edgeTypeFor(
   childType: NodeType,
   parentType: NodeType,
 ): EdgeType {
-  // Anything built directly on a premise is entailed by it.
-  if (parentType === "premise") return "entails";
-  if (childType === "position" && parentType === "question") return "answers";
-  if (childType === "argument-support") return "argues-for";
-  if (childType === "argument-attack") return "argues-against";
-  if (childType === "evidence-empirical" || childType === "evidence-anecdotal")
-    return "supports";
-  if (childType === "question") return "raises"; // argument drills deeper
-  if (childType === "objection") return "objects-to";
-  if (childType === "rebuttal") return "rebuts";
-  if (childType === "analogy" || childType === "thought-experiment")
-    return "illustrates";
-  if (isTerminalType(childType)) return "grounds-in";
-  return "connects-to";
+  // Anything built on a premise is supported by it
+  if (parentType === "premise") return "supports";
+  if (childType === "support" || childType === "claim") return "supports";
+  if (childType === "attack") return "attacks";
+  if (childType === "source") return "cites";
+  if (isTerminalType(childType)) return "grounds";
+  return "annotates"; // note, limit
 }
 
 // Build an edge with the correct orientation for its type.
@@ -172,19 +154,19 @@ export function addNode(
   };
   const edgeType = parent
     ? edgeTypeFor(nodeType, parent.type)
-    : "connects-to";
+    : "annotates";
   return {
     nodes: [...graph.nodes, newNode],
     edges: [...graph.edges, makeEdge(parentId, newNode.id, edgeType)],
   };
 }
 
-// Create a brand new root question (no parent edge).
+// Create a brand new root claim (no parent edge).
 export function addRootQuestion(graph: Graph, content: string): Graph {
-  return addRoot(graph, "question", content);
+  return addRoot(graph, "claim", content);
 }
 
-// Create a brand new root premise — a base to reason forward from.
+// Create a brand new root premise.
 export function addRootPremise(graph: Graph, content: string): Graph {
   return addRoot(graph, "premise", content);
 }
@@ -195,6 +177,22 @@ function addRoot(graph: Graph, type: NodeType, content: string): Graph {
     type,
     content,
     createdAt: new Date().toISOString(),
+  };
+  return { nodes: [...graph.nodes, newNode], edges: graph.edges };
+}
+
+export function addFloatingNode(
+  graph: Graph,
+  type: NodeType,
+  content: string,
+  position: { x: number; y: number }
+): Graph {
+  const newNode: GraphNode = {
+    id: uid("node"),
+    type,
+    content,
+    createdAt: new Date().toISOString(),
+    position,
   };
   return { nodes: [...graph.nodes, newNode], edges: graph.edges };
 }
@@ -212,8 +210,38 @@ export function editNode(
   };
 }
 
+export function moveNode(
+  graph: Graph,
+  nodeId: string,
+  position: { x: number; y: number },
+): Graph {
+  return {
+    ...graph,
+    nodes: graph.nodes.map((n) =>
+      n.id === nodeId ? { ...n, position } : n,
+    ),
+  };
+}
+
+export function addEdge(
+  graph: Graph,
+  sourceId: string,
+  targetId: string,
+): Graph {
+  const sourceNode = getNode(graph, sourceId);
+  const targetNode = getNode(graph, targetId);
+  if (!sourceNode || !targetNode) return graph;
+  
+  const edgeType = edgeTypeFor(sourceNode.type, targetNode.type);
+  const newEdge = makeEdge(targetId, sourceId, edgeType);
+  return {
+    ...graph,
+    edges: [...graph.edges, newEdge],
+  };
+}
+
 // Collect a node and all descendants, EXCEPT shared terminals that are still
-// grounded by an argument outside the deletion set (so reused values survive).
+// grounded by a parent outside the deletion set.
 function doomedSet(graph: Graph, nodeId: string): Set<string> {
   const doomed = new Set<string>();
   const queue = [nodeId];
@@ -231,7 +259,7 @@ function doomedSet(graph: Graph, nodeId: string): Set<string> {
     if (node && isTerminalType(node.type) && id !== nodeId) {
       const hasSurvivingParent = graph.edges.some(
         (e) =>
-          e.edgeType === "grounds-in" &&
+          e.edgeType === "grounds" &&
           e.to === id &&
           !doomed.has(e.from),
       );
@@ -241,12 +269,10 @@ function doomedSet(graph: Graph, nodeId: string): Set<string> {
   return doomed;
 }
 
-// Number of nodes (excluding the target itself) that deletion would remove.
 export function countDescendants(graph: Graph, nodeId: string): number {
   return doomedSet(graph, nodeId).size - 1;
 }
 
-// Delete a node, its descendants, and any edges touching removed nodes.
 export function deleteNode(graph: Graph, nodeId: string): Graph {
   const doomed = doomedSet(graph, nodeId);
   return {
@@ -255,121 +281,88 @@ export function deleteNode(graph: Graph, nodeId: string): Graph {
   };
 }
 
-// Ground an argument in an EXISTING terminal node. Replaces any prior
-// grounds-in edge from this argument. Never duplicates the value.
+// Ground an argument in an EXISTING terminal node.
 export function linkToExistingValue(
   graph: Graph,
   argumentId: string,
   valueId: string,
 ): Graph {
   const edges = graph.edges.filter(
-    (e) => !(e.from === argumentId && e.edgeType === "grounds-in"),
+    (e) => !(e.from === argumentId && e.edgeType === "grounds"),
   );
-  edges.push(makeEdge(argumentId, valueId, "grounds-in"));
+  edges.push(makeEdge(argumentId, valueId, "grounds"));
   return { nodes: graph.nodes, edges };
 }
 
 // --- Grounding ---------------------------------------------------------------
-// A question is FULLY GROUNDED when every argument chain beneath it bottoms out
-// at a terminal node. Walkers traverse edges in semantic direction and guard
-// against cycles.
 
-export function isFullyGrounded(graph: Graph, questionId: string): boolean {
-  return groundedQuestion(graph, questionId, new Set());
+export function isFullyGrounded(graph: Graph, claimId: string): boolean {
+  return groundedClaim(graph, claimId, new Set());
 }
 
-// Is this specific node grounded? Questions/positions/arguments are evaluated
-// by their respective rules; terminals are inherently grounded; other node
-// types (evidence, definitions, annotations…) don't participate, so `true`.
-// Powers the "what's left to ground" cue in the tree.
 export function isNodeGrounded(graph: Graph, nodeId: string): boolean {
   const node = getNode(graph, nodeId);
   if (!node) return false;
   switch (node.type) {
-    case "question":
-      return groundedQuestion(graph, nodeId, new Set());
-    case "position":
-      return groundedPosition(graph, nodeId, new Set());
-    case "argument-support":
-    case "argument-attack":
+    case "claim":
+      return groundedClaim(graph, nodeId, new Set());
+    case "support":
+    case "attack":
       return groundedArgument(graph, nodeId, new Set());
     default:
       return true;
   }
 }
 
-function groundedQuestion(
+function groundedClaim(
   graph: Graph,
-  questionId: string,
+  claimId: string,
   visiting: Set<string>,
 ): boolean {
-  const question = getNode(graph, questionId);
-  if (!question || question.type !== "question") return false;
-  if (visiting.has(questionId)) return false;
-  const next = new Set(visiting).add(questionId);
+  const claim = getNode(graph, claimId);
+  if (!claim || claim.type !== "claim") return false;
+  if (visiting.has(claimId)) return false;
+  const next = new Set(visiting).add(claimId);
 
-  const positions = graph.edges
-    .filter((e) => e.to === questionId && e.edgeType === "answers")
-    .map((e) => getNode(graph, e.from))
-    .filter((n): n is GraphNode => Boolean(n));
-
-  if (positions.length === 0) return false;
-  return positions.every((p) => groundedPosition(graph, p.id, next));
-}
-
-function groundedPosition(
-  graph: Graph,
-  positionId: string,
-  visiting: Set<string>,
-): boolean {
-  // A position may rest directly on a terminal (some seed data does this), or
-  // be backed by arguments that each ground out.
-  const direct = graph.edges.find(
-    (e) => e.from === positionId && e.edgeType === "grounds-in",
+  // Check for direct grounding
+  const directGround = graph.edges.find(
+    (e) => e.from === claimId && e.edgeType === "grounds",
   );
-  if (direct) {
-    const terminal = getNode(graph, direct.to);
+  if (directGround) {
+    const terminal = getNode(graph, directGround.to);
     if (terminal && isTerminalType(terminal.type)) return true;
   }
 
+  // Check children support/attack arguments
   const args = graph.edges
     .filter(
       (e) =>
-        e.to === positionId &&
-        (e.edgeType === "argues-for" || e.edgeType === "argues-against"),
+        endpoints(e).parent === claimId &&
+        (e.edgeType === "supports" || e.edgeType === "attacks"),
     )
-    .map((e) => getNode(graph, e.from))
-    .filter((n): n is GraphNode => Boolean(n));
+    .map((e) => getNode(graph, endpoints(e).child))
+    .filter((n): n is GraphNode => Boolean(n))
+    .filter((n) => n.type === "support" || n.type === "attack");
 
   if (args.length === 0) return false;
-  return args.every((a) => groundedArgument(graph, a.id, visiting));
+  return args.every((a) => groundedArgument(graph, a.id, next));
 }
 
 function groundedArgument(
   graph: Graph,
   argumentId: string,
-  visiting: Set<string>,
+  _visiting: Set<string>,
 ): boolean {
-  // Grounds out directly at a terminal node?
-  const groundsIn = graph.edges.find(
-    (e) => e.from === argumentId && e.edgeType === "grounds-in",
+  const groundsEdge = graph.edges.find(
+    (e) => e.from === argumentId && e.edgeType === "grounds",
   );
-  if (groundsIn) {
-    const terminal = getNode(graph, groundsIn.to);
+  if (groundsEdge) {
+    const terminal = getNode(graph, groundsEdge.to);
     return Boolean(terminal && isTerminalType(terminal.type));
   }
-
-  // Or raises a child question that is itself fully grounded?
-  const raises = graph.edges.find(
-    (e) => e.from === argumentId && e.edgeType === "raises",
-  );
-  if (raises) return groundedQuestion(graph, raises.to, visiting);
-
   return false;
 }
 
-// Trace from a node down its grounds-in / raises chain to the terminal it
-// reaches, if any.
 export function getGroundingTerminal(
   graph: Graph,
   nodeId: string,
@@ -381,9 +374,7 @@ export function getGroundingTerminal(
     const node = getNode(graph, current);
     if (node && isTerminalType(node.type)) return node;
     const next = graph.edges.find(
-      (e) =>
-        e.from === current &&
-        (e.edgeType === "grounds-in" || e.edgeType === "raises"),
+      (e) => e.from === current && e.edgeType === "grounds",
     );
     current = next?.to;
   }
@@ -391,34 +382,16 @@ export function getGroundingTerminal(
 }
 
 // --- Acceptability (Dung-style defeat analysis) -----------------------------
-// Attacks are cosmetic until they have consequences. Here we compute, for every
-// node, whether it is DEFENDED, DEFEATED, or CONTESTED under grounded semantics
-// — so an objection can defeat an argument, and a rebuttal can revive it.
-//
-// Attack relation: a node is attacked by its *attacking-type children*. An
-// objection objects-to its parent, a rebuttal rebuts its parent objection, an
-// argument-attack argues-against its parent position, and counter-arguments /
-// logical-fallacies challenge their parent. Because these run child→parent over
-// the tree, the attack graph is acyclic, so grounded labelling is total
-// (every node ends up defended or defeated; CONTESTED is reserved for the
-// degenerate cyclic case and shouldn't arise from normal authoring).
 
 export type Acceptability = "defended" | "defeated" | "contested";
 
-const ATTACKING_TYPES: ReadonlySet<NodeType> = new Set<NodeType>([
-  "argument-attack",
-  "objection",
-  "rebuttal",
-  "counter-argument",
-  "logical-fallacy",
-]);
+// Nodes that attack their parent.
+const ATTACKING_TYPES: ReadonlySet<NodeType> = new Set<NodeType>(["attack"]);
 
-// The nodes that attack `nodeId` (its attacking-type children).
 export function getAttackers(graph: Graph, nodeId: string): GraphNode[] {
   return getChildren(graph, nodeId).filter((c) => ATTACKING_TYPES.has(c.type));
 }
 
-// Grounded labelling for the whole graph.
 export function getAcceptability(graph: Graph): Map<string, Acceptability> {
   const attackers = new Map<string, string[]>();
   for (const n of graph.nodes) {
@@ -428,12 +401,10 @@ export function getAcceptability(graph: Graph): Map<string, Acceptability> {
     );
   }
 
-  // "in" = defended, "out" = defeated; unlabelled until decided.
   const label = new Map<string, "in" | "out">();
   let changed = true;
   while (changed) {
     changed = false;
-    // A node is defended once all of its attackers are defeated.
     for (const n of graph.nodes) {
       if (label.has(n.id)) continue;
       const atk = attackers.get(n.id) as string[];
@@ -442,7 +413,6 @@ export function getAcceptability(graph: Graph): Map<string, Acceptability> {
         changed = true;
       }
     }
-    // A node is defeated once any attacker is defended.
     for (const n of graph.nodes) {
       if (label.has(n.id)) continue;
       const atk = attackers.get(n.id) as string[];
@@ -462,10 +432,7 @@ export function getAcceptability(graph: Graph): Map<string, Acceptability> {
 }
 
 // --- Depth metrics ----------------------------------------------------------
-// The product is about depth — so surface it. These read-only queries power the
-// insights panel and the "weakest link" finder.
 
-// Steps from a node up to its root (0 for a root).
 export function getDepth(graph: Graph, nodeId: string): number {
   let depth = 0;
   let current = getParent(graph, nodeId);
@@ -478,7 +445,6 @@ export function getDepth(graph: Graph, nodeId: string): number {
   return depth;
 }
 
-// Longest downward path from a node to a leaf (cycle-guarded, memoized).
 function longestPath(
   graph: Graph,
   nodeId: string,
@@ -500,21 +466,21 @@ function longestPath(
 }
 
 export interface GraphStats {
-  questions: number;
+  claims: number;
   premises: number;
-  positions: number;
-  arguments: number;
+  supports: number;
+  attacks: number;
   terminals: number;
-  groundedQuestions: number;
-  openQuestions: number;
+  groundedClaims: number;
+  openClaims: number;
   convergentValues: number;
   clashes: number;
   maxDepth: number;
 }
 
 export function getGraphStats(graph: Graph): GraphStats {
-  const questions = getRootQuestions(graph);
-  const grounded = questions.filter((q) => isFullyGrounded(graph, q.id)).length;
+  const claims = getRootQuestions(graph);
+  const grounded = claims.filter((q) => isFullyGrounded(graph, q.id)).length;
   const memo = new Map<string, number>();
   const roots = getRoots(graph);
   const maxDepth = roots.reduce(
@@ -522,15 +488,13 @@ export function getGraphStats(graph: Graph): GraphStats {
     0,
   );
   return {
-    questions: graph.nodes.filter((n) => n.type === "question").length,
+    claims: graph.nodes.filter((n) => n.type === "claim").length,
     premises: graph.nodes.filter((n) => n.type === "premise").length,
-    positions: graph.nodes.filter((n) => n.type === "position").length,
-    arguments: graph.nodes.filter(
-      (n) => n.type === "argument-support" || n.type === "argument-attack",
-    ).length,
+    supports: graph.nodes.filter((n) => n.type === "support").length,
+    attacks: graph.nodes.filter((n) => n.type === "attack").length,
     terminals: getTerminals(graph).length,
-    groundedQuestions: grounded,
-    openQuestions: questions.length - grounded,
+    groundedClaims: grounded,
+    openClaims: claims.length - grounded,
     convergentValues: getValueUsage(graph).filter((u) => u.convergent).length,
     clashes: getValueClashes(graph).length,
     maxDepth,
@@ -543,14 +507,11 @@ export interface GroundingGap {
   depth: number;
 }
 
-// Arguments that don't yet reach a foundation — the concrete grounding to-do
-// list, shallowest first (the shallowest is the "weakest link", closest to a
-// root and blocking the most).
 export function getGroundingGaps(graph: Graph): GroundingGap[] {
   return graph.nodes
     .filter(
       (n) =>
-        (n.type === "argument-support" || n.type === "argument-attack") &&
+        (n.type === "support" || n.type === "attack") &&
         !isNodeGrounded(graph, n.id),
     )
     .map((n) => ({
@@ -562,17 +523,11 @@ export function getGroundingGaps(graph: Graph): GroundingGap[] {
 }
 
 // --- Convergence ------------------------------------------------------------
-// The product thesis: many questions resolving to the same bedrock values.
-// These read-only queries power the Values index and clash detection.
 
-// All terminal nodes (value / principle / epistemic-limit).
 export function getTerminals(graph: Graph): GraphNode[] {
   return graph.nodes.filter((n) => isTerminalType(n.type));
 }
 
-// Walk up the parent chain to the root a node ultimately sits under — a
-// top-level question or premise. Returns undefined if the chain dead-ends
-// somewhere else (e.g. an orphaned terminal).
 export function getRootFor(
   graph: Graph,
   nodeId: string,
@@ -583,7 +538,7 @@ export function getRootFor(
     seen.add(node.id);
     const parent = getParent(graph, node.id);
     if (!parent) {
-      return node.type === "question" || node.type === "premise"
+      return node.type === "claim" || node.type === "premise"
         ? node
         : undefined;
     }
@@ -594,20 +549,16 @@ export function getRootFor(
 
 export interface ValueUsage {
   value: GraphNode;
-  // Nodes (arguments or positions) that ground directly in this terminal.
   groundingNodes: GraphNode[];
-  // Distinct roots (questions or premises) whose chains reach this terminal.
   roots: GraphNode[];
-  // True when reached from more than one distinct root.
   convergent: boolean;
 }
 
-// Usage summary for every terminal, sorted by how many roots converge on it.
 export function getValueUsage(graph: Graph): ValueUsage[] {
   return getTerminals(graph)
     .map((value) => {
       const groundingNodes = graph.edges
-        .filter((e) => e.edgeType === "grounds-in" && e.to === value.id)
+        .filter((e) => e.edgeType === "grounds" && e.to === value.id)
         .map((e) => getNode(graph, e.from))
         .filter((n): n is GraphNode => Boolean(n));
 
@@ -629,11 +580,9 @@ export function getValueUsage(graph: Graph): ValueUsage[] {
 
 export interface ValueClash {
   question: GraphNode;
-  values: GraphNode[]; // the distinct terminals its chains bottom out at
+  values: GraphNode[];
 }
 
-// A root question "clashes" when its chains ground in more than one distinct
-// terminal — the real value disagreement the product aims to surface.
 export function getValueClashes(graph: Graph): ValueClash[] {
   const clashes: ValueClash[] = [];
   for (const question of getRootQuestions(graph)) {
@@ -641,7 +590,7 @@ export function getValueClashes(graph: Graph): ValueClash[] {
     for (const t of getTerminals(graph)) {
       const reaches = graph.edges.some(
         (e) =>
-          e.edgeType === "grounds-in" &&
+          e.edgeType === "grounds" &&
           e.to === t.id &&
           getRootFor(graph, e.from)?.id === question.id,
       );
@@ -655,8 +604,6 @@ export function getValueClashes(graph: Graph): ValueClash[] {
 }
 
 // --- Value de-duplication ---------------------------------------------------
-// Convergence depends on REUSING bedrock nodes, not re-typing near-identical
-// ones. A lightweight text similarity nudges the user to link instead.
 
 function normalizeText(s: string): string {
   return s
@@ -666,8 +613,6 @@ function normalizeText(s: string): string {
     .trim();
 }
 
-// 0..1 similarity: 1 = identical (after normalization), else the larger of
-// token-set Jaccard overlap and a containment boost.
 export function similarity(a: string, b: string): number {
   const na = normalizeText(a);
   const nb = normalizeText(b);
@@ -688,7 +633,6 @@ export interface TerminalMatch {
   score: number;
 }
 
-// Existing terminals of `type` similar to `text`, most similar first.
 export function findSimilarTerminals(
   graph: Graph,
   text: string,
@@ -701,4 +645,148 @@ export function findSimilarTerminals(
     .map((node) => ({ node, score: similarity(text, node.content) }))
     .filter((m) => m.score >= threshold)
     .sort((a, b) => b.score - a.score);
+}
+
+// --- Status Window Profiles -------------------------------------------------
+
+export interface ValueRank {
+  terminal: GraphNode;
+  convergenceCount: number;
+  roots: GraphNode[];
+  groundingArgs: GraphNode[];
+  chainDepths: number[];
+}
+
+export interface StatusProfile {
+  rankedValues: ValueRank[];
+  stats: StatusStats;
+  topValues: ValueRank[];
+  archetype: string;
+}
+
+export interface StatusStats {
+  totalClaims: number;
+  groundedClaims: number;
+  openClaims: number;
+  totalTerminals: number;
+  convergentTerminals: number;
+  convergenceRatio: number;
+  valueClashes: number;
+  maxDepth: number;
+}
+
+export function getStatusProfile(graph: Graph): StatusProfile {
+  const usage = getValueUsage(graph);
+  
+  const rankedValues: ValueRank[] = usage.map(u => ({
+    terminal: u.value,
+    convergenceCount: u.roots.length,
+    roots: u.roots,
+    groundingArgs: u.groundingNodes,
+    chainDepths: u.groundingNodes.map(node => getDepth(graph, node.id)),
+  })).sort((a, b) => b.convergenceCount - a.convergenceCount);
+  
+  const topValues = rankedValues.slice(0, 5);
+  
+  const graphStats = getGraphStats(graph);
+  
+  const stats: StatusStats = {
+    totalClaims: getRootQuestions(graph).length,
+    groundedClaims: graphStats.groundedClaims,
+    openClaims: graphStats.openClaims,
+    totalTerminals: graphStats.terminals,
+    convergentTerminals: graphStats.convergentValues,
+    convergenceRatio: graphStats.terminals > 0 
+      ? graphStats.convergentValues / graphStats.terminals 
+      : 0,
+    valueClashes: graphStats.clashes,
+    maxDepth: graphStats.maxDepth,
+  };
+  
+  const archetype = computeArchetype(topValues);
+  
+  return { rankedValues, stats, topValues, archetype };
+}
+
+export function computeArchetype(topValues: ValueRank[]): string {
+  if (topValues.length === 0) return "Seeker";
+
+  let valuesCount = 0;
+  let limitsCount = 0;
+
+  for (const rank of topValues) {
+    if (rank.terminal.type === "value") valuesCount++;
+    else if (rank.terminal.type === "limit") limitsCount++;
+  }
+
+  let prefix = "Pluralist";
+  if (valuesCount > limitsCount) {
+    prefix = "Value-grounded";
+  } else if (limitsCount > valuesCount) {
+    prefix = "Epistemically cautious";
+  }
+
+  let convergentCount = 0;
+  let shallowCount = 0;
+  let deepCount = 0;
+  let totalChains = 0;
+
+  for (const rank of topValues) {
+    if (rank.convergenceCount >= 4) convergentCount++;
+    for (const depth of rank.chainDepths) {
+      if (depth <= 3) shallowCount++;
+      else deepCount++;
+      totalChains++;
+    }
+  }
+
+  let suffix = "";
+  if (convergentCount >= 2 || (topValues[0] && topValues[0].convergenceCount >= 4)) {
+    suffix = "synthesizer";
+  } else if (totalChains > 0 && deepCount > shallowCount) {
+    suffix = "deep reasoner";
+  } else {
+    suffix = "intuitive";
+  }
+
+  return `${prefix} ${suffix}`;
+}
+
+export interface ValueChainDetail {
+  terminal: GraphNode;
+  groundingArgs: Array<{
+    argument: GraphNode;
+    root: GraphNode | undefined;
+    depth: number;
+    rootGrounded: boolean;
+  }>;
+}
+
+export function getValueChainDetail(graph: Graph, terminalId: string): ValueChainDetail {
+  const terminal = getNode(graph, terminalId);
+  if (!terminal) throw new Error("Terminal not found");
+
+  const groundingEdges = graph.edges.filter(e => e.edgeType === "grounds" && e.to === terminalId);
+  
+  const groundingArgs = groundingEdges.map(e => {
+    const argument = getNode(graph, e.from)!;
+    const root = getRootFor(graph, argument.id);
+    const rootGrounded = root && root.type === "claim" ? isFullyGrounded(graph, root.id) : false;
+    
+    return {
+      argument,
+      root,
+      depth: getDepth(graph, argument.id),
+      rootGrounded
+    };
+  });
+
+  return { terminal, groundingArgs };
+}
+
+export function verifySource(graph: Graph, sourceId: string, verified: boolean): Graph {
+  return {
+    nodes: graph.nodes.map(n => n.id === sourceId ? { ...n, verified } : n),
+    edges: graph.edges
+  };
 }

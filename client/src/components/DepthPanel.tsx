@@ -9,9 +9,9 @@ interface DepthPanelProps {
 
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-md bg-slate-50 px-2 py-1.5 text-center">
-      <div className="text-base font-semibold text-slate-800">{value}</div>
-      <div className="text-[10px] uppercase tracking-wide text-slate-400">
+    <div className="rounded-md bg-slate-50 border border-slate-100 px-2 py-1.5 text-center">
+      <div className="text-base font-semibold text-slate-900">{value}</div>
+      <div className="text-[10px] uppercase tracking-wide text-slate-500">
         {label}
       </div>
     </div>
@@ -23,10 +23,10 @@ export default function DepthPanel({ graph, onFocus }: DepthPanelProps) {
   const gaps = G.getGroundingGaps(graph);
 
   return (
-    <div className="mb-4 rounded-lg border border-slate-200 bg-white p-3">
+    <div className="mb-4 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-slate-900">Depth & progress</h2>
-        <span className="text-[11px] text-slate-400">
+        <span className="text-[11px] text-slate-500">
           deepest chain: {stats.maxDepth}
         </span>
       </div>
@@ -34,12 +34,12 @@ export default function DepthPanel({ graph, onFocus }: DepthPanelProps) {
       <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-6">
         <Stat
           label="grounded"
-          value={`${stats.groundedQuestions}/${
-            stats.groundedQuestions + stats.openQuestions
+          value={`${stats.groundedClaims}/${
+            stats.groundedClaims + stats.openClaims
           }`}
         />
-        <Stat label="open" value={stats.openQuestions} />
-        <Stat label="arguments" value={stats.arguments} />
+        <Stat label="open" value={stats.openClaims} />
+        <Stat label="arguments" value={stats.supports + stats.attacks} />
         <Stat label="values" value={stats.terminals} />
         <Stat label="convergent" value={stats.convergentValues} />
         <Stat label="clashes" value={stats.clashes} />
@@ -59,21 +59,28 @@ export default function DepthPanel({ graph, onFocus }: DepthPanelProps) {
                   <button
                     type="button"
                     onClick={() => onFocus(node.id)}
-                    className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs hover:bg-slate-50"
+                    className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs hover:bg-slate-50 transition-colors"
                     title="Focus this node in the tree"
                   >
                     {i === 0 && (
-                      <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700">
+                      <span className="shrink-0 rounded-full bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700">
                         WEAKEST
                       </span>
                     )}
                     <span style={{ color: meta.color }}>{meta.icon}</span>
-                    <span className="min-w-0 flex-1 truncate text-slate-700">
+                    <span className="min-w-0 flex-1 truncate text-slate-800">
                       {node.content}
                     </span>
-                    <span className="shrink-0 text-[10px] text-slate-400">
+                    <span className="shrink-0 text-[10px] text-slate-500 flex items-center gap-1">
                       depth {depth}
-                      {root ? ` · ${NODE_META[root.type].icon}` : ""}
+                      {root && (
+                        <>
+                          <span>·</span>
+                          <span style={{ color: NODE_META[root.type].color }} className="text-xs">
+                            {NODE_META[root.type].icon}
+                          </span>
+                        </>
+                      )}
                     </span>
                   </button>
                 </li>
@@ -87,7 +94,7 @@ export default function DepthPanel({ graph, onFocus }: DepthPanelProps) {
           )}
         </div>
       ) : (
-        <p className="mt-3 rounded-md bg-emerald-50 px-2 py-1.5 text-xs text-emerald-700">
+        <p className="mt-3 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-1.5 text-xs text-emerald-700">
           Every argument reaches a foundation. Nothing left to ground.
         </p>
       )}
