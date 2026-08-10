@@ -12,9 +12,10 @@
 }
 
 :root {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
 }
 
 html,
@@ -26,7 +27,7 @@ body,
 body {
   margin: 0;
   /* Subtle ambient background for glassmorphism to reflect */
-  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #f1f5f9 100%);
+  background: #fdfdfd;
   background-attachment: fixed;
-  color: #0f172a; /* text-slate-900 */
+  color: #1a1a1a;
 }

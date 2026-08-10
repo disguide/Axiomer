@@ -90,9 +90,9 @@ export default function AddNodeForm({
           {[
             { label: "Claims", types: ["claim", "premise"] },
             { label: "Support", types: ["support"] },
-            { label: "Attacks", types: ["attack"] },
+            { label: "Conflicts", types: ["conflict"] },
             { label: "Evidence", types: ["source"] },
-            { label: "Foundations", types: ["value", "limit"] },
+            { label: "Foundations", types: ["value", "limit", "bedrock", "preference"] },
             { label: "Meta", types: ["note"] },
           ].map(group => {
             const validOptions = group.types.filter(t => options.includes(t as NodeType));

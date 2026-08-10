@@ -16,16 +16,18 @@ export const MAP_NODE_WIDTH = 230;
 export const MAP_NODE_HEIGHT = 72;
 
 export function layoutGraph(
-  graph: Graph,
-  nodeWidth = MAP_NODE_WIDTH,
-  nodeHeight = MAP_NODE_HEIGHT,
+  graph: Graph
 ): Record<string, NodePosition> {
   const g = new dagre.graphlib.Graph();
   g.setGraph({ rankdir: "TB", ranksep: 64, nodesep: 28, marginx: 16, marginy: 16 });
   g.setDefaultEdgeLabel(() => ({}));
 
   for (const node of graph.nodes) {
-    g.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+    const isRoot = ["claim", "premise"].includes(node.type);
+    const isTerminal = ["value", "bedrock", "limit", "preference", "source"].includes(node.type);
+    const w = isRoot ? 240 : (isTerminal ? 200 : 220);
+    const h = isRoot ? 80 : (isTerminal ? 36 : 48);
+    g.setNode(node.id, { width: w, height: h });
   }
   for (const edge of graph.edges) {
     const { parent, child } = edgeEndpoints(edge);
@@ -38,10 +40,14 @@ export function layoutGraph(
   for (const node of graph.nodes) {
     const laid = g.node(node.id);
     if (laid) {
+      const isRoot = ["claim", "premise"].includes(node.type);
+      const isTerminal = ["value", "bedrock", "limit", "preference", "source"].includes(node.type);
+      const w = isRoot ? 240 : (isTerminal ? 200 : 220);
+      const h = isRoot ? 80 : (isTerminal ? 36 : 48);
       // dagre centers nodes; React Flow positions from the top-left corner.
       positions[node.id] = {
-        x: laid.x - nodeWidth / 2,
-        y: laid.y - nodeHeight / 2,
+        x: laid.x - w / 2,
+        y: laid.y - h / 2,
       };
     }
   }

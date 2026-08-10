@@ -22,7 +22,7 @@ interface Sector {
 function edgeColor(edgeType?: EdgeType): "pro" | "con" | "other" {
   if (!edgeType) return "other";
   if (["supports"].includes(edgeType)) return "pro";
-  if (["attacks"].includes(edgeType)) return "con";
+  if (["conflicts"].includes(edgeType)) return "con";
   return "other";
 }
 

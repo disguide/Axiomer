@@ -5,7 +5,7 @@ import type { NodeType } from "./types";
 import type { ReactNode } from "react";
 import {
   MessageSquare, Sprout, CheckCircle2, XCircle,
-  StickyNote, Anchor, BookOpen, Ban,
+  StickyNote, Anchor, BookOpen, Ban, Mountain, Heart,
 } from "lucide-react";
 
 export interface NodeMeta {
@@ -46,13 +46,13 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     placeholder: "Studies show 78% success rate...",
     terminal: false,
   },
-  attack: {
-    label: "ATTACK",
+  conflict: {
+    label: "CONFLICT",
     icon: <XCircle className="w-[1em] h-[1em]" />,
     color: "#e11d48",   // rose-600
-    description: "An objection, counter-argument, or flaw.",
-    prompt: "What challenges this?",
-    placeholder: "But this ignores the psychological cost...",
+    description: "A logical inconsistency or contradiction in the derivation.",
+    prompt: "What does this conflict with?",
+    placeholder: "This contradicts the premise that...",
     terminal: false,
   },
   note: {
@@ -91,19 +91,39 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     placeholder: "We can't know if consciousness is fundamental",
     terminal: true,
   },
+  bedrock: {
+    label: "BEDROCK",
+    icon: <Mountain className="w-[1em] h-[1em]" />,
+    color: "#4f46e5",   // indigo-600
+    description: "Absolute bedrock where you cannot go any deeper.",
+    prompt: "What is the ultimate bedrock truth?",
+    placeholder: "I think, therefore I am",
+    terminal: true,
+  },
+  preference: {
+    label: "PREFERENCE",
+    icon: <Heart className="w-[1em] h-[1em]" />,
+    color: "#ec4899",   // pink-500
+    description: "A subjective human desire, aesthetic choice, or personal inclination.",
+    prompt: "What is the underlying preference?",
+    placeholder: "I prefer autonomy over security",
+    terminal: true,
+  },
 };
 
 // Context-sensitive children: which node types may be added under a given
 // parent type. Terminal types map to an empty list.
 export const ALLOWED_CHILDREN: Record<NodeType, NodeType[]> = {
-  claim:   ["claim", "support", "attack", "note", "value", "source", "limit"],
-  premise: ["claim", "support", "attack", "note", "value", "source", "limit"],
-  support: ["support", "attack", "note", "value", "source", "limit"],
-  attack:  ["support", "attack", "note", "value", "source", "limit"],
-  note:    ["attack", "note", "source"],
+  claim:   ["claim", "support", "conflict", "note", "value", "source", "limit", "bedrock", "preference"],
+  premise: ["claim", "support", "conflict", "note", "value", "source", "limit", "bedrock", "preference"],
+  support: ["support", "conflict", "note", "value", "source", "limit", "bedrock", "preference"],
+  conflict: ["support", "conflict", "note", "value", "source", "limit", "bedrock", "preference"],
+  note:    ["conflict", "note", "source"],
   value:   [],
   source:  [],
   limit:   [],
+  bedrock: [],
+  preference: [],
 };
 
 // Display order for the Legend panel.
@@ -111,9 +131,11 @@ export const NODE_ORDER: NodeType[] = [
   "claim",
   "premise",
   "support",
-  "attack",
+  "conflict",
   "note",
   "value",
+  "preference",
   "source",
   "limit",
+  "bedrock",
 ];

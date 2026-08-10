@@ -6,15 +6,17 @@ export type NodeType =
   | "claim"
   | "premise"
   | "support"
-  | "attack"
+  | "conflict"
   | "note"
   | "value"
   | "source"
-  | "limit";
+  | "limit"
+  | "bedrock"
+  | "preference";
 
 export type EdgeType =
   | "supports"
-  | "attacks"
+  | "conflicts"
   | "annotates"
   | "grounds"
   | "cites";
@@ -46,6 +48,8 @@ export const TERMINAL_TYPES: readonly NodeType[] = [
   "value",
   "source",
   "limit",
+  "bedrock",
+  "preference",
 ];
 
 // Runtime lists of every valid type — used to validate imported graph JSON.
@@ -53,16 +57,18 @@ export const NODE_TYPES: readonly NodeType[] = [
   "claim",
   "premise",
   "support",
-  "attack",
+  "conflict",
   "note",
   "value",
   "source",
   "limit",
+  "bedrock",
+  "preference",
 ];
 
 export const EDGE_TYPES: readonly EdgeType[] = [
   "supports",
-  "attacks",
+  "conflicts",
   "annotates",
   "grounds",
   "cites",
@@ -80,6 +86,7 @@ type LegacyNodeType =
   | "question" | "position"
   | "argument-support" | "evidence-empirical" | "evidence-anecdotal" | "rebuttal"
   | "argument-attack" | "counter-argument" | "objection" | "logical-fallacy"
+  | "attack" // Add "attack" so existing graphs can migrate to "conflict"
   | "assumption" | "definition" | "caveat" | "clarification"
   | "analogy" | "thought-experiment" | "related-concept"
   | "value" | "principle"
@@ -94,10 +101,11 @@ const LEGACY_NODE_MAP: Record<LegacyNodeType, NodeType> = {
   "evidence-empirical": "support",
   "evidence-anecdotal": "support",
   "rebuttal": "support",
-  "argument-attack": "attack",
-  "counter-argument": "attack",
-  "objection": "attack",
-  "logical-fallacy": "attack",
+  "argument-attack": "conflict",
+  "counter-argument": "conflict",
+  "objection": "conflict",
+  "logical-fallacy": "conflict",
+  "attack": "conflict",
   "assumption": "note",
   "definition": "note",
   "caveat": "note",
@@ -115,17 +123,19 @@ const LEGACY_NODE_MAP: Record<LegacyNodeType, NodeType> = {
 type LegacyEdgeType =
   | "answers" | "supports" | "argues-for" | "argues-against"
   | "raises" | "objects-to" | "rebuts" | "grounds-in"
+  | "attacks" // Add "attacks" to migrate to "conflicts"
   | "connects-to" | "illustrates" | "entails" | "cites";
 
 const LEGACY_EDGE_MAP: Record<LegacyEdgeType, EdgeType> = {
   "answers": "supports",
   "supports": "supports",
   "argues-for": "supports",
-  "argues-against": "attacks",
+  "argues-against": "conflicts",
   "raises": "annotates",
-  "objects-to": "attacks",
+  "objects-to": "conflicts",
   "rebuts": "supports",
   "grounds-in": "grounds",
+  "attacks": "conflicts",
   "connects-to": "annotates",
   "illustrates": "annotates",
   "entails": "supports",

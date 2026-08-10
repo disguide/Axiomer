@@ -39,7 +39,7 @@ export default function DepthPanel({ graph, onFocus }: DepthPanelProps) {
           }`}
         />
         <Stat label="open" value={stats.openClaims} />
-        <Stat label="arguments" value={stats.supports + stats.attacks} />
+        <Stat label="arguments" value={stats.supports + stats.conflicts} />
         <Stat label="values" value={stats.terminals} />
         <Stat label="convergent" value={stats.convergentValues} />
         <Stat label="clashes" value={stats.clashes} />

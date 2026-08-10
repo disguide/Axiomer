@@ -255,7 +255,7 @@ describe("lineage helpers (map highlight)", () => {
 });
 
 describe("acceptability (Dung-style defeat analysis)", () => {
-  // Build: Q ← P ← A(support). Then attack A with an attack, etc.
+  // Build: Q ← P ← A(support). Then conflict A with a conflict, etc.
   const baseChain = () => {
     let g = G.addRootQuestion(seedGraph, "Q?");
     const qid = lastId(g);
@@ -266,48 +266,51 @@ describe("acceptability (Dung-style defeat analysis)", () => {
     return { g, qid, pid, aid };
   };
 
-  it("treats a node with no attackers as defended", () => {
+  it("treats a node with no conflicts as coherent", () => {
     const { g, aid } = baseChain();
     expect(G.getAcceptability(g).get(aid)).toBe("defended");
-    expect(G.getAttackers(g, aid)).toHaveLength(0);
+    expect(G.getConflicts(g, aid)).toHaveLength(0);
   });
 
-  it("lets an attack defeat its parent argument", () => {
+  it("lets a conflict defeat its parent argument", () => {
     let { g, aid } = baseChain();
-    g = G.addNode(g, "attack", "But that's flawed", aid);
+    g = G.addNode(g, "conflict", "But that's flawed", aid);
     const oid = lastId(g);
     const acc = G.getAcceptability(g);
     expect(acc.get(aid)).toBe("defeated");
     expect(acc.get(oid)).toBe("defended");
-    expect(G.getAttackers(g, aid).map((n) => n.id)).toEqual([oid]);
+    expect(G.getConflicts(g, aid).map((n: import("./types").GraphNode) => n.id)).toEqual([oid]);
   });
 
-  it("lets an attack to the attack revive the argument", () => {
+  it("lets a conflict to the conflict revive the argument", () => {
     let { g, aid } = baseChain();
-    g = G.addNode(g, "attack", "Flawed", aid);
+    g = G.addNode(g, "conflict", "Flawed", aid);
     const oid = lastId(g);
-    g = G.addNode(g, "attack", "Not so", oid);
+    g = G.addNode(g, "conflict", "Not so", oid);
     const acc = G.getAcceptability(g);
     expect(acc.get(oid)).toBe("defeated"); // rebutted
     expect(acc.get(aid)).toBe("defended"); // therefore restored
   });
 
-  it("stays defeated while any attacker survives", () => {
+  it("stays conflicted while any conflict survives", () => {
     let { g, aid } = baseChain();
-    g = G.addNode(g, "attack", "Flawed", aid);
+    g = G.addNode(g, "conflict", "Flawed", aid);
     const oid = lastId(g);
-    g = G.addNode(g, "attack", "Not so", oid); // defeats first attack
-    g = G.addNode(g, "attack", "Also wrong", aid); // fresh, undefeated
-    expect(G.getAcceptability(g).get(aid)).toBe("defeated");
+    g = G.addNode(g, "conflict", "Not so", oid); // defeats first conflict
+    g = G.addNode(g, "conflict", "Also wrong", aid); // fresh, undefeated
+    const acc = G.getAcceptability(g);
+    expect(acc.get(aid)).toBe("conflicted");
   });
 
-  it("lets an attack defeat a claim", () => {
+  it("lets a conflict defeat a claim", () => {
+    // Q ← P ← A(support). Now conflict P directly.
     let { g, pid } = baseChain();
-    g = G.addNode(g, "attack", "P is harmful", pid);
+    g = G.addNode(g, "conflict", "P is harmful", pid);
     const attackId = lastId(g);
+
     const acc = G.getAcceptability(g);
-    expect(acc.get(pid)).toBe("defeated");
-    expect(acc.get(attackId)).toBe("defended");
+    expect(acc.get(attackId)).toBe("coherent");
+    expect(acc.get(pid)).toBe("conflicted");
   });
 });
 

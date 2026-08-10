@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState, useEffect, useRef } from "react";
+import { Plus } from "lucide-react";
 import {
   Background,
   BackgroundVariant,
@@ -29,16 +30,16 @@ interface GraphMapProps {
   graph: Graph;
   onNodeMove?: (id: string, position: { x: number; y: number }) => void;
   onConnectEdges?: (sourceId: string, targetId: string) => void;
-  onAddNode?: (type: NodeType, content: string, position: { x: number; y: number }) => void;
+  onAddNode?: (type: NodeType, content: string, parentOrPos: string | {x: number, y: number}) => void;
   onEditNode?: (id: string, content: string) => void;
+  readOnly?: boolean;
 }
 
-const NODE_W = 210;
-const NODE_H = 40;
+
 
 const EDGE_LABEL: Record<EdgeType, string> = {
   supports: "supports",
-  attacks: "attacks",
+  conflicts: "conflicts",
   annotates: "annotates",
   grounds: "grounds in",
   cites: "cites",
@@ -46,7 +47,7 @@ const EDGE_LABEL: Record<EdgeType, string> = {
 
 function edgeColor(type: EdgeType): string {
   if (type === "supports") return "#16a34a"; // green
-  if (type === "attacks") return "#dc2626"; // red
+  if (type === "conflicts") return "#e11d48"; // rose-600
   if (type === "grounds") return "#ca8a04"; // yellow
   if (type === "cites") return "#0d9488"; // teal
   return "#94a3b8"; // slate
@@ -59,6 +60,8 @@ type AxiomerNodeData = {
   isEditing: boolean;
   onEditSubmit: (content: string) => void;
   onEditCancel: () => void;
+  onSpawnChild?: (type: NodeType) => void;
+  readOnly?: boolean;
 };
 
 // Inline Editing Node
@@ -71,7 +74,6 @@ function AxiomerFlowNode({ data }: NodeProps<Node<AxiomerNodeData>>) {
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
-      // Select all text when editing existing
       if (node.id !== "draft") {
         inputRef.current.select();
       }
@@ -80,7 +82,10 @@ function AxiomerFlowNode({ data }: NodeProps<Node<AxiomerNodeData>>) {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
+      // Allow shift+enter for multiline roots
+      if (["claim", "premise"].includes(node.type) && e.shiftKey) return;
       e.stopPropagation();
+      e.preventDefault();
       onEditSubmit(val);
     } else if (e.key === "Escape") {
       e.stopPropagation();
@@ -88,16 +93,95 @@ function AxiomerFlowNode({ data }: NodeProps<Node<AxiomerNodeData>>) {
     }
   };
 
+  const isTerminal = ["value", "bedrock", "limit", "preference", "source"].includes(node.type);
+  const isRoot = ["claim", "premise"].includes(node.type);
+
+  if (isRoot) {
+    return (
+      <div
+        title={`${meta.label}: ${node.content}`}
+        className={`flex flex-col rounded-2xl border bg-white/70 backdrop-blur-xl px-4 py-3.5 shadow-xl transition-all duration-300 ${selected ? 'ring-2 ring-offset-2' : 'hover:shadow-2xl hover:-translate-y-0.5'}`}
+        style={{
+          width: 260,
+          borderColor: selected ? meta.color : "rgba(255,255,255,0.9)",
+          boxShadow: selected ? `0 20px 25px -5px ${meta.color}20, 0 8px 10px -6px ${meta.color}20` : '0 10px 40px -10px rgba(0,0,0,0.08)',
+          opacity: dim ? 0.3 : 1,
+        }}
+      >
+        <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
+        <div className="flex items-center gap-2 mb-2 opacity-90">
+          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: meta.color }} />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{meta.label}</span>
+        </div>
+        {isEditing ? (
+          <textarea
+            ref={inputRef as any}
+            value={val}
+            onChange={(e) => setVal(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={() => onEditSubmit(val)}
+            placeholder={meta.placeholder}
+            className="w-full resize-none bg-transparent text-sm font-medium text-slate-800 outline-none min-h-[40px]"
+          />
+        ) : (
+          <span className="text-sm font-medium text-slate-800 leading-snug break-words">
+            {node.content}
+          </span>
+        )}
+        <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
+      </div>
+    );
+  }
+
+  if (isTerminal) {
+    return (
+      <div
+        title={`${meta.label}: ${node.content}`}
+        className={`flex items-center gap-2.5 rounded-full border px-4 py-2 shadow-sm transition-all duration-300 backdrop-blur-md ${selected ? 'ring-2 ring-offset-1' : 'hover:shadow-md hover:-translate-y-0.5'}`}
+        style={{
+          width: 220,
+          backgroundColor: `${meta.color}0F`,
+          borderColor: selected ? meta.color : `${meta.color}30`,
+          boxShadow: selected ? `0 4px 12px ${meta.color}15` : undefined,
+          opacity: dim ? 0.3 : 1,
+        }}
+      >
+        <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
+        <span className="shrink-0 text-sm" style={{ color: meta.color }}>
+          {meta.icon}
+        </span>
+        {isEditing ? (
+          <textarea
+            ref={inputRef as any}
+            value={val}
+            onChange={(e) => setVal(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={() => onEditSubmit(val)}
+            placeholder={meta.placeholder}
+            className="w-full resize-none bg-transparent text-xs font-medium outline-none min-h-[30px]"
+            style={{ color: meta.color }}
+          />
+        ) : (
+          <span className="text-xs font-medium leading-snug break-words" style={{ color: meta.color }}>
+            {node.content}
+          </span>
+        )}
+        <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
+      </div>
+    );
+  }
+
+  // Intermediate node (support, conflict, note)
   return (
     <div
       title={`${meta.label}: ${node.content}`}
-      className="flex items-center gap-1.5 rounded-full border bg-white px-2.5 shadow-md shadow-slate-200/50"
+      className={`flex items-center gap-3 rounded-xl border bg-white/80 backdrop-blur-lg px-3 py-2.5 shadow-md transition-all duration-300 ${selected ? 'ring-2 ring-offset-1' : 'hover:shadow-lg hover:-translate-y-0.5'}`}
       style={{
-        width: NODE_W,
-        height: NODE_H,
-        borderColor: selected ? meta.color : "#e2e8f0",
+        width: 240,
+        borderColor: selected ? meta.color : "rgba(255,255,255,0.9)",
+        boxShadow: selected ? `0 10px 15px -3px ${meta.color}20` : '0 4px 20px -5px rgba(0,0,0,0.06)',
         borderLeft: `4px solid ${meta.color}`,
-        opacity: dim ? 0.3 : 1,
+        opacity: dim ? 0.4 : 1,
       }}
     >
       <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
@@ -105,20 +189,40 @@ function AxiomerFlowNode({ data }: NodeProps<Node<AxiomerNodeData>>) {
         {meta.icon}
       </span>
       {isEditing ? (
-        <input
-          ref={inputRef}
+        <textarea
+          ref={inputRef as any}
           value={val}
           onChange={(e) => setVal(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={() => onEditSubmit(val)}
           placeholder={meta.placeholder}
-          className="w-full bg-transparent text-[11px] font-medium text-slate-700 outline-none"
+          className="w-full resize-none bg-transparent text-[11px] font-medium text-slate-700 outline-none min-h-[30px]"
         />
       ) : (
-        <span className="truncate text-[11px] font-medium text-slate-700">
+        <span className="line-clamp-2 text-[11px] font-medium text-slate-700 leading-tight">
           {node.content}
         </span>
       )}
+      
+      {/* Quick Spawn Handles */}
+        {!isEditing && selected && !data.readOnly && (
+           <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10 animate-in fade-in zoom-in slide-in-from-top-2 duration-200">
+              <button 
+                 title="Add Support"
+                 onClick={(e) => { e.stopPropagation(); data.onSpawnChild?.("supports" as NodeType); }}
+                 className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+              <button 
+                 title="Add Conflict"
+                 onClick={(e) => { e.stopPropagation(); data.onSpawnChild?.("conflicts" as NodeType); }}
+                 className="w-7 h-7 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+           </div>
+        )}
       <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
     </div>
   );
@@ -143,14 +247,14 @@ export default function GraphMap(props: GraphMapProps) {
   );
 }
 
-function GraphMapInner({ graph, onNodeMove, onConnectEdges, onAddNode, onEditNode }: GraphMapProps) {
+function GraphMapInner({ graph, onNodeMove, onConnectEdges, onAddNode, onEditNode, readOnly }: GraphMapProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draftNode, setDraftNode] = useState<{ type: NodeType; position: { x: number; y: number } } | null>(null);
+  const [draftNode, setDraftNode] = useState<{ type: NodeType; parentId: string } | null>(null);
 
   const { screenToFlowPosition, zoomIn, zoomOut, fitView } = useReactFlow();
 
-  const positions = useMemo(() => layoutGraph(graph, NODE_W, NODE_H), [graph]);
+  const positions = useMemo(() => layoutGraph(graph), [graph]);
 
   const highlighted = useMemo<Set<string> | null>(() => {
     if (!selectedId) return null;
@@ -172,6 +276,7 @@ function GraphMapInner({ graph, onNodeMove, onConnectEdges, onAddNode, onEditNod
         dim: highlighted ? !highlighted.has(node.id) : false,
         selected: node.id === selectedId,
         isEditing: node.id === editingId,
+        readOnly: readOnly,
         onEditSubmit: (content: string) => {
           if (content.trim() && content.trim() !== node.content && onEditNode) {
             onEditNode(node.id, content.trim());
@@ -179,35 +284,43 @@ function GraphMapInner({ graph, onNodeMove, onConnectEdges, onAddNode, onEditNod
           setEditingId(null);
         },
         onEditCancel: () => setEditingId(null),
+        onSpawnChild: (type: NodeType) => {
+          setDraftNode({ type, parentId: node.id });
+        },
       },
     }));
 
     if (draftNode) {
+      const parentFlow = flowNodes.find(n => n.id === draftNode.parentId);
+      const parentPos = parentFlow ? parentFlow.position : { x: 0, y: 0 };
+      
       flowNodes.push({
         id: "draft",
         type: "axiomer",
-        position: draftNode.position,
+        position: { x: parentPos.x, y: parentPos.y + 120 },
         data: {
           node: { id: "draft", type: draftNode.type, content: "" },
           dim: false,
           selected: true,
           isEditing: true,
+          readOnly: readOnly,
           onEditSubmit: (content: string) => {
             if (content.trim() && onAddNode) {
-              onAddNode(draftNode.type, content.trim(), draftNode.position);
+              onAddNode(draftNode.type, content.trim(), draftNode.parentId);
             }
             setDraftNode(null);
           },
           onEditCancel: () => setDraftNode(null),
+          onSpawnChild: (_type: NodeType) => {},
         },
       });
     }
     return flowNodes;
-  }, [graph.nodes, positions, highlighted, selectedId, editingId, draftNode, onEditNode, onAddNode]);
+  }, [graph.nodes, positions, highlighted, selectedId, editingId, draftNode, onEditNode, onAddNode, readOnly]);
 
   const edges = useMemo<Edge[]>(
-    () =>
-      graph.edges.map((edge) => {
+    () => {
+      const existing = graph.edges.map((edge) => {
         const { parent, child } = G.edgeEndpoints(edge);
         const lit = !highlighted || (highlighted.has(parent) && highlighted.has(child));
         const color = edgeColor(edge.edgeType);
@@ -216,19 +329,38 @@ function GraphMapInner({ graph, onNodeMove, onConnectEdges, onAddNode, onEditNod
           id: edge.id,
           source: parent,
           target: child,
-          type: "smoothstep",
+          type: "bezier",
           label: showLabel ? EDGE_LABEL[edge.edgeType] : undefined,
           labelStyle: { fontSize: 9, fill: "#475569" },
           labelBgStyle: { fill: "#ffffff", fillOpacity: 0.9 },
           labelBgPadding: [3, 1] as [number, number],
           labelBgBorderRadius: 3,
+          animated: edge.edgeType === "conflicts",
           style: {
-            stroke: lit ? color : "#e2e8f0",
-            strokeWidth: lit ? 1.75 : 1,
+            stroke: lit ? color : "#cbd5e1",
+            strokeWidth: lit ? 2 : 1,
+            strokeDasharray: edge.edgeType === "conflicts" ? "5 5" : undefined,
           },
         };
-      }),
-    [graph.edges, highlighted],
+      });
+
+      if (draftNode) {
+        existing.push({
+          id: "draft-edge",
+          source: draftNode.parentId,
+          target: "draft",
+          type: "bezier",
+          animated: draftNode.type === "conflict",
+          style: {
+            stroke: edgeColor(draftNode.type as EdgeType),
+            strokeWidth: 2,
+            strokeDasharray: draftNode.type === "conflict" ? "5 5" : undefined,
+          },
+        } as any);
+      }
+      return existing;
+    },
+    [graph.edges, highlighted, draftNode]
   );
 
   const onNodeClick = useCallback(
@@ -239,13 +371,20 @@ function GraphMapInner({ graph, onNodeMove, onConnectEdges, onAddNode, onEditNod
     [],
   );
 
+  const onPaneClick = useCallback(() => {
+    setSelectedId(null);
+    if (!draftNode) setEditingId(null);
+    setDraftNode(null);
+  }, [draftNode]);
+
   const handleAddNode = useCallback((type: NodeType) => {
-    if (!onAddNode) return;
     const center = screenToFlowPosition({
       x: window.innerWidth / 2,
       y: window.innerHeight / 2,
     });
-    setDraftNode({ type, position: center });
+    if (onAddNode) {
+      onAddNode(type, "", center);
+    }
   }, [onAddNode, screenToFlowPosition]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
@@ -276,11 +415,7 @@ function GraphMapInner({ graph, onNodeMove, onConnectEdges, onAddNode, onEditNod
         edgeTypes={edgeTypes}
         onNodeClick={onNodeClick}
         onNodeDoubleClick={onNodeDoubleClick}
-        onPaneClick={() => {
-          setSelectedId(null);
-          setEditingId(null);
-          setDraftNode(null);
-        }}
+        onPaneClick={onPaneClick}
         onNodesChange={onNodesChange}
         onConnect={onConnect}
         nodesDraggable={!!onNodeMove}
@@ -292,7 +427,7 @@ function GraphMapInner({ graph, onNodeMove, onConnectEdges, onAddNode, onEditNod
         maxZoom={2.5}
         proOptions={{ hideAttribution: true }}
       >
-        <Background variant={BackgroundVariant.Dots} color="#cbd5e1" gap={22} />
+        <Background variant={BackgroundVariant.Cross} color="#cbd5e1" gap={24} size={1} />
         <Controls showInteractive={false} />
         <MiniMap
           pannable

@@ -12,7 +12,7 @@ interface CanvasToolbarProps {
 }
 
 // Primary types shown directly in the bar
-const PRIMARY_TOOLS: NodeType[] = ["claim", "support", "attack", "note"];
+const PRIMARY_TOOLS: NodeType[] = ["claim", "support", "conflict", "note"];
 
 // Overflow types shown in the "more" menu
 const OVERFLOW_TOOLS: NodeType[] = ["premise", "value", "source", "limit"];

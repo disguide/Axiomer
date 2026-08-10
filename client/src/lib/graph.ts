@@ -1,6 +1,6 @@
 // Pure graph utilities. No mutation — every transform returns a new Graph.
 //
-// EDGE DIRECTION: `supports`, `attacks`, `annotates` run child→parent.
+// EDGE DIRECTION: `supports`, `conflicts`, `annotates` run child→parent.
 // `grounds` and `cites` run parent→child (downward).
 
 import type { EdgeType, Graph, GraphEdge, GraphNode, NodeType } from "./types";
@@ -118,7 +118,7 @@ export function edgeTypeFor(
   // Anything built on a premise is supported by it
   if (parentType === "premise") return "supports";
   if (childType === "support" || childType === "claim") return "supports";
-  if (childType === "attack") return "attacks";
+  if (childType === "conflict") return "conflicts";
   if (childType === "source") return "cites";
   if (isTerminalType(childType)) return "grounds";
   return "annotates"; // note, limit
@@ -307,7 +307,7 @@ export function isNodeGrounded(graph: Graph, nodeId: string): boolean {
     case "claim":
       return groundedClaim(graph, nodeId, new Set());
     case "support":
-    case "attack":
+    case "conflict":
       return groundedArgument(graph, nodeId, new Set());
     default:
       return true;
@@ -333,16 +333,16 @@ function groundedClaim(
     if (terminal && isTerminalType(terminal.type)) return true;
   }
 
-  // Check children support/attack arguments
+  // Check children support/conflict arguments
   const args = graph.edges
     .filter(
       (e) =>
         endpoints(e).parent === claimId &&
-        (e.edgeType === "supports" || e.edgeType === "attacks"),
+        (e.edgeType === "supports" || e.edgeType === "conflicts"),
     )
     .map((e) => getNode(graph, endpoints(e).child))
     .filter((n): n is GraphNode => Boolean(n))
-    .filter((n) => n.type === "support" || n.type === "attack");
+    .filter((n) => n.type === "support" || n.type === "conflict");
 
   if (args.length === 0) return false;
   return args.every((a) => groundedArgument(graph, a.id, next));
@@ -383,21 +383,21 @@ export function getGroundingTerminal(
 
 // --- Acceptability (Dung-style defeat analysis) -----------------------------
 
-export type Acceptability = "defended" | "defeated" | "contested";
+export type Acceptability = "coherent" | "conflicted" | "contested";
 
-// Nodes that attack their parent.
-const ATTACKING_TYPES: ReadonlySet<NodeType> = new Set<NodeType>(["attack"]);
+// Nodes that conflict with their parent.
+const CONFLICTING_TYPES: ReadonlySet<NodeType> = new Set<NodeType>(["conflict"]);
 
-export function getAttackers(graph: Graph, nodeId: string): GraphNode[] {
-  return getChildren(graph, nodeId).filter((c) => ATTACKING_TYPES.has(c.type));
+export function getConflicts(graph: Graph, nodeId: string): GraphNode[] {
+  return getChildren(graph, nodeId).filter((c) => CONFLICTING_TYPES.has(c.type));
 }
 
 export function getAcceptability(graph: Graph): Map<string, Acceptability> {
-  const attackers = new Map<string, string[]>();
+  const conflictsList = new Map<string, string[]>();
   for (const n of graph.nodes) {
-    attackers.set(
+    conflictsList.set(
       n.id,
-      getAttackers(graph, n.id).map((a) => a.id),
+      getConflicts(graph, n.id).map((a) => a.id),
     );
   }
 
@@ -407,7 +407,7 @@ export function getAcceptability(graph: Graph): Map<string, Acceptability> {
     changed = false;
     for (const n of graph.nodes) {
       if (label.has(n.id)) continue;
-      const atk = attackers.get(n.id) as string[];
+      const atk = conflictsList.get(n.id) as string[];
       if (atk.every((a) => label.get(a) === "out")) {
         label.set(n.id, "in");
         changed = true;
@@ -415,7 +415,7 @@ export function getAcceptability(graph: Graph): Map<string, Acceptability> {
     }
     for (const n of graph.nodes) {
       if (label.has(n.id)) continue;
-      const atk = attackers.get(n.id) as string[];
+      const atk = conflictsList.get(n.id) as string[];
       if (atk.some((a) => label.get(a) === "in")) {
         label.set(n.id, "out");
         changed = true;
@@ -426,7 +426,7 @@ export function getAcceptability(graph: Graph): Map<string, Acceptability> {
   const result = new Map<string, Acceptability>();
   for (const n of graph.nodes) {
     const l = label.get(n.id);
-    result.set(n.id, l === "in" ? "defended" : l === "out" ? "defeated" : "contested");
+    result.set(n.id, l === "in" ? "coherent" : l === "out" ? "conflicted" : "contested");
   }
   return result;
 }
@@ -469,7 +469,7 @@ export interface GraphStats {
   claims: number;
   premises: number;
   supports: number;
-  attacks: number;
+  conflicts: number;
   terminals: number;
   groundedClaims: number;
   openClaims: number;
@@ -491,7 +491,7 @@ export function getGraphStats(graph: Graph): GraphStats {
     claims: graph.nodes.filter((n) => n.type === "claim").length,
     premises: graph.nodes.filter((n) => n.type === "premise").length,
     supports: graph.nodes.filter((n) => n.type === "support").length,
-    attacks: graph.nodes.filter((n) => n.type === "attack").length,
+    conflicts: graph.nodes.filter((n) => n.type === "conflict").length,
     terminals: getTerminals(graph).length,
     groundedClaims: grounded,
     openClaims: claims.length - grounded,
@@ -511,7 +511,7 @@ export function getGroundingGaps(graph: Graph): GroundingGap[] {
   return graph.nodes
     .filter(
       (n) =>
-        (n.type === "support" || n.type === "attack") &&
+        (n.type === "support" || n.type === "conflict") &&
         !isNodeGrounded(graph, n.id),
     )
     .map((n) => ({
