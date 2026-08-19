@@ -3,6 +3,24 @@ import type { Project, Branch } from "@/lib/projectTypes";
 
 const PROJECTS_STORAGE_KEY = "axiomer_projects";
 
+const STARTER_PROJECT: Project = {
+  id: "starter",
+  name: "Axiomer examples",
+  branches: [
+    {
+      id: "examples",
+      name: "Two worked examples",
+      graphId: "starter",
+      position: { x: 0, y: 0 },
+      createdAt: 0,
+      updatedAt: 0,
+    },
+  ],
+  edges: [],
+  createdAt: 0,
+  updatedAt: 0,
+};
+
 function generateId() {
   return Math.random().toString(36).substring(2, 9);
 }
@@ -16,7 +34,7 @@ function loadProjects(): Project[] {
   } catch (err) {
     console.error("Failed to load projects", err);
   }
-  return [];
+  return [STARTER_PROJECT];
 }
 
 export function useProjects() {
@@ -37,7 +55,7 @@ export function useProjects() {
       branches: [
         {
           id: generateId(),
-          name: "Main",
+          name: "Main map",
           graphId: generateId(),
           position: { x: window.innerWidth / 2 - 100, y: window.innerHeight / 2 - 50 },
           createdAt: Date.now(),

@@ -20,61 +20,61 @@ export interface NodeMeta {
 
 export const NODE_META: Record<NodeType, NodeMeta> = {
   claim: {
-    label: "CLAIM",
+    label: "Claim",
     icon: <MessageSquare className="w-[1em] h-[1em]" />,
-    color: "#334155",   // slate-700
+    color: "#2563eb",
     description: "A question, position, or statement you're exploring.",
     prompt: "What are you claiming or exploring?",
     placeholder: "Should you pull the lever?",
     terminal: false,
   },
   premise: {
-    label: "PREMISE",
+    label: "Premise",
     icon: <Sprout className="w-[1em] h-[1em]" />,
-    color: "#64748b",   // slate-500
+    color: "#7c3aed",
     description: "A foundational assumption you reason forward from.",
     prompt: "What premise are you starting from?",
     placeholder: "All humans have equal moral worth",
     terminal: false,
   },
   support: {
-    label: "SUPPORT",
+    label: "Support",
     icon: <CheckCircle2 className="w-[1em] h-[1em]" />,
-    color: "#16a34a",   // green-600
+    color: "#059669",
     description: "Evidence, reasoning, or data that backs a claim.",
     prompt: "What supports this?",
     placeholder: "Studies show 78% success rate...",
     terminal: false,
   },
   conflict: {
-    label: "CONFLICT",
+    label: "Conflict",
     icon: <XCircle className="w-[1em] h-[1em]" />,
-    color: "#e11d48",   // rose-600
+    color: "#e11d48",
     description: "A logical inconsistency or contradiction in the derivation.",
     prompt: "What does this conflict with?",
     placeholder: "This contradicts the premise that...",
     terminal: false,
   },
   note: {
-    label: "NOTE",
+    label: "Note",
     icon: <StickyNote className="w-[1em] h-[1em]" />,
-    color: "#94a3b8",   // slate-400
+    color: "#64748b",
     description: "Context, clarification, caveat, or annotation.",
     prompt: "What context or annotation to add?",
     placeholder: "By 'justice' I mean distributive fairness...",
     terminal: false,
   },
   value: {
-    label: "VALUE",
+    label: "Value",
     icon: <Anchor className="w-[1em] h-[1em]" />,
-    color: "#d97706",   // amber-600
+    color: "#b45309",
     description: "A bedrock value or principle — intrinsically important.",
     prompt: "What is the bedrock value?",
     placeholder: "Minimize total suffering",
     terminal: true,
   },
   source: {
-    label: "SOURCE",
+    label: "Source",
     icon: <BookOpen className="w-[1em] h-[1em]" />,
     color: "#0d9488",   // teal-600
     description: "A citation, reference, or link to evidence.",
@@ -83,7 +83,7 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     terminal: true,
   },
   limit: {
-    label: "LIMIT",
+    label: "Limit",
     icon: <Ban className="w-[1em] h-[1em]" />,
     color: "#94a3b8",   // slate-400
     description: "The boundary of what we can know.",
@@ -92,7 +92,7 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     terminal: true,
   },
   bedrock: {
-    label: "BEDROCK",
+    label: "Bedrock",
     icon: <Mountain className="w-[1em] h-[1em]" />,
     color: "#4f46e5",   // indigo-600
     description: "Absolute bedrock where you cannot go any deeper.",
@@ -101,7 +101,7 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     terminal: true,
   },
   preference: {
-    label: "PREFERENCE",
+    label: "Preference",
     icon: <Heart className="w-[1em] h-[1em]" />,
     color: "#ec4899",   // pink-500
     description: "A subjective human desire, aesthetic choice, or personal inclination.",

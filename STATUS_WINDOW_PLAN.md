@@ -1,5 +1,9 @@
 # Status Window — Implementation Plan
 
+> **Archived concept.** The standalone status/profile surface is no longer part
+> of core navigation. Grounding and conflict status now appear in context in
+> the Map inspector and Outline.
+
 A **Status** tab (alongside Tree / Values / Map) that shows the user's
 **philosophical profile**: their bedrock values ranked by convergence, overall
 exploration statistics, a visual identity card, and per-value provenance detail.

@@ -40,7 +40,7 @@ function loadInitial(graphId: string): Graph {
   } catch {
     // fall through to seed
   }
-  return seedGraph;
+  return graphId === "starter" || graphId === "default" ? seedGraph : EMPTY;
 }
 
 const EMPTY: Graph = { nodes: [], edges: [] };

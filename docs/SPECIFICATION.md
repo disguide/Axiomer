@@ -1,5 +1,9 @@
 # AXIOMER V1 — COMPLETE MASTER SPECIFICATION & IMPLEMENTATION GUIDE
 
+> **Archived V1 specification.** This describes the original 20/21-type
+> prototype. The current 10-node, 5-edge model is documented in `CLAUDE.md` and
+> `client/src/lib/types.ts`.
+
 **Project:** Axiomer - Question Tree to Bedrock Values  
 **Version:** V1 (MVP)  
 **Status:** Ready for Implementation  

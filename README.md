@@ -1,42 +1,57 @@
 # Axiomer
 
-Kialo but deeper — trace questions down to their **bedrock values**.
+See what your beliefs are built on.
 
-Axiomer is a wiki-style argument-tree platform. You explore a question by adding
-positions, arguments, evidence and more, and every chain must eventually bottom
-out at a fundamental **value**, **principle**, or **epistemic limit**. As you
-answer many questions you reuse the same bedrock values, revealing where
-different questions converge — and where they clash.
+Axiomer is a local-first reasoning map. Start with a question, decision, or
+belief; add support, conflict, and context; then keep asking why until every
+path reaches a value, source, preference, bedrock fact, or honest limit.
+
+## Why it exists
+
+Most disagreement stays at the level of conclusions. Axiomer makes the chain
+beneath a conclusion visible, so shared foundations and real points of
+divergence are easier to see.
+
+The product is intentionally small:
+
+1. State a thought.
+2. Trace what supports or challenges it.
+3. Ground each path in a foundation.
+
+The same graph can be read as a visual **Map** or a linear **Outline**. Work is
+saved to the browser in authoring mode. A static, read-only build can load a
+canonical graph for public viewing.
 
 ## Stack
 
-React 19 · TypeScript · Vite · Tailwind CSS 4. No backend in V1 — state lives in
-`localStorage`.
+React 19 · TypeScript · Vite · Tailwind CSS 4 · React Flow · dagre
 
-## Getting started
+## Run locally
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
+npm run dev
 ```
 
-Other scripts: `npm run build`, `npm run preview`, `npm run typecheck`.
+Open `http://localhost:5173`.
 
-## Docs
+## Verify
 
-- `docs/SPECIFICATION.md` — the full V1 master specification.
-- `CLAUDE.md` — architecture, conventions, and guidance for AI assistants
-  (including resolved spec inconsistencies). A good orientation for humans too.
+```bash
+npm run typecheck
+npm test
+npm run build
+```
 
-## How it works (in brief)
+## Model
 
-- **21 node types** (question, position, argument, evidence, value, premise, …)
-  and **11 edge types**, defined in `client/src/lib/types.ts` / `meta.ts`.
-- **Reverse authoring:** start from a **premise** (a base assumption) and build
-  conclusions forward from it — premise trees bottom out at the same shared
-  values, feeding the convergence view.
-- **Grounding badge:** each question shows `FULLY GROUNDED` (every chain reaches
-  a terminal) or `OPEN`.
-- **Convergence:** arguments link to *existing* values instead of duplicating
-  them.
-- Two seed examples (Trolley Problem, Why is the sky blue?) load on first visit.
+Axiomer uses 10 node types:
+
+- Structural: `claim`, `premise`, `support`, `conflict`, `note`
+- Foundations: `value`, `source`, `limit`, `bedrock`, `preference`
+
+Five labelled edge types connect them: `supports`, `conflicts`, `annotates`,
+`grounds`, and `cites`.
+
+See [VISION.md](VISION.md) for the product philosophy and [CLAUDE.md](CLAUDE.md)
+for implementation conventions.

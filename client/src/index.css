@@ -2,6 +2,7 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
+  --color-canvas: #f7f7f4;
   --color-glass: rgba(255, 255, 255, 0.85);
   --color-glass-subtle: rgba(255, 255, 255, 0.6);
   --color-glass-solid: rgba(255, 255, 255, 0.95);
@@ -16,6 +17,11 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.01em;
+  --canvas: #f7f7f4;
+  --surface: #ffffff;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
 }
 
 html,
@@ -27,7 +33,24 @@ body,
 body {
   margin: 0;
   /* Subtle ambient background for glassmorphism to reflect */
-  background: #fdfdfd;
+  background: var(--canvas);
   background-attachment: fixed;
   color: #1a1a1a;
+}
+
+button,
+a,
+input,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a {
+  touch-action: manipulation;
+}
+
+::selection {
+  background: #fde68a;
+  color: #0f172a;
 }

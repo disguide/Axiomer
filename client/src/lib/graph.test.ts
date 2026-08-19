@@ -268,7 +268,7 @@ describe("acceptability (Dung-style defeat analysis)", () => {
 
   it("treats a node with no conflicts as coherent", () => {
     const { g, aid } = baseChain();
-    expect(G.getAcceptability(g).get(aid)).toBe("defended");
+    expect(G.getAcceptability(g).get(aid)).toBe("coherent");
     expect(G.getConflicts(g, aid)).toHaveLength(0);
   });
 
@@ -277,8 +277,8 @@ describe("acceptability (Dung-style defeat analysis)", () => {
     g = G.addNode(g, "conflict", "But that's flawed", aid);
     const oid = lastId(g);
     const acc = G.getAcceptability(g);
-    expect(acc.get(aid)).toBe("defeated");
-    expect(acc.get(oid)).toBe("defended");
+    expect(acc.get(aid)).toBe("conflicted");
+    expect(acc.get(oid)).toBe("coherent");
     expect(G.getConflicts(g, aid).map((n: import("./types").GraphNode) => n.id)).toEqual([oid]);
   });
 
@@ -288,8 +288,8 @@ describe("acceptability (Dung-style defeat analysis)", () => {
     const oid = lastId(g);
     g = G.addNode(g, "conflict", "Not so", oid);
     const acc = G.getAcceptability(g);
-    expect(acc.get(oid)).toBe("defeated"); // rebutted
-    expect(acc.get(aid)).toBe("defended"); // therefore restored
+    expect(acc.get(oid)).toBe("conflicted"); // rebutted
+    expect(acc.get(aid)).toBe("coherent"); // therefore restored
   });
 
   it("stays conflicted while any conflict survives", () => {

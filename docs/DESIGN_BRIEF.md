@@ -1,5 +1,9 @@
 # Axiomer — Design Brief (for a repo-aware design agent)
 
+> **Historical brief.** This records the audit that led to the current redesign.
+> The 21-type palette and several named components are obsolete. Use
+> `CLAUDE.md`, `VISION.md`, and current code as the source of truth.
+
 You are a **product + visual designer who codes**, with full access to the
 `disguide/axiomer` repo. Your job: make Axiomer **clear and beautiful**, with the
 **Map** as the primary surface. Implement in code (React + Tailwind), verify with
