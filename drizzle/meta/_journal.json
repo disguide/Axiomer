@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1788830545173,
+      "tag": "0000_glossy_wolfpack",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788830590118,
+      "tag": "0001_search",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788867095778,
+      "tag": "0002_giant_tigra",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1788867096639,
+      "tag": "0003_counts",
+      "breakpoints": true
+    }
+  ]
+}

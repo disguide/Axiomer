@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import type { Project, Branch } from "@/lib/projectTypes";
 
-const PROJECTS_STORAGE_KEY = "axiomer_projects";
+export const PROJECTS_STORAGE_KEY = "axiomer_projects";
 
-const STARTER_PROJECT: Project = {
+export const STARTER_PROJECT: Project = {
   id: "starter",
   name: "Axiomer examples",
   branches: [
@@ -21,15 +21,93 @@ const STARTER_PROJECT: Project = {
   updatedAt: 0,
 };
 
-function generateId() {
+export function generateId(): string {
   return Math.random().toString(36).substring(2, 9);
 }
 
-function loadProjects(): Project[] {
+export function cleanupBranchStorage(graphId: string): void {
   try {
-    const stored = localStorage.getItem(PROJECTS_STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored);
+    if (typeof localStorage !== "undefined") {
+      localStorage.removeItem(`axiomer_graph_${graphId}`);
+    }
+  } catch (err) {
+    console.error("Failed to clean up branch storage", err);
+  }
+}
+
+export function cleanupProjectStorage(project: Project): void {
+  for (const branch of project.branches) {
+    cleanupBranchStorage(branch.graphId);
+  }
+}
+
+export function createDefaultProject(name = "Main project"): Project {
+  return {
+    id: generateId(),
+    name,
+    branches: [
+      {
+        id: generateId(),
+        name: "Main map",
+        graphId: generateId(),
+        position: {
+          x: typeof window !== "undefined" ? window.innerWidth / 2 - 100 : 200,
+          y: typeof window !== "undefined" ? window.innerHeight / 2 - 50 : 200,
+        },
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    ],
+    edges: [],
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+}
+
+export function deleteBranchFromProject(project: Project, branchId: string): Project {
+  // Prevent deleting the last remaining branch
+  if (project.branches.length <= 1) {
+    return project;
+  }
+
+  const targetBranch = project.branches.find((b) => b.id === branchId);
+  if (targetBranch) {
+    cleanupBranchStorage(targetBranch.graphId);
+  }
+
+  return {
+    ...project,
+    branches: project.branches.filter((b) => b.id !== branchId),
+    edges: (project.edges || []).filter(
+      (e) => e.source !== branchId && e.target !== branchId
+    ),
+    updatedAt: Date.now(),
+  };
+}
+
+export function deleteProjectFromList(projects: Project[], projectId: string): Project[] {
+  const targetProject = projects.find((p) => p.id === projectId);
+  if (targetProject) {
+    cleanupProjectStorage(targetProject);
+  }
+
+  const remaining = projects.filter((p) => p.id !== projectId);
+  if (remaining.length === 0) {
+    return [createDefaultProject()];
+  }
+  return remaining;
+}
+
+export function loadProjects(): Project[] {
+  try {
+    if (typeof localStorage !== "undefined") {
+      const stored = localStorage.getItem(PROJECTS_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
     }
   } catch (err) {
     console.error("Failed to load projects", err);
@@ -38,50 +116,44 @@ function loadProjects(): Project[] {
 }
 
 export function useProjects() {
-  const [projects, setProjects] = useState<Project[]>(loadProjects());
+  const [projects, setProjects] = useState<Project[]>(loadProjects);
 
   useEffect(() => {
     try {
-      localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
+      }
     } catch (err) {
       console.error("Failed to save projects", err);
     }
   }, [projects]);
 
-  const createProject = (name: string) => {
-    const newProject: Project = {
-      id: generateId(),
-      name,
-      branches: [
-        {
-          id: generateId(),
-          name: "Main map",
-          graphId: generateId(),
-          position: { x: window.innerWidth / 2 - 100, y: window.innerHeight / 2 - 50 },
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        },
-      ],
-      edges: [],
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
+  const createProject = (name: string): Project => {
+    const newProject = createDefaultProject(name);
     setProjects((prev) => [newProject, ...prev]);
     return newProject;
   };
 
-  const createBranch = (projectId: string, name: string) => {
+  const deleteProject = (projectId: string) => {
+    setProjects((prev) => deleteProjectFromList(prev, projectId));
+  };
+
+  const createBranch = (projectId: string, name: string): Branch => {
+    const newBranch: Branch = {
+      id: generateId(),
+      name,
+      graphId: generateId(), // New empty graph
+      position: {
+        x: typeof window !== "undefined" ? window.innerWidth / 2 - 100 + Math.random() * 50 : 200,
+        y: typeof window !== "undefined" ? window.innerHeight / 2 - 50 + Math.random() * 50 : 200,
+      },
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
     setProjects((prev) =>
       prev.map((p) => {
         if (p.id !== projectId) return p;
-        const newBranch: Branch = {
-          id: generateId(),
-          name,
-          graphId: generateId(), // New empty graph
-          position: { x: window.innerWidth / 2 - 100 + Math.random() * 50, y: window.innerHeight / 2 - 50 + Math.random() * 50 },
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        };
         return {
           ...p,
           branches: [...p.branches, newBranch],
@@ -89,10 +161,17 @@ export function useProjects() {
         };
       })
     );
+    return newBranch;
+  };
+
+  const deleteBranch = (projectId: string, branchId: string) => {
+    setProjects((prev) =>
+      prev.map((p) => (p.id === projectId ? deleteBranchFromProject(p, branchId) : p))
+    );
   };
 
   const getProject = (id: string) => projects.find((p) => p.id === id);
-  
+
   const getBranch = (projectId: string, branchId: string) => {
     const p = getProject(projectId);
     return p?.branches.find((b) => b.id === branchId);
@@ -133,9 +212,12 @@ export function useProjects() {
 
   return {
     projects,
+    setProjects,
     createProject,
+    deleteProject,
     updateProjectColor,
     createBranch,
+    deleteBranch,
     getProject,
     getBranch,
     moveBranch,

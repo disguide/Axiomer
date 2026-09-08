@@ -13,13 +13,15 @@ import {
   type NodeProps,
   useReactFlow,
 } from "@xyflow/react";
+import { motion } from "framer-motion";
 import "@xyflow/react/dist/style.css";
-import { ChevronRight, Link2, Plus, Search, Trash2, X } from "lucide-react";
+import { Activity, ChevronRight, Link2, Plus, Search, Trash2, X } from "lucide-react";
 import type { EdgeType, Graph, GraphNode, NodeType } from "@/lib/types";
 import { isTerminalType } from "@/lib/types";
 import { ALLOWED_CHILDREN, NODE_META } from "@/lib/meta";
 import * as G from "@/lib/graph";
 import { layoutGraph } from "@/lib/flowLayout";
+import ConnectionDensityCanvas from "./ConnectionDensityCanvas";
 
 interface GraphMapProps {
   graph: Graph;
@@ -45,7 +47,7 @@ const EDGE_COLOR: Record<EdgeType, string> = {
   grounds: "#b45309",
   cites: "#0d9488",
 };
-
+// TODO: Consider implementing ghost-node authoring for faster idea capture
 const ACTION_LABEL: Partial<Record<NodeType, string>> = {
   claim: "Deeper claim",
   support: "Support",
@@ -63,40 +65,60 @@ type FlowData = {
   selected: boolean;
   dimmed: boolean;
   grounded: boolean;
+  conflicted: boolean;
 };
 
 function FlowNode({ data }: NodeProps<Node<FlowData>>) {
-  const { node, selected, dimmed, grounded } = data;
+  const { node, selected, dimmed, grounded, conflicted } = data;
   const meta = NODE_META[node.type];
   const terminal = isTerminalType(node.type);
   const root = node.type === "claim" || node.type === "premise";
 
   return (
-    <div
-      className={`relative border bg-white text-left transition-[opacity,box-shadow,border-color] duration-200 ${
-        terminal ? "rounded-full px-3.5 py-2" : root ? "rounded-2xl px-4 py-3.5" : "rounded-xl px-3.5 py-2.5"
-      } ${selected ? "shadow-xl ring-2 ring-slate-900/10" : "shadow-sm"}`}
+    <motion.div
+      className={`relative border bg-white/95 text-left backdrop-blur-md transition-[opacity,box-shadow,border-color,transform] duration-200 ${
+        terminal
+          ? "rounded-full px-4 py-2"
+          : root
+          ? "rounded-2xl px-4 py-3.5"
+          : "rounded-xl px-3.5 py-2.5"
+      } ${selected ? "shadow-xl ring-2 ring-indigo-600/30 scale-[1.02]" : "shadow-sm hover:shadow-md"} ${
+        conflicted ? "ring-1 ring-rose-500/50 border-rose-300" : ""
+      }`}
       style={{
         width: terminal ? 210 : root ? 250 : 225,
-        borderColor: selected ? meta.color : terminal ? `${meta.color}45` : "#e2e8f0",
-        borderLeftWidth: terminal || root ? undefined : 3,
-        borderLeftColor: meta.color,
-        opacity: dimmed ? 0.18 : 1,
+        borderColor: selected ? (conflicted ? "#e11d48" : meta.color) : terminal ? `${meta.color}40` : conflicted ? "#f43f5e" : "#e2e8f0",
+        borderLeftWidth: terminal || root ? undefined : 3.5,
+        borderLeftColor: conflicted ? "#e11d48" : meta.color,
+        opacity: dimmed ? 0.2 : 1,
       }}
+      initial={{ scale: 1 }}
+      animate={{ scale: 1 }}
+      whileHover={{ scale: 1.05 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >
       <Handle type="target" position={Position.Top} className="!opacity-0" />
-      <div className="flex items-center gap-2">
-        <span className="shrink-0" style={{ color: meta.color }}>{meta.icon}</span>
-        <span className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: meta.color }}>{meta.label}</span>
+      <div className="flex items-center gap-1.5">
+        <span className="shrink-0 text-sm" style={{ color: conflicted ? "#e11d48" : meta.color }}>
+          {meta.icon}
+        </span>
+        <span className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: conflicted ? "#e11d48" : meta.color }}>
+          {meta.label}
+        </span>
         {!terminal && node.type !== "note" && (
-          <span className={`ml-auto h-1.5 w-1.5 rounded-full ${grounded ? "bg-emerald-500" : "bg-amber-400"}`} title={grounded ? "Grounded" : "Open"} />
+          <span
+            className={`ml-auto h-2 w-2 rounded-full ring-2 ring-white ${
+              conflicted ? "bg-rose-500 animate-pulse" : grounded ? "bg-emerald-500" : "bg-amber-400"
+            }`}
+            title={conflicted ? "Conflicted / Attacked" : grounded ? "Grounded" : "Open"}
+          />
         )}
       </div>
       <p className={`${root ? "mt-2 text-sm font-semibold" : terminal ? "ml-6 -mt-4 text-xs font-medium" : "mt-1.5 text-xs font-medium"} line-clamp-3 leading-snug text-slate-800`}>
         {node.content}
       </p>
       <Handle type="source" position={Position.Bottom} className="!opacity-0" />
-    </div>
+    </motion.div>
   );
 }
 
@@ -130,15 +152,16 @@ function EmptyMap({ onCreate }: { onCreate: (content: string) => void }) {
 
 function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNode, onLinkValue }: GraphMapProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState<string>("");
+  const [showDensity, setShowDensity] = useState<boolean>(false);
   const [addingType, setAddingType] = useState<NodeType | null>(null);
-  const [addDraft, setAddDraft] = useState("");
-  const [editing, setEditing] = useState(false);
-  const [editDraft, setEditDraft] = useState("");
-  const [showFoundations, setShowFoundations] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [rootComposer, setRootComposer] = useState(false);
-  const [rootDraft, setRootDraft] = useState("");
+  const [addDraft, setAddDraft] = useState<string>("");
+  const [editing, setEditing] = useState<boolean>(false);
+  const [editDraft, setEditDraft] = useState<string>("");
+  const [showFoundations, setShowFoundations] = useState<boolean>(false);
+  const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
+  const [rootComposer, setRootComposer] = useState<boolean>(false);
+  const [rootDraft, setRootDraft] = useState<string>("");
   const searchRef = useRef<HTMLInputElement>(null);
   const { setCenter, fitView } = useReactFlow();
   const positions = useMemo(() => layoutGraph(graph), [graph]);
@@ -154,17 +177,120 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
     setConfirmDelete(false);
   }, [selectedNode?.id]);
 
+  // Helper functions for keyboard navigation
+  const cycleNodeType = useCallback((nodeId: string, direction: 1 | -1) => {
+    const node = G.getNode(graph, nodeId);
+    if (!node || !onAddNode) return;
+
+    const allowed = ALLOWED_CHILDREN[node.type].filter((t) => ACTION_LABEL[t]);
+    if (allowed.length === 0) return;
+
+    const currentIndex = addingType ? allowed.indexOf(addingType) : -1;
+    const nextIndex = (currentIndex + direction + allowed.length) % allowed.length;
+    setAddingType(allowed[nextIndex]);
+    setAddDraft("");
+  }, [graph, onAddNode, addingType]);
+
+  const createSiblingNode = useCallback((nodeId: string) => {
+    const node = G.getNode(graph, nodeId);
+    if (!node || !onAddNode) return;
+
+    const siblingType = node.type;
+    setAddingType(siblingType);
+    setAddDraft("");
+  }, [graph, onAddNode]);
+
+  const createChildNode = useCallback((nodeId: string) => {
+    const node = G.getNode(graph, nodeId);
+    if (!node || !onAddNode) return;
+
+    const allowed = ALLOWED_CHILDREN[node.type].filter((t) => ACTION_LABEL[t]);
+    if (allowed.length === 0) return;
+
+    const childType = allowed[0];
+    setAddingType(childType);
+    setAddDraft("");
+  }, [graph, onAddNode]);
+
+  const pendingCenterRef = useRef<boolean>(false);
+
+  const createChildNodeCentered = useCallback((targetParentId?: string | null) => {
+    if (!onAddNode) return;
+
+    const explicitParent = targetParentId ? G.getNode(graph, targetParentId) : undefined;
+    const parent =
+      (explicitParent && !isTerminalType(explicitParent.type) ? explicitParent : undefined) ??
+      (selectedNode && !isTerminalType(selectedNode.type) ? selectedNode : undefined) ??
+      G.getRoots(graph).find((n) => !isTerminalType(n.type)) ??
+      graph.nodes.find((n) => !isTerminalType(n.type));
+
+    if (!parent) {
+      if (graph.nodes.length === 0 && onCreateRoot) {
+        pendingCenterRef.current = true;
+        onCreateRoot("New thought");
+      }
+      return;
+    }
+
+    const allowed = ALLOWED_CHILDREN[parent.type].filter((t) => ACTION_LABEL[t]);
+    if (allowed.length === 0) return;
+
+    const childType = addingType && allowed.includes(addingType) ? addingType : allowed[0];
+    const content = "New thought";
+
+    pendingCenterRef.current = true;
+    onAddNode(childType, content, parent.id);
+  }, [graph, onAddNode, onCreateRoot, selectedNode, addingType]);
+
+  useEffect(() => {
+    if (!pendingCenterRef.current) return;
+    pendingCenterRef.current = false;
+    const newestNode = graph.nodes[graph.nodes.length - 1];
+    if (newestNode) {
+      setSelectedId(newestNode.id);
+      const pos = positions[newestNode.id];
+      if (pos) {
+        setCenter(pos.x + 115, pos.y + 35, { zoom: 1.05, duration: 450 });
+      }
+    }
+  }, [graph, positions, setCenter]);
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
+      const isInput =
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA" ||
+        (document.activeElement as HTMLElement | null)?.isContentEditable;
+
+      if (event.key === "/" && !isInput) {
         event.preventDefault();
         searchRef.current?.focus();
       }
       if (event.key === "Escape") setSelectedId(null);
+      // 'C' key: create a new child node centered on the canvas
+      if (!isInput && (event.key === "c" || event.key === "C") && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        createChildNodeCentered(selectedId);
+      }
+      // Tab and Shift+Tab for changing node type based on allowed children
+      if ((event.key === "Tab" || event.key === "Shift+Tab") && selectedId && !event.shiftKey && !event.ctrlKey && !event.altKey) {
+        event.preventDefault();
+        cycleNodeType(selectedId, event.shiftKey ? -1 : 1);
+      }
+      // Ctrl+Enter to create sibling node
+      if (event.key === "Enter" && event.ctrlKey && selectedId && !event.shiftKey && !event.altKey) {
+        event.preventDefault();
+        createSiblingNode(selectedId);
+      }
+      // Shift+Enter to create child node
+      if (event.key === "Enter" && event.shiftKey && selectedId && !event.ctrlKey && !event.altKey) {
+        event.preventDefault();
+        createChildNode(selectedId);
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [selectedId, createChildNodeCentered, cycleNodeType, createSiblingNode, createChildNode]);
 
   const highlighted = useMemo<Set<string> | null>(() => {
     if (!selectedId) return null;
@@ -183,8 +309,9 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
       selected: node.id === selectedId,
       dimmed: Boolean(highlighted && !highlighted.has(node.id)),
       grounded: G.isNodeGrounded(graph, node.id),
+      conflicted: acceptability.get(node.id) === "conflicted",
     },
-  })), [graph, positions, selectedId, highlighted]);
+  })), [graph, positions, selectedId, highlighted, acceptability]);
 
   const edges = useMemo<Edge[]>(() => graph.edges.map((edge) => {
     const { parent, child } = G.edgeEndpoints(edge);
@@ -228,6 +355,8 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
     setAddDraft("");
     setAddingType(null);
   };
+
+
 
   const availableActions = selectedNode
     ? ALLOWED_CHILDREN[selectedNode.type].filter((type) => ACTION_LABEL[type])
@@ -288,6 +417,38 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
             </button>
           )}
           <button onClick={() => fitView({ duration: 400, padding: 0.2, maxZoom: 1.1 })} className="hidden h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-500 shadow-sm hover:bg-slate-50 sm:block">Fit map</button>
+          <button
+            onClick={() => setShowDensity((prev) => !prev)}
+            className={`hidden h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-sm transition sm:inline-flex ${
+              showDensity
+                ? "border-indigo-300 bg-indigo-50 text-indigo-700"
+                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+            title="Toggle Radial Coherence Orbit"
+          >
+            <Activity className="h-3.5 w-3.5" />
+            <span>Coherence</span>
+          </button>
+        </div>
+      )}
+
+      {showDensity && graph.nodes.length > 0 && (
+        <div className="absolute bottom-4 left-4 z-20 rounded-2xl border border-slate-200/90 bg-white/95 p-3.5 shadow-xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
+          <div className="mb-2 flex items-center justify-between px-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Radial Coherence Orbit</span>
+            <button onClick={() => setShowDensity(false)} className="rounded p-1 text-slate-400 hover:bg-slate-100"><X className="h-3.5 w-3.5" /></button>
+          </div>
+          <ConnectionDensityCanvas
+            graph={graph}
+            selectedId={selectedId}
+            onSelectNode={(id) => {
+              setSelectedId(id);
+              const n = G.getNode(graph, id);
+              if (n) focusNode(n);
+            }}
+            width={280}
+            height={210}
+          />
         </div>
       )}
 
@@ -318,7 +479,7 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
 
           {editing ? (
             <form className="mt-5" onSubmit={(event) => { event.preventDefault(); if (editDraft.trim() && onEditNode) onEditNode(selectedNode.id, editDraft.trim()); setEditing(false); }}>
-              <textarea autoFocus value={editDraft} onChange={(event) => setEditDraft(event.target.value)} className="min-h-28 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-6 outline-none focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-100" />
+              <textarea autoFocus value={editDraft} onChange={(event) => setEditDraft(event.target.value)} className="min-h-28 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-6 outline-none focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-100" />
               <div className="mt-2 flex gap-2"><button className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white">Save</button><button type="button" onClick={() => setEditing(false)} className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100">Cancel</button></div>
             </form>
           ) : (
@@ -347,7 +508,16 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
               {onLinkValue && terminalChoices.length > 0 && (
                 <div className="mt-3">
                   <button onClick={() => setShowFoundations((value) => !value)} className="flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-800"><Link2 className="h-3.5 w-3.5" /> Use an existing foundation</button>
-                  {showFoundations && <div className="mt-2 max-h-40 overflow-y-auto rounded-xl border border-slate-200 p-1">{terminalChoices.map((node) => <button key={node.id} onClick={() => { onLinkValue(selectedNode.id, node.id); setShowFoundations(false); }} className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-slate-600 hover:bg-slate-50"><span style={{ color: NODE_META[node.type].color }}>{NODE_META[node.type].icon}</span><span className="truncate">{node.content}</span></button>)}</div>}
+                  {showFoundations && (
+                    <div className="mt-2 max-h-40 overflow-y-auto rounded-xl border border-slate-200 p-1">
+                      {terminalChoices.map((node) => (
+                        <button key={node.id} onClick={() => { onLinkValue(selectedNode.id, node.id); setShowFoundations(false); }} className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-slate-600 hover:bg-slate-50">
+                          <span style={{ color: NODE_META[node.type].color }}>{NODE_META[node.type].icon}</span>
+                          <span className="truncate">{node.content}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -356,7 +526,22 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
           {(onEditNode || onDeleteNode) && (
             <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
               {onEditNode && <button onClick={() => setEditing(true)} className="text-xs font-semibold text-slate-500 hover:text-slate-900">Edit text</button>}
-              {onDeleteNode && <button onClick={() => { if (confirmDelete) { onDeleteNode(selectedNode.id); setSelectedId(null); } else setConfirmDelete(true); }} className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold ${confirmDelete ? "bg-rose-50 text-rose-700" : "text-slate-400 hover:bg-rose-50 hover:text-rose-700"}`}><Trash2 className="h-3.5 w-3.5" />{confirmDelete ? `Delete ${G.countDescendants(graph, selectedNode.id) + 1} nodes?` : "Delete"}</button>}
+              {onDeleteNode && (
+                <button
+                  onClick={() => {
+                    if (confirmDelete) {
+                      onDeleteNode(selectedNode.id);
+                      setSelectedId(null);
+                    } else {
+                      setConfirmDelete(true);
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold ${confirmDelete ? "bg-rose-50 text-rose-700" : "text-slate-400 hover:bg-rose-50 hover:text-rose-700"}`}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {confirmDelete ? `Delete ${G.countDescendants(graph, selectedNode.id) + 1} nodes?` : "Delete"}
+                </button>
+              )}
             </div>
           )}
         </aside>

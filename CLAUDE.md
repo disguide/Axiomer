@@ -1,5 +1,9 @@
 # Working on Axiomer
 
+## September 2026 rebuild
+
+The primary workspace is now `client/src/atlas/Workspace.tsx`. **[docs/REBUILD.md](docs/REBUILD.md) is the source of truth for v2.** It uses persistent SQL, statements and sources, connection semantics, bounded neighborhoods, and agent proposals. The following instructions apply only to the retained legacy editor at `/legacy` and `/editor/*`; do not impose its ten-type terminal ontology or browser persistence on v2.
+
 This is the current implementation guide. `docs/SPECIFICATION.md` and
 `STATUS_WINDOW_PLAN.md` describe earlier product iterations and are not the
 source of truth for the UI or ontology.

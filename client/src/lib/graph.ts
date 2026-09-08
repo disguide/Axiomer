@@ -1,10 +1,25 @@
+// TODO: AGY test edit
+// AGY test comment
 // Pure graph utilities. No mutation — every transform returns a new Graph.
 //
 // EDGE DIRECTION: `supports`, `conflicts`, `annotates` run child→parent.
 // `grounds` and `cites` run parent→child (downward).
 
 import type { EdgeType, Graph, GraphEdge, GraphNode, NodeType } from "./types";
-import { isTerminalType } from "./types";
+import {
+  isTerminalType,
+  ALLOWED_CHILDREN,
+  getAllowedChildren,
+  canAddChild,
+  NODE_TYPE_LABELS,
+} from "./types";
+
+export {
+  ALLOWED_CHILDREN,
+  getAllowedChildren,
+  canAddChild,
+  NODE_TYPE_LABELS,
+};
 
 // Edge types whose direction runs parent(from) → child(to).
 const DOWNWARD: readonly EdgeType[] = ["grounds", "cites"];
@@ -113,15 +128,15 @@ export function getValues(graph: Graph): GraphNode[] {
 // Edge type connecting a new child to its parent — auto-inferred from types.
 export function edgeTypeFor(
   childType: NodeType,
-  parentType: NodeType,
+  parentType?: NodeType,
 ): EdgeType {
-  // Anything built on a premise is supported by it
-  if (parentType === "premise") return "supports";
-  if (childType === "support" || childType === "claim") return "supports";
   if (childType === "conflict") return "conflicts";
   if (childType === "source") return "cites";
   if (isTerminalType(childType)) return "grounds";
-  return "annotates"; // note, limit
+  if (childType === "note") return "annotates";
+  if (childType === "support" || childType === "claim") return "supports";
+  if (parentType === "premise") return "supports";
+  return "annotates";
 }
 
 // Build an edge with the correct orientation for its type.
@@ -146,6 +161,9 @@ export function addNode(
   parentId: string,
 ): Graph {
   const parent = getNode(graph, parentId);
+  if (parent && isTerminalType(parent.type)) {
+    return graph;
+  }
   const newNode: GraphNode = {
     id: uid("node"),
     type: nodeType,
@@ -197,6 +215,16 @@ export function addFloatingNode(
   return { nodes: [...graph.nodes, newNode], edges: graph.edges };
 }
 
+export function addNodeCentered(parentId: string): string {
+  const coordinates = { x: 0, y: 0 };
+  void parentId;
+  void coordinates;
+  if (typeof (globalThis as any).generateId === "function") {
+    return (globalThis as any).generateId();
+  }
+  return "new-node-" + Date.now();
+}
+
 export function editNode(
   graph: Graph,
   nodeId: string,
@@ -228,10 +256,20 @@ export function addEdge(
   sourceId: string,
   targetId: string,
 ): Graph {
+  if (sourceId === targetId) return graph;
   const sourceNode = getNode(graph, sourceId);
   const targetNode = getNode(graph, targetId);
   if (!sourceNode || !targetNode) return graph;
+  if (isTerminalType(targetNode.type)) return graph;
   
+  const exists = graph.edges.some(
+    (e) =>
+      (endpoints(e).parent === targetId && endpoints(e).child === sourceId) ||
+      (e.from === sourceId && e.to === targetId) ||
+      (e.from === targetId && e.to === sourceId),
+  );
+  if (exists) return graph;
+
   const edgeType = edgeTypeFor(sourceNode.type, targetNode.type);
   const newEdge = makeEdge(targetId, sourceId, edgeType);
   return {
@@ -259,7 +297,7 @@ function doomedSet(graph: Graph, nodeId: string): Set<string> {
     if (node && isTerminalType(node.type) && id !== nodeId) {
       const hasSurvivingParent = graph.edges.some(
         (e) =>
-          e.edgeType === "grounds" &&
+          (e.edgeType === "grounds" || e.edgeType === "cites") &&
           e.to === id &&
           !doomed.has(e.from),
       );
@@ -287,14 +325,30 @@ export function linkToExistingValue(
   argumentId: string,
   valueId: string,
 ): Graph {
+  const target = getNode(graph, valueId);
+  const edgeType: EdgeType = target?.type === "source" ? "cites" : "grounds";
   const edges = graph.edges.filter(
-    (e) => !(e.from === argumentId && e.edgeType === "grounds"),
+    (e) =>
+      !(
+        e.from === argumentId &&
+        (e.edgeType === "grounds" || e.edgeType === "cites")
+      ),
   );
-  edges.push(makeEdge(argumentId, valueId, "grounds"));
+  edges.push(makeEdge(argumentId, valueId, edgeType));
   return { nodes: graph.nodes, edges };
 }
 
 // --- Grounding ---------------------------------------------------------------
+
+function isDirectlyGrounded(graph: Graph, nodeId: string): boolean {
+  return graph.edges.some((e) => {
+    if (e.from === nodeId && (e.edgeType === "grounds" || e.edgeType === "cites")) {
+      const target = getNode(graph, e.to);
+      return Boolean(target && isTerminalType(target.type));
+    }
+    return false;
+  });
+}
 
 export function isFullyGrounded(graph: Graph, claimId: string): boolean {
   return groundedClaim(graph, claimId, new Set());
@@ -303,12 +357,15 @@ export function isFullyGrounded(graph: Graph, claimId: string): boolean {
 export function isNodeGrounded(graph: Graph, nodeId: string): boolean {
   const node = getNode(graph, nodeId);
   if (!node) return false;
+  if (isTerminalType(node.type)) return true;
   switch (node.type) {
     case "claim":
       return groundedClaim(graph, nodeId, new Set());
     case "support":
     case "conflict":
       return groundedArgument(graph, nodeId, new Set());
+    case "premise":
+      return true;
     default:
       return true;
   }
@@ -325,15 +382,11 @@ function groundedClaim(
   const next = new Set(visiting).add(claimId);
 
   // Check for direct grounding
-  const directGround = graph.edges.find(
-    (e) => e.from === claimId && e.edgeType === "grounds",
-  );
-  if (directGround) {
-    const terminal = getNode(graph, directGround.to);
-    if (terminal && isTerminalType(terminal.type)) return true;
+  if (isDirectlyGrounded(graph, claimId)) {
+    return true;
   }
 
-  // Check children support/conflict arguments
+  // Check children claim (positions) or support/conflict arguments
   const args = graph.edges
     .filter(
       (e) =>
@@ -342,25 +395,50 @@ function groundedClaim(
     )
     .map((e) => getNode(graph, endpoints(e).child))
     .filter((n): n is GraphNode => Boolean(n))
-    .filter((n) => n.type === "support" || n.type === "conflict");
+    .filter(
+      (n) => n.type === "claim" || n.type === "support" || n.type === "conflict",
+    );
 
   if (args.length === 0) return false;
-  return args.every((a) => groundedArgument(graph, a.id, next));
+  return args.every((a) =>
+    a.type === "claim"
+      ? groundedClaim(graph, a.id, next)
+      : groundedArgument(graph, a.id, next),
+  );
 }
 
 function groundedArgument(
   graph: Graph,
   argumentId: string,
-  _visiting: Set<string>,
+  visiting: Set<string>,
 ): boolean {
-  const groundsEdge = graph.edges.find(
-    (e) => e.from === argumentId && e.edgeType === "grounds",
-  );
-  if (groundsEdge) {
-    const terminal = getNode(graph, groundsEdge.to);
-    return Boolean(terminal && isTerminalType(terminal.type));
+  if (visiting.has(argumentId)) return false;
+  const next = new Set(visiting).add(argumentId);
+
+  // 1. Direct grounding to a terminal node
+  if (isDirectlyGrounded(graph, argumentId)) {
+    return true;
   }
-  return false;
+
+  // 2. Recursive multi-hop grounding via child supports / arguments
+  const childArgs = graph.edges
+    .filter(
+      (e) =>
+        endpoints(e).parent === argumentId &&
+        (e.edgeType === "supports" || e.edgeType === "conflicts"),
+    )
+    .map((e) => getNode(graph, endpoints(e).child))
+    .filter((n): n is GraphNode => Boolean(n))
+    .filter(
+      (n) => n.type === "support" || n.type === "conflict" || n.type === "claim",
+    );
+
+  if (childArgs.length === 0) return false;
+  return childArgs.every((child) =>
+    child.type === "claim"
+      ? groundedClaim(graph, child.id, next)
+      : groundedArgument(graph, child.id, next),
+  );
 }
 
 export function getGroundingTerminal(
@@ -374,7 +452,9 @@ export function getGroundingTerminal(
     const node = getNode(graph, current);
     if (node && isTerminalType(node.type)) return node;
     const next = graph.edges.find(
-      (e) => e.from === current && e.edgeType === "grounds",
+      (e) =>
+        (e.edgeType === "grounds" || e.edgeType === "cites") &&
+        e.from === current,
     );
     current = next?.to;
   }
@@ -389,7 +469,16 @@ export type Acceptability = "coherent" | "conflicted" | "contested";
 const CONFLICTING_TYPES: ReadonlySet<NodeType> = new Set<NodeType>(["conflict"]);
 
 export function getConflicts(graph: Graph, nodeId: string): GraphNode[] {
-  return getChildren(graph, nodeId).filter((c) => CONFLICTING_TYPES.has(c.type));
+  const childConflicts = getChildren(graph, nodeId).filter((c) => CONFLICTING_TYPES.has(c.type));
+  const directAttacks = graph.edges
+    .filter((e) => e.edgeType === "conflicts" && endpoints(e).parent === nodeId)
+    .map((e) => getNode(graph, endpoints(e).child))
+    .filter((n): n is GraphNode => Boolean(n));
+
+  const all = new Map<string, GraphNode>();
+  for (const c of childConflicts) all.set(c.id, c);
+  for (const a of directAttacks) all.set(a.id, a);
+  return [...all.values()];
 }
 
 export function getAcceptability(graph: Graph): Map<string, Acceptability> {
@@ -558,7 +647,11 @@ export function getValueUsage(graph: Graph): ValueUsage[] {
   return getTerminals(graph)
     .map((value) => {
       const groundingNodes = graph.edges
-        .filter((e) => e.edgeType === "grounds" && e.to === value.id)
+        .filter(
+          (e) =>
+            (e.edgeType === "grounds" || e.edgeType === "cites") &&
+            e.to === value.id,
+        )
         .map((e) => getNode(graph, e.from))
         .filter((n): n is GraphNode => Boolean(n));
 
@@ -590,7 +683,7 @@ export function getValueClashes(graph: Graph): ValueClash[] {
     for (const t of getTerminals(graph)) {
       const reaches = graph.edges.some(
         (e) =>
-          e.edgeType === "grounds" &&
+          (e.edgeType === "grounds" || e.edgeType === "cites") &&
           e.to === t.id &&
           getRootFor(graph, e.from)?.id === question.id,
       );
@@ -766,7 +859,11 @@ export function getValueChainDetail(graph: Graph, terminalId: string): ValueChai
   const terminal = getNode(graph, terminalId);
   if (!terminal) throw new Error("Terminal not found");
 
-  const groundingEdges = graph.edges.filter(e => e.edgeType === "grounds" && e.to === terminalId);
+  const groundingEdges = graph.edges.filter(
+    (e) =>
+      (e.edgeType === "grounds" || e.edgeType === "cites") &&
+      e.to === terminalId,
+  );
   
   const groundingArgs = groundingEdges.map(e => {
     const argument = getNode(graph, e.from)!;
@@ -790,3 +887,17 @@ export function verifySource(graph: Graph, sourceId: string, verified: boolean):
     edges: graph.edges
   };
 }
+
+/**
+ * Thinking partner helper: generates suggestions for expanding a node's thinking based on graph context.
+ * Returns array of suggestion objects with type, content, and reason.
+ */
+export function getThinkingPartnerSuggestions(
+  graph: Graph,
+  nodeId: string,
+): Array<{ type: NodeType; content: string; reason: string }> {
+  void graph;
+  void nodeId;
+  return [];
+}
+

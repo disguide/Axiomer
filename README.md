@@ -1,57 +1,58 @@
 # Axiomer
 
-See what your beliefs are built on.
+Arguments, connected.
 
-Axiomer is a local-first reasoning map. Start with a question, decision, or
-belief; add support, conflict, and context; then keep asking why until every
-path reaches a value, source, preference, bedrock fact, or honest limit.
+A knowledge space for readable arguments and original sources. Write a question or statement, connect supporting or challenging reasons, and follow any reason into its own neighborhood. Reuse existing arguments and citations across topics.
 
-## Why it exists
+## Use it
 
-Most disagreement stays at the level of conclusions. Axiomer makes the chain
-beneath a conclusion visible, so shared foundations and real points of
-divergence are easier to see.
+- **Map** shows the selected argument with supporting and opposing reasons. **Read** expands their explanations.
+- Select a reason for details; **Explore this argument** makes it the center.
+- **New argument** starts a question. Add reasons and sources using **Write new** or **Use existing**.
+- **Search** (Ctrl/Cmd K) finds words in arguments, explanations, and publishers.
+- **Sources** collects original URLs, publishers, and passage locators.
+- **Review** holds agent proposals. Accepted proposals become connections; outdated proposals must be resubmitted.
+- Edits preserve earlier versions. Unlink removes a relationship without deleting shared arguments.
 
-The product is intentionally small:
+## Development
 
-1. State a thought.
-2. Trace what supports or challenges it.
-3. Ground each path in a foundation.
+Node 22.13+ is required for the local SQLite adapter.
 
-The same graph can be read as a visual **Map** or a linear **Outline**. Work is
-saved to the browser in authoring mode. A static, read-only build can load a
-canonical graph for public viewing.
-
-## Stack
-
-React 19 · TypeScript · Vite · Tailwind CSS 4 · React Flow · dagre
-
-## Run locally
-
-```bash
+```sh
 npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`.
+Open the Vite URL (normally `http://127.0.0.1:5173`). The API listens on loopback port 4174. Local knowledge persists in `.local/axiomer.db`, outside source control. Hosted knowledge uses Cloudflare D1. These databases are separate; deployment does not upload your local knowledge.
 
-## Verify
-
-```bash
+```sh
 npm run typecheck
 npm test
 npm run build
 ```
 
-## Model
+The build produces `dist/client/` and `dist/server/index.js`. Schema and generated migrations live in `db/` and `drizzle/`.
 
-Axiomer uses 10 node types:
+## Agents
 
-- Structural: `claim`, `premise`, `support`, `conflict`, `note`
-- Foundations: `value`, `source`, `limit`, `bedrock`, `preference`
+Agents use the same persistent repository as the interface:
 
-Five labelled edge types connect them: `supports`, `conflicts`, `annotates`,
-`grounds`, and `cites`.
+- `search_arguments`: bounded result pages and stable IDs.
+- `read_argument`: one neighborhood, sources, and paginated backlinks.
+- `propose_argument`: a connected node staged for review, with parent version and rationale.
 
-See [VISION.md](VISION.md) for the product philosophy and [CLAUDE.md](CLAUDE.md)
-for implementation conventions.
+Start Axiomer, then run `npm run mcp` for the stdio transport. It defaults to the local API. Set `AXIOMER_URL` for another server; a private hosted space requires an authorized site session (`AXIOMER_COOKIE`). Never put session credentials in source or URLs. Optional browser WebMCP registration uses the current page session.
+
+Discover `/api/agent-tools`; execute `POST /api/agent-call`. See [architecture and API details](docs/REBUILD.md).
+
+## Earlier work
+
+The earlier editor remains at `/legacy` and `/editor/:projectId/:branchId`. Existing local browser keys and compressed `#tree=` links are retained. Browser data is origin-specific: use your original local URL to export it, then import into the hosted space.
+
+**Import a map** accepts old and new JSON, up to 200 nodes, 500 edges, and 100 KB per transaction. Imports create separate maps and retain the exact original at `/api/imports/<new-root-id>`. Export downloads the **displayed neighborhood**, with a truncation flag if more connections exist. [Earlier documentation](docs/LEGACY_README.md) is retained.
+
+## Scale and trust
+
+The UI renders neighborhoods rather than the entire corpus. Indexed nodes/edges, full-text search, keyset pagination, and transactional aggregate counters support growth. Tests exercise 100,000 synthetic nodes and a 10,000-edge hub.
+
+This release is an **owner-private knowledge space**, protected by Sites access controls. Its application API treats an owner session as a trusted editor. Agent tools stage proposals by convention; they are not a separate security role. Public contributions require application roles, moderation, rate limiting, and a larger storage/search deployment. See [the scaling path and current limits](docs/REBUILD.md#scaling-path).

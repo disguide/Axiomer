@@ -1,17 +1,32 @@
-// Import / export the graph as JSON. The exported file is the canonical store
-// (data/graph.json) in the read-mostly architecture (see docs/ARCHITECTURE.md):
-// an editor exports, opens a PR, and the merged JSON is published read-only.
-//
-// parseGraph is pure and strict so a malformed or hand-edited file is rejected
-// with a clear error rather than silently corrupting the viewer.
+// Import / export the graph as JSON or Markdown with strict schema validation.
+// Supports both canonical JSON store and readable Markdown trees.
 
 import type { Graph, GraphEdge, GraphNode } from "./types";
 import { EDGE_TYPES, NODE_TYPES, migrateGraph } from "./types";
+import {
+  exportGraphToMarkdown,
+  parseMarkdownGraph,
+  parseMarkdownToGraph,
+  importGraphFromMarkdown,
+} from "./markdown";
+
+export {
+  exportGraphToMarkdown,
+  parseMarkdownGraph,
+  parseMarkdownToGraph,
+  importGraphFromMarkdown,
+};
 
 const NODE_TYPE_SET = new Set<string>(NODE_TYPES);
 const EDGE_TYPE_SET = new Set<string>(EDGE_TYPES);
 
-export function exportGraph(graph: Graph): string {
+export type ExportFormat = "json" | "markdown";
+export type ImportFormat = "json" | "markdown" | "auto";
+
+export function exportGraph(graph: Graph, format: ExportFormat = "json"): string {
+  if (format === "markdown") {
+    return exportGraphToMarkdown(graph);
+  }
   return JSON.stringify(graph, null, 2) + "\n";
 }
 
@@ -29,6 +44,14 @@ function parseNode(value: unknown, i: number): GraphNode {
     throw new Error(`nodes[${i}].content must be a string`);
   const node: GraphNode = { id, type: type as GraphNode["type"], content };
   if (typeof createdAt === "string") node.createdAt = createdAt;
+  if (typeof value.url === "string") {
+    if (!/^https?:\/\//i.test(value.url)) throw new Error(`nodes[${i}].url must use http or https`);
+    node.url = value.url;
+  }
+  if (typeof value.verified === "boolean") node.verified = value.verified;
+  if (isObject(value.position) && typeof value.position.x === "number" && typeof value.position.y === "number" && Number.isFinite(value.position.x) && Number.isFinite(value.position.y)) {
+    node.position = { x: value.position.x, y: value.position.y };
+  }
   return node;
 }
 
@@ -73,18 +96,63 @@ export function parseGraph(text: string): Graph {
   return validateGraph(json);
 }
 
+export function importGraph(text: string, format: ImportFormat = "auto"): Graph {
+  if (typeof text !== "string") {
+    throw new Error("Cannot import non-string graph content");
+  }
+
+  const trimmed = text.trim();
+  if (format === "markdown") {
+    const mdGraph = parseMarkdownGraph(text);
+    return validateGraph(mdGraph);
+  }
+
+  if (format === "json") {
+    return parseGraph(text);
+  }
+
+  // format === "auto"
+  if (trimmed.startsWith("{")) {
+    return parseGraph(text);
+  }
+
+  // Attempt markdown parse
+  try {
+    const mdGraph = parseMarkdownGraph(text);
+    return validateGraph(mdGraph);
+  } catch (mdErr) {
+    // If it started with [ or looks like bad JSON, try JSON to produce clear message
+    try {
+      return parseGraph(text);
+    } catch {
+      throw mdErr;
+    }
+  }
+}
+
 // --- Browser helpers (DOM; not used by the pure tests above) ---------------
 
-export function downloadGraph(graph: Graph, filename = "graph.json"): void {
-  const blob = new Blob([exportGraph(graph)], { type: "application/json" });
+export function downloadGraph(
+  graph: Graph,
+  filename?: string,
+  format: ExportFormat = "json",
+): void {
+  const content = exportGraph(graph, format);
+  const defaultExt = format === "markdown" ? "md" : "json";
+  const defaultMime = format === "markdown" ? "text/markdown" : "application/json";
+  const name = filename || `axiomer-export-${Date.now()}.${defaultExt}`;
+  const blob = new Blob([content], { type: defaultMime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = filename;
+  a.download = name;
   a.click();
   URL.revokeObjectURL(url);
 }
 
 export function readGraphFile(file: File): Promise<Graph> {
-  return file.text().then(parseGraph);
+  const isMd = /\.md$/i.test(file.name) || /\.markdown$/i.test(file.name);
+  const isJson = /\.json$/i.test(file.name);
+  const format: ImportFormat = isMd ? "markdown" : isJson ? "json" : "auto";
+  return file.text().then((text) => importGraph(text, format));
 }

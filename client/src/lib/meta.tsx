@@ -2,11 +2,14 @@
 // Single source of truth shared by NodeCard, AddNodeForm, Legend, and Toolbar.
 
 import type { NodeType } from "./types";
+import { ALLOWED_CHILDREN, getAllowedChildren, canAddChild, NODE_TYPE_LABELS } from "./types";
 import type { ReactNode } from "react";
 import {
   MessageSquare, Sprout, CheckCircle2, XCircle,
   StickyNote, Anchor, BookOpen, Ban, Mountain, Heart,
 } from "lucide-react";
+
+export { ALLOWED_CHILDREN, getAllowedChildren, canAddChild, NODE_TYPE_LABELS };
 
 export interface NodeMeta {
   label: string;
@@ -20,7 +23,7 @@ export interface NodeMeta {
 
 export const NODE_META: Record<NodeType, NodeMeta> = {
   claim: {
-    label: "Claim",
+    label: NODE_TYPE_LABELS.claim,
     icon: <MessageSquare className="w-[1em] h-[1em]" />,
     color: "#2563eb",
     description: "A question, position, or statement you're exploring.",
@@ -29,7 +32,7 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     terminal: false,
   },
   premise: {
-    label: "Premise",
+    label: NODE_TYPE_LABELS.premise,
     icon: <Sprout className="w-[1em] h-[1em]" />,
     color: "#7c3aed",
     description: "A foundational assumption you reason forward from.",
@@ -38,7 +41,7 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     terminal: false,
   },
   support: {
-    label: "Support",
+    label: NODE_TYPE_LABELS.support,
     icon: <CheckCircle2 className="w-[1em] h-[1em]" />,
     color: "#059669",
     description: "Evidence, reasoning, or data that backs a claim.",
@@ -47,7 +50,7 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     terminal: false,
   },
   conflict: {
-    label: "Conflict",
+    label: NODE_TYPE_LABELS.conflict,
     icon: <XCircle className="w-[1em] h-[1em]" />,
     color: "#e11d48",
     description: "A logical inconsistency or contradiction in the derivation.",
@@ -56,7 +59,7 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     terminal: false,
   },
   note: {
-    label: "Note",
+    label: NODE_TYPE_LABELS.note,
     icon: <StickyNote className="w-[1em] h-[1em]" />,
     color: "#64748b",
     description: "Context, clarification, caveat, or annotation.",
@@ -65,7 +68,7 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     terminal: false,
   },
   value: {
-    label: "Value",
+    label: NODE_TYPE_LABELS.value,
     icon: <Anchor className="w-[1em] h-[1em]" />,
     color: "#b45309",
     description: "A bedrock value or principle — intrinsically important.",
@@ -74,7 +77,7 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     terminal: true,
   },
   source: {
-    label: "Source",
+    label: NODE_TYPE_LABELS.source,
     icon: <BookOpen className="w-[1em] h-[1em]" />,
     color: "#0d9488",   // teal-600
     description: "A citation, reference, or link to evidence.",
@@ -83,7 +86,7 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     terminal: true,
   },
   limit: {
-    label: "Limit",
+    label: NODE_TYPE_LABELS.limit,
     icon: <Ban className="w-[1em] h-[1em]" />,
     color: "#94a3b8",   // slate-400
     description: "The boundary of what we can know.",
@@ -92,7 +95,7 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     terminal: true,
   },
   bedrock: {
-    label: "Bedrock",
+    label: NODE_TYPE_LABELS.bedrock,
     icon: <Mountain className="w-[1em] h-[1em]" />,
     color: "#4f46e5",   // indigo-600
     description: "Absolute bedrock where you cannot go any deeper.",
@@ -101,7 +104,7 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     terminal: true,
   },
   preference: {
-    label: "Preference",
+    label: NODE_TYPE_LABELS.preference,
     icon: <Heart className="w-[1em] h-[1em]" />,
     color: "#ec4899",   // pink-500
     description: "A subjective human desire, aesthetic choice, or personal inclination.",
@@ -109,21 +112,6 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
     placeholder: "I prefer autonomy over security",
     terminal: true,
   },
-};
-
-// Context-sensitive children: which node types may be added under a given
-// parent type. Terminal types map to an empty list.
-export const ALLOWED_CHILDREN: Record<NodeType, NodeType[]> = {
-  claim:   ["claim", "support", "conflict", "note", "value", "source", "limit", "bedrock", "preference"],
-  premise: ["claim", "support", "conflict", "note", "value", "source", "limit", "bedrock", "preference"],
-  support: ["support", "conflict", "note", "value", "source", "limit", "bedrock", "preference"],
-  conflict: ["support", "conflict", "note", "value", "source", "limit", "bedrock", "preference"],
-  note:    ["conflict", "note", "source"],
-  value:   [],
-  source:  [],
-  limit:   [],
-  bedrock: [],
-  preference: [],
 };
 
 // Display order for the Legend panel.

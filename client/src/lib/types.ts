@@ -78,6 +78,44 @@ export function isTerminalType(type: NodeType): boolean {
   return TERMINAL_TYPES.includes(type);
 }
 
+// Canonical display labels for every node type.
+export const NODE_TYPE_LABELS: Record<NodeType, string> = {
+  claim: "Claim",
+  premise: "Premise",
+  support: "Support",
+  conflict: "Conflict",
+  note: "Note",
+  value: "Value",
+  source: "Source",
+  limit: "Limit",
+  bedrock: "Bedrock",
+  preference: "Preference",
+};
+
+// Context-sensitive children: which node types may be added under a given parent type.
+// Terminal types map to an empty list. Pure data structure with zero UI/React dependencies.
+export const ALLOWED_CHILDREN: Record<NodeType, readonly NodeType[]> = {
+  claim: ["claim", "support", "conflict", "note", "value", "source", "limit", "bedrock", "preference"],
+  premise: ["claim", "support", "conflict", "note", "value", "source", "limit", "bedrock", "preference"],
+  support: ["support", "conflict", "note", "value", "source", "limit", "bedrock", "preference"],
+  conflict: ["support", "conflict", "note", "value", "source", "limit", "bedrock", "preference"],
+  note: ["conflict", "note", "source"],
+  value: [],
+  source: [],
+  limit: [],
+  bedrock: [],
+  preference: [],
+};
+
+export function getAllowedChildren(type: NodeType): readonly NodeType[] {
+  return ALLOWED_CHILDREN[type] || [];
+}
+
+export function canAddChild(parentType: NodeType, childType: NodeType): boolean {
+  const allowed = ALLOWED_CHILDREN[parentType];
+  return Boolean(allowed && allowed.includes(childType));
+}
+
 // ---------------------------------------------------------------------------
 // Migration: map old 22-type system → new 8-type system
 // ---------------------------------------------------------------------------

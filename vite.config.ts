@@ -11,8 +11,9 @@ export default defineConfig({
       "@": path.resolve(__dirname, "client/src"),
     },
   },
+  server: { proxy: { '/api': 'http://127.0.0.1:4174' } },
   build: {
-    outDir: "../dist",
+    outDir: "../dist/client",
     emptyOutDir: true,
   },
 });

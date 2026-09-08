@@ -1,9 +1,19 @@
 import { describe, expect, it } from "vitest";
 import type { Graph } from "./types";
+import {
+  ALLOWED_CHILDREN,
+  EDGE_TYPES,
+  NODE_TYPES,
+  NODE_TYPE_LABELS,
+  TERMINAL_TYPES,
+  canAddChild,
+  getAllowedChildren,
+  isTerminalType,
+} from "./types";
 import { seedGraph } from "./seed";
 import * as G from "./graph";
 
-// A tiny helper to find the id of the node added last.
+// Helper to find the id of the node added last.
 const lastId = (g: Graph) => g.nodes[g.nodes.length - 1].id;
 
 describe("traversal respects semantic edge direction", () => {
@@ -30,14 +40,110 @@ describe("traversal respects semantic edge direction", () => {
   });
 });
 
+describe("ontology decoupling and child rules", () => {
+  it("exports pure ALLOWED_CHILDREN and validation helpers without UI dependencies", () => {
+    expect(NODE_TYPES).toHaveLength(10);
+    expect(EDGE_TYPES).toHaveLength(5);
+    expect(TERMINAL_TYPES).toHaveLength(5);
+    expect(ALLOWED_CHILDREN.claim).toBeDefined();
+    expect(NODE_TYPE_LABELS.claim).toBe("Claim");
+
+    // Terminal types allow 0 children
+    for (const term of TERMINAL_TYPES) {
+      expect(isTerminalType(term)).toBe(true);
+      expect(getAllowedChildren(term)).toEqual([]);
+      expect(canAddChild(term, "claim")).toBe(false);
+      expect(canAddChild(term, "support")).toBe(false);
+      expect(canAddChild(term, "value")).toBe(false);
+    }
+
+    // Structural types allow children
+    expect(canAddChild("claim", "support")).toBe(true);
+    expect(canAddChild("claim", "conflict")).toBe(true);
+    expect(canAddChild("claim", "claim")).toBe(true);
+    expect(canAddChild("claim", "value")).toBe(true);
+    expect(canAddChild("claim", "source")).toBe(true);
+    expect(canAddChild("premise", "support")).toBe(true);
+    expect(canAddChild("support", "value")).toBe(true);
+    expect(canAddChild("conflict", "support")).toBe(true);
+    expect(canAddChild("note", "source")).toBe(true);
+    expect(canAddChild("note", "claim")).toBe(false);
+  });
+
+  it("prevents adding nodes under terminal parents in addNode", () => {
+    let g: Graph = { nodes: [], edges: [] };
+    g = G.addRootQuestion(g, "Root Q");
+    const qId = lastId(g);
+    g = G.addNode(g, "value", "Bedrock Value", qId);
+    const vId = lastId(g);
+
+    const beforeCount = g.nodes.length;
+    g = G.addNode(g, "support", "Illegal child under value", vId);
+    expect(g.nodes.length).toBe(beforeCount);
+  });
+
+  it("prevents invalid edge additions in addEdge", () => {
+    let g: Graph = { nodes: [], edges: [] };
+    g = G.addRootQuestion(g, "Q1");
+    const qId = lastId(g);
+    g = G.addNode(g, "value", "V1", qId);
+    const vId = lastId(g);
+
+    // Self-loop prevention
+    const g1 = G.addEdge(g, qId, qId);
+    expect(g1.edges.length).toBe(g.edges.length);
+
+    // Terminal parent prevention (in addEdge, targetId is parent)
+    const g2 = G.addEdge(g, qId, vId);
+    expect(g2.edges.length).toBe(g.edges.length);
+
+    // Duplicate edge prevention
+    const g3 = G.addEdge(g, vId, qId);
+    expect(g3.edges.length).toBe(g.edges.length);
+  });
+});
+
+describe("edgeTypeFor inference ordering", () => {
+  it("resolves specific child types even when parent is a premise", () => {
+    expect(G.edgeTypeFor("conflict", "premise")).toBe("conflicts");
+    expect(G.edgeTypeFor("source", "premise")).toBe("cites");
+    expect(G.edgeTypeFor("value", "premise")).toBe("grounds");
+    expect(G.edgeTypeFor("limit", "premise")).toBe("grounds");
+    expect(G.edgeTypeFor("bedrock", "premise")).toBe("grounds");
+    expect(G.edgeTypeFor("preference", "premise")).toBe("grounds");
+    expect(G.edgeTypeFor("note", "premise")).toBe("annotates");
+    expect(G.edgeTypeFor("claim", "premise")).toBe("supports");
+    expect(G.edgeTypeFor("support", "premise")).toBe("supports");
+  });
+
+  it("resolves standard child types across structural parents", () => {
+    expect(G.edgeTypeFor("support", "claim")).toBe("supports");
+    expect(G.edgeTypeFor("claim", "claim")).toBe("supports");
+    expect(G.edgeTypeFor("conflict", "claim")).toBe("conflicts");
+    expect(G.edgeTypeFor("source", "claim")).toBe("cites");
+    expect(G.edgeTypeFor("value", "claim")).toBe("grounds");
+    expect(G.edgeTypeFor("note", "claim")).toBe("annotates");
+
+    expect(G.edgeTypeFor("support", "support")).toBe("supports");
+    expect(G.edgeTypeFor("conflict", "support")).toBe("conflicts");
+    expect(G.edgeTypeFor("source", "support")).toBe("cites");
+    expect(G.edgeTypeFor("bedrock", "support")).toBe("grounds");
+
+    expect(G.edgeTypeFor("source", "note")).toBe("cites");
+    expect(G.edgeTypeFor("conflict", "note")).toBe("conflicts");
+  });
+});
+
 describe("grounding", () => {
   it("computes grounding status for seed claims", () => {
     expect(G.isFullyGrounded(seedGraph, "sky-p2")).toBe(true);
+    expect(G.isFullyGrounded(seedGraph, "sky-q2")).toBe(true);
+    expect(G.isFullyGrounded(seedGraph, "trolley-q2")).toBe(true);
+    expect(G.isFullyGrounded(seedGraph, "sky-q1")).toBe(false);
     expect(G.isFullyGrounded(seedGraph, "trolley-q1")).toBe(false);
   });
 
   it("treats a claim grounding directly in a terminal as grounded", () => {
-    // sky-p2 grounds sky-el1 with no intermediate argument.
     expect(G.isFullyGrounded(seedGraph, "sky-p2")).toBe(true);
   });
 
@@ -59,22 +165,111 @@ describe("grounding", () => {
     expect(G.isFullyGrounded(g, qid)).toBe(true);
   });
 
-  it("does not loop forever on a cyclic annotates chain", () => {
-    // Hand-build a cycle: argument annotates a claim that (transitively) annotates
-    // back. The visiting guard must terminate with `false`, not hang.
+  it("recursively evaluates multi-hop support chains (Claim → S1 → S2 → S3 → Bedrock)", () => {
+    let g: Graph = { nodes: [], edges: [] };
+    g = G.addRootQuestion(g, "Should we terraform Mars?");
+    const qId = lastId(g);
+
+    g = G.addNode(g, "support", "Hop 1: Long term species survival", qId);
+    const s1 = lastId(g);
+    expect(G.isFullyGrounded(g, qId)).toBe(false);
+    expect(G.isNodeGrounded(g, s1)).toBe(false);
+
+    g = G.addNode(g, "support", "Hop 2: Planetary risk redundancy", s1);
+    const s2 = lastId(g);
+    expect(G.isFullyGrounded(g, qId)).toBe(false);
+    expect(G.isNodeGrounded(g, s2)).toBe(false);
+
+    g = G.addNode(g, "support", "Hop 3: Extinction level asteroid probabilities", s2);
+    const s3 = lastId(g);
+    expect(G.isFullyGrounded(g, qId)).toBe(false);
+    expect(G.isNodeGrounded(g, s3)).toBe(false);
+
+    g = G.addNode(g, "bedrock", "Axiom of conscious preservation", s3);
+    const bId = lastId(g);
+
+    expect(G.isNodeGrounded(g, bId)).toBe(true);
+    expect(G.isNodeGrounded(g, s3)).toBe(true);
+    expect(G.isNodeGrounded(g, s2)).toBe(true);
+    expect(G.isNodeGrounded(g, s1)).toBe(true);
+    expect(G.isFullyGrounded(g, qId)).toBe(true);
+  });
+
+  it("evaluates root questions with multiple candidate position claims", () => {
+    let g: Graph = { nodes: [], edges: [] };
+    g = G.addRootQuestion(g, "Which transport policy?");
+    const qId = lastId(g);
+
+    // Position 1: High speed rail (grounded)
+    g = G.addNode(g, "claim", "Invest in high-speed rail", qId);
+    const p1 = lastId(g);
+    g = G.addNode(g, "support", "Reduces carbon emissions", p1);
+    const a1 = lastId(g);
+    g = G.addNode(g, "value", "Planetary climate stability", a1);
+
+    // Only P1 exists and is grounded -> Question is fully grounded
+    expect(G.isNodeGrounded(g, p1)).toBe(true);
+    expect(G.isFullyGrounded(g, qId)).toBe(true);
+
+    // Position 2: Highway expansion (ungrounded)
+    g = G.addNode(g, "claim", "Expand highway lanes", qId);
+    const p2 = lastId(g);
+    g = G.addNode(g, "support", "Relieves congestion temporarily", p2);
+    const a2 = lastId(g);
+
+    // Now P2 is ungrounded -> Question is ungrounded (conjunctive over positions)
+    expect(G.isNodeGrounded(g, p1)).toBe(true);
+    expect(G.isNodeGrounded(g, p2)).toBe(false);
+    expect(G.isFullyGrounded(g, qId)).toBe(false);
+
+    // Ground P2 via preference
+    g = G.addNode(g, "preference", "Personal driver autonomy preference", a2);
+    expect(G.isNodeGrounded(g, p2)).toBe(true);
+    expect(G.isFullyGrounded(g, qId)).toBe(true);
+  });
+
+  it("supports citations to terminal source nodes via cites edges", () => {
+    let g: Graph = { nodes: [], edges: [] };
+    g = G.addRootQuestion(g, "Does vaccine reduce hospitalization?");
+    const qId = lastId(g);
+
+    g = G.addNode(g, "support", "Clinical trial data shows 90% reduction", qId);
+    const sId = lastId(g);
+
+    g = G.addNode(g, "source", "https://nejm.org/doi/10.1056/evidence", sId);
+    const srcId = lastId(g);
+
+    const edge = g.edges.find((e) => e.to === srcId)!;
+    expect(edge.edgeType).toBe("cites");
+    expect(edge.from).toBe(sId);
+    expect(edge.to).toBe(srcId);
+
+    expect(G.isNodeGrounded(g, srcId)).toBe(true);
+    expect(G.isNodeGrounded(g, sId)).toBe(true);
+    expect(G.isFullyGrounded(g, qId)).toBe(true);
+
+    const terminal = G.getGroundingTerminal(g, sId);
+    expect(terminal?.id).toBe(srcId);
+    expect(terminal?.type).toBe("source");
+  });
+
+  it("does not loop forever on cyclic argument or claim chains", () => {
+    // Cyclic argument graph: S1 -> S2 -> S1
     const g: Graph = {
       nodes: [
-        { id: "q", type: "claim", content: "q" },
-        { id: "p", type: "claim", content: "p" },
-        { id: "a", type: "support", content: "a" },
+        { id: "q", type: "claim", content: "Root" },
+        { id: "s1", type: "support", content: "S1" },
+        { id: "s2", type: "support", content: "S2" },
       ],
       edges: [
-        { id: "e1", from: "p", to: "q", edgeType: "supports" },
-        { id: "e2", from: "a", to: "p", edgeType: "supports" },
-        { id: "e3", from: "a", to: "q", edgeType: "annotates" }, // a annotates its own q
+        { id: "e1", from: "s1", to: "q", edgeType: "supports" },
+        { id: "e2", from: "s2", to: "s1", edgeType: "supports" },
+        { id: "e3", from: "s1", to: "s2", edgeType: "supports" }, // cycle
       ],
     };
     expect(G.isFullyGrounded(g, "q")).toBe(false);
+    expect(G.isNodeGrounded(g, "s1")).toBe(false);
+    expect(G.isNodeGrounded(g, "s2")).toBe(false);
   });
 });
 
@@ -110,7 +305,7 @@ describe("edge construction", () => {
   });
 });
 
-describe("value reuse (convergence)", () => {
+describe("value reuse and citation convergence", () => {
   it("links to an existing value without creating a duplicate node", () => {
     const before = G.getValues(seedGraph).length;
     const g = G.linkToExistingValue(seedGraph, "trolley-a3", "trolley-v1");
@@ -121,13 +316,36 @@ describe("value reuse (convergence)", () => {
   });
 
   it("replaces a prior grounds edge rather than stacking them", () => {
-    // a3 already grounds in v2; re-link to v1 should leave exactly one.
     const g = G.linkToExistingValue(seedGraph, "trolley-a3", "trolley-v1");
     const groundsIn = g.edges.filter(
-      (e) => e.from === "trolley-a3" && e.edgeType === "grounds",
+      (e) => e.from === "trolley-a3" && (e.edgeType === "grounds" || e.edgeType === "cites"),
     );
     expect(groundsIn).toHaveLength(1);
     expect(groundsIn[0].to).toBe("trolley-v1");
+  });
+
+  it("links to an existing source citation using cites edgeType", () => {
+    let g: Graph = { nodes: [], edges: [] };
+    g = G.addRootQuestion(g, "Q1");
+    const q1 = lastId(g);
+    g = G.addNode(g, "support", "A1", q1);
+    const a1 = lastId(g);
+    g = G.addNode(g, "source", "https://doi.org/10.1234/test", a1);
+    const sId = lastId(g);
+
+    g = G.addRootQuestion(g, "Q2");
+    const q2 = lastId(g);
+    g = G.addNode(g, "support", "A2", q2);
+    const a2 = lastId(g);
+
+    g = G.linkToExistingValue(g, a2, sId);
+
+    const edge = g.edges.find((e) => e.from === a2 && e.to === sId);
+    expect(edge?.edgeType).toBe("cites");
+
+    const usage = G.getValueUsage(g).find((u) => u.value.id === sId);
+    expect(usage?.convergent).toBe(true);
+    expect(usage?.roots.map((r) => r.id).sort()).toEqual([q1, q2].sort());
   });
 });
 
@@ -145,31 +363,51 @@ describe("deletion", () => {
   });
 
   it("spares a value still grounded by a surviving argument", () => {
-    // Make v1 shared by a3, then delete p2 (which owns a2→v1).
     let g = G.linkToExistingValue(seedGraph, "trolley-a3", "trolley-v1");
     g = G.deleteNode(g, "trolley-p2");
     expect(G.getNode(g, "trolley-v1")).toBeDefined();
     expect(G.getNode(g, "trolley-a2")).toBeUndefined();
   });
 
+  it("spares a shared source cited by surviving arguments", () => {
+    let g: Graph = { nodes: [], edges: [] };
+    g = G.addRootQuestion(g, "Q1");
+    const q1 = lastId(g);
+    g = G.addNode(g, "support", "A1", q1);
+    const a1 = lastId(g);
+    g = G.addNode(g, "source", "https://evidence.org", a1);
+    const sId = lastId(g);
+
+    g = G.addRootQuestion(g, "Q2");
+    const q2 = lastId(g);
+    g = G.addNode(g, "support", "A2", q2);
+    const a2 = lastId(g);
+    g = G.linkToExistingValue(g, a2, sId);
+
+    // Delete Q1 subtree
+    g = G.deleteNode(g, q1);
+    expect(G.getNode(g, q1)).toBeUndefined();
+    expect(G.getNode(g, a1)).toBeUndefined();
+    // sId spared because Q2/A2 still cites it
+    expect(G.getNode(g, sId)).toBeDefined();
+    expect(G.getNode(g, q2)).toBeDefined();
+    expect(G.getNode(g, a2)).toBeDefined();
+  });
+
   it("counts only nodes that will actually be removed", () => {
     let g = G.linkToExistingValue(seedGraph, "trolley-a3", "trolley-v1");
-    // p2 subtree is p2, a2, (v1 spared) → 2 removed besides... count excludes self.
     expect(G.countDescendants(g, "trolley-p2")).toBe(1); // just a2
   });
 });
 
 describe("convergence queries", () => {
   it("resolves the root a deep node belongs to", () => {
-    // A node with a single parent chain resolves to its top-level root,
-    // even a (non-shared) terminal value.
     expect(G.getRootFor(seedGraph, "trolley-v1")?.id).toBe("trolley-q2");
     expect(G.getRootFor(seedGraph, "trolley-a2")?.id).toBe("trolley-q2");
     expect(G.getRootFor(seedGraph, "sky-p2")?.id).toBe("sky-q2");
   });
 
   it("reports a value as convergent once two roots share it", () => {
-    // Build a second claim whose argument links to trolley's v1.
     let g = G.addRootQuestion(seedGraph, "Help refugees?");
     const qid = lastId(g);
     g = G.addNode(g, "claim", "Yes", qid);
@@ -223,21 +461,18 @@ describe("per-node grounding (isNodeGrounded)", () => {
   it("treats seeded grounded arguments and terminals as grounded", () => {
     expect(G.isNodeGrounded(seedGraph, "trolley-a3")).toBe(true);
     expect(G.isNodeGrounded(seedGraph, "trolley-v2")).toBe(true);
-    // Non-participating types are inherently "grounded".
     expect(G.isNodeGrounded(seedGraph, "trolley-c1")).toBe(true);
   });
 });
 
 describe("lineage helpers (map highlight)", () => {
   it("collects all ancestors that flow into a value", () => {
-    // Share trolley-v1 across a2 and a3, then check who reaches it.
     const g = G.linkToExistingValue(seedGraph, "trolley-a3", "trolley-v1");
     const anc = G.getAncestors(g, "trolley-v1");
-    // Both grounding arguments and their upward chains to the root claim.
     for (const id of ["trolley-a2", "trolley-a3", "trolley-p2", "trolley-p3", "trolley-q2", "trolley-q1"]) {
       expect(anc.has(id)).toBe(true);
     }
-    expect(anc.has("trolley-v1")).toBe(false); // excludes the node itself
+    expect(anc.has("trolley-v1")).toBe(false);
   });
 
   it("collects descendants including the node itself", () => {
@@ -255,7 +490,6 @@ describe("lineage helpers (map highlight)", () => {
 });
 
 describe("acceptability (Dung-style defeat analysis)", () => {
-  // Build: Q ← P ← A(support). Then conflict A with a conflict, etc.
   const baseChain = () => {
     let g = G.addRootQuestion(seedGraph, "Q?");
     const qid = lastId(g);
@@ -288,22 +522,21 @@ describe("acceptability (Dung-style defeat analysis)", () => {
     const oid = lastId(g);
     g = G.addNode(g, "conflict", "Not so", oid);
     const acc = G.getAcceptability(g);
-    expect(acc.get(oid)).toBe("conflicted"); // rebutted
-    expect(acc.get(aid)).toBe("coherent"); // therefore restored
+    expect(acc.get(oid)).toBe("conflicted");
+    expect(acc.get(aid)).toBe("coherent");
   });
 
   it("stays conflicted while any conflict survives", () => {
     let { g, aid } = baseChain();
     g = G.addNode(g, "conflict", "Flawed", aid);
     const oid = lastId(g);
-    g = G.addNode(g, "conflict", "Not so", oid); // defeats first conflict
-    g = G.addNode(g, "conflict", "Also wrong", aid); // fresh, undefeated
+    g = G.addNode(g, "conflict", "Not so", oid);
+    g = G.addNode(g, "conflict", "Also wrong", aid);
     const acc = G.getAcceptability(g);
     expect(acc.get(aid)).toBe("conflicted");
   });
 
   it("lets a conflict defeat a claim", () => {
-    // Q ← P ← A(support). Now conflict P directly.
     let { g, pid } = baseChain();
     g = G.addNode(g, "conflict", "P is harmful", pid);
     const attackId = lastId(g);
@@ -329,14 +562,12 @@ describe("value de-duplication (similarity)", () => {
   });
 
   it("finds similar existing terminals of the same type, best first", () => {
-    // Seed has value 'Minimize total suffering'.
     const matches = G.findSimilarTerminals(
       seedGraph,
       "minimize suffering",
       "value",
     );
     expect(matches[0]?.node.id).toBe("trolley-v1");
-    // Type filter: searching for a limit shouldn't match the value.
     expect(
       G.findSimilarTerminals(seedGraph, "minimize suffering", "limit"),
     ).toHaveLength(0);
@@ -363,14 +594,13 @@ describe("depth metrics", () => {
     expect(s.claims).toBe(9); // 9 claim nodes in seedGraph
     expect(s.premises).toBe(0);
     expect(s.terminals).toBe(3); // v1, v2, el1
-    expect(s.groundedClaims).toBe(0); // 0 fully grounded root claims
-    expect(s.openClaims).toBe(4); // 4 root claims
+    expect(s.groundedClaims).toBe(2); // trolley-q2 and sky-q2 are fully grounded
+    expect(s.openClaims).toBe(2); // trolley-q1 and sky-q1 are open
     expect(s.clashes).toBe(0);
     expect(s.maxDepth).toBeGreaterThan(0);
   });
 
   it("lists grounding gaps shallowest-first", () => {
-    // Add an ungrounded argument near the top and a deeper one.
     let g = G.addRootQuestion(seedGraph, "Q?");
     const qid = lastId(g);
     g = G.addNode(g, "claim", "P", qid);
@@ -393,7 +623,6 @@ describe("premises (reverse / forward-from-a-base authoring)", () => {
     const pid = lastId(g);
     const rootIds = G.getRoots(g).map((n) => n.id);
     expect(rootIds).toContain(pid);
-    // getRootQuestions stays claim-only.
     expect(G.getRootQuestions(g).map((n) => n.id)).not.toContain(pid);
   });
 
@@ -409,13 +638,11 @@ describe("premises (reverse / forward-from-a-base authoring)", () => {
     const conclusionId = lastId(g);
     const edge = g.edges.find((e) => G.edgeEndpoints(e).parent === pid && G.edgeEndpoints(e).child === conclusionId);
     expect(edge?.edgeType).toBe("supports");
-    // And the conclusion nests under the premise in the tree.
     expect(G.getChildren(g, pid).map((n) => n.id)).toContain(conclusionId);
     expect(G.getParent(g, conclusionId)?.id).toBe(pid);
   });
 
   it("lets a premise tree bottom out at a shared value (convergence)", () => {
-    // premise → claim → argument → grounds → existing trolley value.
     let g = G.addRootPremise(seedGraph, "Suffering matters");
     const pid = lastId(g);
     g = G.addNode(g, "claim", "Help refugees", pid);
@@ -427,7 +654,6 @@ describe("premises (reverse / forward-from-a-base authoring)", () => {
     const usage = G.getValueUsage(g).find((u) => u.value.id === "trolley-v1");
     expect(usage?.convergent).toBe(true);
     expect(usage?.roots.map((r) => r.id)).toContain(pid);
-    // getRootFor resolves a node in the premise tree back to the premise.
     expect(G.getRootFor(g, argId)?.id).toBe(pid);
   });
 });
@@ -436,7 +662,6 @@ describe("Status Profiles", () => {
   it("getStatusProfile computes correct ranks, stats and archetype", () => {
     const profile = G.getStatusProfile(seedGraph);
     expect(profile.stats.totalTerminals).toBeGreaterThan(0);
-    // Values should be sorted by convergenceCount descending
     expect(profile.rankedValues[0].convergenceCount).toBeGreaterThanOrEqual(
       profile.rankedValues[profile.rankedValues.length - 1].convergenceCount
     );
@@ -445,7 +670,6 @@ describe("Status Profiles", () => {
   });
 
   it("getValueChainDetail extracts the correct arguments for a terminal", () => {
-    // Find a terminal in the seedGraph (e.g., trolley-v1)
     const detail = G.getValueChainDetail(seedGraph, "trolley-v1");
     expect(detail.terminal.id).toBe("trolley-v1");
     expect(detail.groundingArgs.length).toBeGreaterThan(0);
@@ -464,5 +688,24 @@ describe("Status Profiles", () => {
     
     expect(G.computeArchetype([mockRank("value")])).toContain("Value-grounded");
     expect(G.computeArchetype([mockRank("limit")])).toContain("Epistemically cautious");
+  });
+});
+
+describe("verifySource helper", () => {
+  it("updates the verified flag on source nodes immutably", () => {
+    let g: Graph = { nodes: [], edges: [] };
+    g = G.addRootQuestion(g, "Q");
+    const q = lastId(g);
+    g = G.addNode(g, "source", "https://evidence.org", q);
+    const sId = lastId(g);
+
+    expect(G.getNode(g, sId)?.verified).toBeUndefined();
+
+    const g2 = G.verifySource(g, sId, true);
+    expect(G.getNode(g2, sId)?.verified).toBe(true);
+    expect(G.getNode(g, sId)?.verified).toBeUndefined(); // original untouched
+
+    const g3 = G.verifySource(g2, sId, false);
+    expect(G.getNode(g3, sId)?.verified).toBe(false);
   });
 });
