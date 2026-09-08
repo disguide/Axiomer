@@ -1,6 +1,7 @@
 import { Repository, ApiError, validateDraft, validRelation } from './repository';
 import type { Statement, Relation } from '../client/src/atlas/model';
-export async function importMap(repo:Repository,data:Record<string,unknown>){
+export async function importMap(repo:Repository,data:Record<string,unknown>,destination?:unknown){
+  const place=destination===undefined?null:await repo.validateDestination(destination);
   if(!Array.isArray(data.nodes)||!Array.isArray(data.edges))throw new ApiError(400,'Choose an Axiomer JSON map with nodes and edges.');
   if(data.nodes.length>200||data.edges.length>500)throw new ApiError(400,'Import up to 200 nodes and 500 connections at a time. Split larger imports into topic maps.');
   if(!data.nodes.length)throw new ApiError(400,'This map is empty.');
@@ -24,6 +25,6 @@ export async function importMap(repo:Repository,data:Record<string,unknown>){
   }
   const root=nodes.find(n=>!incoming.has(n.id))??nodes[0];if(root.kind==='claim')root.kind='question';
   // The exact original is retained as a backup, including unknown legacy metadata.
-  await repo.db.batch([...nodes.map(n=>repo.insert(n)),...edgeStatements,repo.db.prepare('INSERT INTO metadata (key,value) VALUES (?,?)').bind(`import:${root.id}`,JSON.stringify(data))]);
+  await repo.db.batch([...nodes.map(n=>repo.insert(n)),...(place?.projectId?nodes.map(n=>repo.placeStatement(n.id,place)):[]),...edgeStatements,repo.db.prepare('INSERT INTO metadata (key,value) VALUES (?,?)').bind(`import:${root.id}`,JSON.stringify(data))]);
   return {nodeId:root.id,nodes:nodes.length,connections:edgeStatements.length};
 }

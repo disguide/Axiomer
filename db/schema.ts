@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index, uniqueIndex, foreignKey } from 'drizzle-orm/sqlite-core';
 export const nodes = sqliteTable('nodes', {
   id: text('id').primaryKey(), title: text('title').notNull(), body: text('body').notNull().default(''),
   kind: text('kind').notNull().default('claim'), topic: text('topic').notNull().default('General'),
@@ -17,3 +17,20 @@ export const revisions = sqliteTable('revisions', { id:text('id').primaryKey(),n
 export const metadata = sqliteTable('metadata', {key:text('key').primaryKey(),value:text('value').notNull()});
 export const counters = sqliteTable('counters', {key:text('key').primaryKey(),value:integer('value').notNull().default(0)});
 export const topicCounts = sqliteTable('topic_counts', {topic:text('topic').primaryKey(),count:integer('count').notNull().default(0)}, t=>[index('topic_counts_count').on(t.count)]);
+export const projects = sqliteTable('projects', {
+  id:text('id').primaryKey(), name:text('name').notNull(), description:text('description').notNull().default(''),
+  created_at:text('created_at').notNull(), updated_at:text('updated_at').notNull(),
+});
+export const folders = sqliteTable('folders', {
+  id:text('id').primaryKey(), project_id:text('project_id').notNull().references(()=>projects.id),
+  name:text('name').notNull(), created_at:text('created_at').notNull(), updated_at:text('updated_at').notNull(),
+},t=>[uniqueIndex('folders_project_id').on(t.project_id,t.id)]);
+// Filing a node changes its home, never its identity or graph connections.
+export const itemLocations = sqliteTable('item_locations', {
+  node_id:text('node_id').primaryKey().references(()=>nodes.id),
+  project_id:text('project_id').notNull().references(()=>projects.id), folder_id:text('folder_id'),
+},t=>[
+  foreignKey({columns:[t.project_id,t.folder_id],foreignColumns:[folders.project_id,folders.id]}),
+  index('locations_project_node').on(t.project_id,t.node_id),
+  index('locations_project_folder_node').on(t.project_id,t.folder_id,t.node_id),
+]);

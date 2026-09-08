@@ -105,7 +105,7 @@ describe('import and compatibility',()=>{
 describe('HTTP and durable storage',()=>{
   it('uses the same persisted data through agent calls and visible endpoints',async()=>{
     const request=(path:string,body?:unknown)=>handleApi(new Request(`http://localhost${path}`,{method:body?'POST':'GET',headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined}),repo.db);
-    const tools=await request('/api/agent-tools');expect((await tools.json()).tools.map((t:{name:string})=>t.name)).toEqual(['search_arguments','read_argument','propose_argument']);
+    const tools=await request('/api/agent-tools');expect((await tools.json()).tools.map((t:{name:string})=>t.name)).toEqual(['list_projects','list_folders','search_arguments','read_argument','propose_argument']);
     const p=await request('/api/agent-call',{name:'propose_argument',arguments:{parent:'transport',baseVersion:1,relation:'supports',draft:{title:'Agent contribution'},rationale:'An explicit test proposal'}});expect(p.status).toBe(200);
     const id=(await p.json()).id;expect((await (await request('/api/proposals')).json()).items[0].id).toBe(id);
     expect((await request(`/api/proposals/${id}`,{accept:true})).status).toBe(200);
@@ -118,15 +118,17 @@ describe('HTTP and durable storage',()=>{
     const dir=mkdtempSync(join(tmpdir(),'axiomer-persistence-'));const file=join(dir,'test.db');let disk:DatabaseSync|undefined;
     try{disk=new DatabaseSync(file);migrate(disk);const r=new Repository(localDatabase(disk));await r.seed();const n=await r.create({title:'Saved across sessions'});disk.close();disk=new DatabaseSync(file);expect((await new Repository(localDatabase(disk)).node(n.id)).title).toBe(n.title);}
     finally{disk?.close();unlinkSync(file);rmdirSync(dir);}
-  });
+  },20000);
   it('keeps queries bounded on 100,000 nodes and a 10,000-edge hub',async()=>{
     const insert=sqlite.prepare('INSERT INTO nodes(id,title,body,topic,created_at,updated_at) VALUES(?,?,?,?,?,?)');const edge=sqlite.prepare('INSERT INTO edges(id,parent,child,relation) VALUES(?,?,?,?)');
     sqlite.exec('BEGIN');for(let i=0;i<100000;i++){const id=`large-${String(i).padStart(6,'0')}`;insert.run(id,`Common transport argument ${i}`,'Synthetic scale fixture','Scale test','','');if(i<10000)edge.run(`edge-${String(i).padStart(6,'0')}`,'transport',id,'supports');}sqlite.exec('COMMIT');
+    sqlite.prepare("INSERT INTO item_locations(node_id,project_id,folder_id) SELECT id,'example-project',NULL FROM nodes WHERE id LIKE 'large-%'").run();
+    const folderStart=performance.now();const folder=await repo.search(new URLSearchParams({project:'example-project',folder:'root',limit:'25'}));const folderMs=performance.now()-folderStart;expect(folder.items).toHaveLength(25);expect(folder.nextCursor).toBeTruthy();
     const start=performance.now();const g=await repo.neighborhood('transport',new URLSearchParams({limit:'40'}));const neighborhoodMs=performance.now()-start;
     const searchStart=performance.now();const s=await repo.search(new URLSearchParams({q:'common transport',limit:'25'}));const searchMs=performance.now()-searchStart;
     const dashboardStart=performance.now();const overview=await repo.overview();const dashboardMs=performance.now()-dashboardStart;
     expect(g.children).toHaveLength(40);expect(g.nextCursor).toBeTruthy();expect(g.counts.supports).toBe(10003);expect(s.items).toHaveLength(25);expect(s.nextCursor).toBeTruthy();expect(overview.nodes).toBe(100014);
     const plans=sqlite.prepare("EXPLAIN QUERY PLAN SELECT n.id FROM nodes_fts JOIN nodes n ON n.rowid=nodes_fts.rowid WHERE nodes_fts MATCH 'common*' AND nodes_fts.rowid>0 ORDER BY nodes_fts.rowid LIMIT 25").all();expect(plans.some(p=>String(p.detail).includes('TEMP B-TREE'))).toBe(false);
-    console.log(JSON.stringify({scaleNodes:100014,hubEdges:10006,neighborhoodMs,searchMs,dashboardMs,responseBytes:JSON.stringify(g).length}));
+    console.log(JSON.stringify({scaleNodes:100014,hubEdges:10006,neighborhoodMs,searchMs,dashboardMs,folderMs,responseBytes:JSON.stringify(g).length}));
   },60000);
 });

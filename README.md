@@ -1,18 +1,21 @@
 # Axiomer
 
-Arguments, connected.
+Your thinking, organized and connected.
 
-A knowledge space for readable arguments and original sources. Write a question or statement, connect supporting or challenging reasons, and follow any reason into its own neighborhood. Reuse existing arguments and citations across topics.
+A project workspace for readable arguments and original sources. Keep your work in projects and folders, write a question or statement, and connect supporting or challenging reasons. Follow any reason into its own neighborhood and reuse existing arguments and citations.
 
 ## Use it
 
-- **Map** shows the selected argument with supporting and opposing reasons. **Read** expands their explanations.
-- Select a reason for details; **Explore this argument** makes it the center.
+- **All projects** is your home. Create a project, add folders, and save arguments and sources inside them. **Unfiled** holds items without a project.
+- The item list has filters for arguments and sources, folder search, and selection for moving several items. Each item has one saved home; its graph connections work across projects.
+- **Read** opens by default. **Map** shows the selected argument with supporting and opposing reasons.
+- Select a reason for details; **Open this argument** makes it the center.
 - **New argument** starts a question. Add reasons and sources using **Write new** or **Use existing**.
 - **Search** (Ctrl/Cmd K) finds words in arguments, explanations, and publishers.
-- **Sources** collects original URLs, publishers, and passage locators.
-- **Review** holds agent proposals. Accepted proposals become connections; outdated proposals must be resubmitted.
+- **Add source** saves original URLs, publishers, and passage locators in the current folder.
+- **Suggestions** holds agent proposals. Accepted proposals become connections in the parent's folder; outdated proposals must be resubmitted.
 - Edits preserve earlier versions. Unlink removes a relationship without deleting shared arguments.
+- Rename or remove a folder/project from its options menu. Removing a folder returns its items to the project home; removing a project returns its items to Unfiled. Both preserve every node and connection.
 
 ## Development
 
@@ -37,7 +40,8 @@ The build produces `dist/client/` and `dist/server/index.js`. Schema and generat
 
 Agents use the same persistent repository as the interface:
 
-- `search_arguments`: bounded result pages and stable IDs.
+- `list_projects`, `list_folders`: discover saved organization in bounded pages.
+- `search_arguments`: bounded result pages and stable IDs; optionally filter by project and folder.
 - `read_argument`: one neighborhood, sources, and paginated backlinks.
 - `propose_argument`: a connected node staged for review, with parent version and rationale.
 

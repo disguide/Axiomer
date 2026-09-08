@@ -8,9 +8,12 @@ Statements are questions or claims. Sources carry an original URL, title, publis
 
 The Map shows one node and its immediate neighbors. Read shows the same data with explanations. Exploring a node requests another neighborhood. Neither mode lays out or recursively traverses the entire corpus. There is no required philosophical taxonomy or automatic truth score.
 
+The workspace opens at Projects. Projects contain one level of folders, with a root area for items saved directly into a project. Unfiled contains nodes without a saved location. `item_locations` gives a node one canonical home, independently of its globally stable ID and graph relationships. Moving items does not change argument versions, citations, or backlinks. New reasons and accepted proposals inherit the parent's current location. Removing a folder moves its items to project home; removing a project unfiles its items. Neither operation deletes nodes. Existing user work remains in Unfiled; only the bundled example receives a one-time example project and source folder. Projects are organizational containers, not authorization boundaries.
+
 | Location | Responsibility |
 | --- | --- |
 | `client/src/atlas/Workspace.tsx` | Workspace, Map/Read, search, sources, edits and review |
+| `client/src/atlas/Organization.tsx` | Projects, folders, item lists, save locations and bulk moves |
 | `client/src/atlas/model.ts` | Shared node, connection, page and proposal contracts |
 | `client/src/atlas/agent-contract.ts` | Shared tool definitions |
 | `server/repository.ts` | Prepared SQL, atomic mutations, revisions and proposals |
@@ -31,15 +34,22 @@ Responses use `no-store`. Errors return `{ error }`. SQL parameters are bound; t
 | Method and path | Result |
 | --- | --- |
 | `GET /api/overview` | Maintained totals and top 100 topics |
-| `GET /api/nodes?q=&topic=&kind=&cursor=&limit=` | Search/list pages |
+| `GET /api/projects?cursor=&limit=` | Project pages with item/folder counts |
+| `POST /api/projects` | Create `{ name, description? }` |
+| `GET/PATCH/DELETE /api/projects/:id` | Read, rename, or remove a project; preserve items |
+| `GET /api/projects/:id/folders?cursor=&limit=` | Folder pages |
+| `POST /api/folders` | Create `{ projectId, name }` |
+| `GET/PATCH/DELETE /api/folders/:id` | Read, rename, or remove a folder; preserve items |
+| `POST /api/items/move` | Atomic `{ ids: string[], destination: { projectId, folderId? } }`, up to 100 items; null project unfiles |
+| `GET /api/nodes?q=&topic=&kind=&project=&folder=&inbox=&cursor=&limit=` | Search/list pages; omit folder to search whole project, `folder=root` for project home, `inbox=true` for Unfiled |
 | `GET /api/nodes/:id?relation=&cursor=&limit=` | One-hop neighborhood, relationship totals, first backlink page |
 | `GET /api/nodes/:id?direction=parents&cursor=&limit=` | Incoming uses; continue with `parentsNextCursor` |
-| `POST /api/nodes` | Create `{ draft, parent?, relation? }` |
+| `POST /api/nodes` | Create `{ draft, parent?, relation?, destination? }`; atomically file in destination or inherit parent location |
 | `PATCH /api/nodes/:id` | Edit `{ draft, version }`; retain old content |
 | `POST /api/connections` | Reuse `{ parent, child, relation }`; duplicate calls are idempotent |
 | `DELETE /api/connections/:id` | Unlink only; send JSON `{}` |
 | `GET /api/nodes/:id/history` | Latest 30 earlier content versions |
-| `POST /api/import` | Atomic JSON import; returns new root ID |
+| `POST /api/import` | Atomic JSON import, or `{ map, destination }`; returns new root ID and preserves original map independently of destination |
 | `GET /api/imports/:rootId` | Exact original imported JSON |
 | `GET /api/proposals?cursor=&limit=` | Pending proposals |
 | `POST /api/proposals` | Stage `{ parent, baseVersion, relation, draft, rationale }` |
@@ -55,7 +65,7 @@ Edits use optimistic concurrency. Proposal acceptance conditionally inserts the 
 
 The stdio bridge forwards requests to the same API/database as the UI; no full graph JSON is needed. Browser WebMCP shares the tool contract, is feature-detected, and unregisters via AbortSignal. No language model API or background autonomous agent is configured.
 
-This deployment is **owner-private**. Sites must protect the app and `/api/*`. The application has no multi-user identity or role model: a holder of the owner's session can use direct editing and review endpoints. The three exposed agent tools stage new content, but this is a tool-interface contract, not an authorization sandbox. Origin checks are not authentication. Do not open shared/public access until reader/contributor/reviewer authorization is implemented. This release does not issue independent agent API keys.
+This deployment is **owner-private**. Sites must protect the app and `/api/*`. The application has no multi-user identity or role model: a holder of the owner's session can use direct editing and review endpoints. The five exposed agent tools browse projects/folders, search/read reasoning, and stage proposed content; this is a tool-interface contract, not an authorization sandbox. Origin checks are not authentication. Do not open shared/public access until reader/contributor/reviewer authorization is implemented. This release does not issue independent agent API keys.
 
 ## Preservation
 
@@ -67,11 +77,11 @@ Import limits are 200 nodes, 500 edges, and 100 KB per transaction. Export is th
 
 Implemented: indexed node/edge tables, stable IDs, FTS5 with incremental triggers, keyset pagination in both adjacency directions, transactional aggregate/topic counters, bounded responses, optimistic edits, reusable sources, and atomic proposal acceptance.
 
-The test fixture contains 100,014 nodes and a 10,006-edge hub. A 40-neighbor response is under 12 KB for that fixture. This local synthetic benchmark is **not** a production capacity guarantee.
+The test fixture contains 100,014 nodes, a 10,006-edge hub, and a project containing 100,000 synthetic items. A 40-neighbor response is under 14 KB for that fixture. Folder lists page directly through the composite location index without materializing a sorted folder. This local synthetic benchmark is **not** a production capacity guarantee.
 
 A single D1 database has a documented size ceiling, currently up to 10 GB on the paid platform. Before reaching that limit, partition topic collections behind the repository interface, retain global IDs, add a cross-shard adjacency directory and search service, and choose an explicit consistency model. These distributed pieces are not implemented. References: [D1 limits](https://developers.cloudflare.com/d1/platform/limits/), [SQLite FTS5](https://www.sqlite.org/fts5.html).
 
-Before Wikipedia-scale public operation, add roles, contribution attribution, moderation/abuse controls, reviewed edits/disconnections, proposal idempotency keys, reconciliation across shards, bulk ingestion/export, caching, backups/restore drills, and hosted load tests. Current history records content edits, not a complete changeset ledger. Topic navigation shows the 100 largest topics; search covers the full corpus.
+Before Wikipedia-scale public operation, add roles, contribution attribution, moderation/abuse controls, reviewed edits/disconnections, proposal idempotency keys, reconciliation across shards, bulk ingestion/export, caching, backups/restore drills, and hosted load tests. Current history records content edits, not a complete changeset ledger. Projects, folders, items, and search are paginated. Project/folder totals use covering location indexes; very large collections may need maintained container counters.
 
 ## Validation
 

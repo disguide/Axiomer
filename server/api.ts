@@ -2,7 +2,7 @@ import type { Database } from './database';
 import { ApiError, Repository, textField } from './repository';
 import { importMap } from './import';
 import { agentTools } from '../client/src/atlas/agent-contract';
-export async function executeAgent(repo:Repository,name:string,args:Record<string,unknown>){const params=new URLSearchParams();for(const[k,v]of Object.entries(args))if(v!==undefined)params.set(k,String(v));if(name==='search_arguments')return repo.search(params);if(name==='read_argument')return repo.neighborhood(textField(args.id,'ID',200,true),params);if(name==='propose_argument')return repo.propose(args);throw new ApiError(404,'Unknown agent tool.');}
+export async function executeAgent(repo:Repository,name:string,args:Record<string,unknown>){const params=new URLSearchParams();for(const[k,v]of Object.entries(args))if(v!==undefined)params.set(k,String(v));if(name==='list_projects')return repo.listProjects(params);if(name==='list_folders')return repo.listFolders(textField(args.project,'Project',200,true),params);if(name==='search_arguments')return repo.search(params);if(name==='read_argument')return repo.neighborhood(textField(args.id,'ID',200,true),params);if(name==='propose_argument')return repo.propose(args);throw new ApiError(404,'Unknown agent tool.');}
 function json(value:unknown,status=200){return new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});}
 export async function handleApi(request:Request,db:Database){
   try{
@@ -20,9 +20,23 @@ export async function handleApi(request:Request,db:Database){
       return json(await executeAgent(repo,textField(body.name,'Tool name',100,true),(body.arguments??{}) as Record<string,unknown>));
     }
     if(path==='/api/overview'&&request.method==='GET')return json(await repo.overview());
+    if(path==='/api/projects'&&request.method==='GET')return json(await repo.listProjects(url.searchParams));
+    if(path==='/api/projects'&&request.method==='POST')return json(await repo.createContainer('project',body),201);
+    if(/^\/api\/projects\/[^/]+\/folders$/.test(path)&&request.method==='GET')return json(await repo.listFolders(id,url.searchParams));
+    if(/^\/api\/projects\/[^/]+$/.test(path)&&request.method==='GET')return json(await repo.project(id));
+    if(/^\/api\/projects\/[^/]+$/.test(path)&&request.method==='PATCH')return json(await repo.renameContainer('project',id,body));
+    if(/^\/api\/projects\/[^/]+$/.test(path)&&request.method==='DELETE')return json(await repo.removeContainer('project',id));
+    if(path==='/api/folders'&&request.method==='POST')return json(await repo.createContainer('folder',body),201);
+    if(/^\/api\/folders\/[^/]+$/.test(path)&&request.method==='GET')return json(await repo.folder(id));
+    if(/^\/api\/folders\/[^/]+$/.test(path)&&request.method==='PATCH')return json(await repo.renameContainer('folder',id,body));
+    if(/^\/api\/folders\/[^/]+$/.test(path)&&request.method==='DELETE')return json(await repo.removeContainer('folder',id));
+    if(path==='/api/items/move'&&request.method==='POST')return json(await repo.moveItems(body));
     if(path==='/api/nodes'&&request.method==='GET')return json(await repo.search(url.searchParams));
-    if(path==='/api/nodes'&&request.method==='POST')return json(await repo.create(body.draft,body.parent===undefined?undefined:textField(body.parent,'Parent',200,true),body.relation),201);
-    if(path==='/api/import'&&request.method==='POST')return json(await importMap(repo,body),201);
+    if(path==='/api/nodes'&&request.method==='POST')return json(await repo.create(body.draft,body.parent===undefined?undefined:textField(body.parent,'Parent',200,true),body.relation,body.destination),201);
+    if(path==='/api/import'&&request.method==='POST'){
+      const map=body.map??body;if(!map||typeof map!=='object'||Array.isArray(map))throw new ApiError(400,'Choose a valid map.');
+      return json(await importMap(repo,map as Record<string,unknown>,body.destination),201);
+    }
     if(/^\/api\/imports\/[^/]+$/.test(path)&&request.method==='GET'){
       const original=await db.prepare('SELECT value FROM metadata WHERE key=?').bind(`import:${id}`).first<{value:string}>();
       if(!original)throw new ApiError(404,'No original import was found for this node.');
