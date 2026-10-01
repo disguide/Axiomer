@@ -107,7 +107,7 @@ export function FolderLibrary({org,open,onOpen,onCreate}:{org:Organization;open:
   const load=useCallback(async(cursor='')=>{
     const serial=++request.current;setLoading(true);setError('');
     if(!cursor)setPage(blankPage);
-    const params=new URLSearchParams({limit:'30',q:query,kind});if(projectId==='inbox')params.set('inbox','true');else{params.set('project',projectId);params.set('folder',folderId||'root');}if(cursor)params.set('cursor',cursor);
+    const params=new URLSearchParams({limit:'30',q:query.startsWith('#')?'':query,kind,roots:kind==='source'||query?'false':'true'});if(query.startsWith('#'))params.set('label',query.slice(1).trim());if(projectId==='inbox')params.set('inbox','true');else{params.set('project',projectId);params.set('folder',folderId||'root');}if(cursor)params.set('cursor',cursor);
     try{const p=await api<Page<Summary>>(`/nodes?${params}`);if(serial===request.current)setPage(old=>cursor?{items:[...new Map([...old.items,...p.items].map(n=>[n.id,n])).values()],nextCursor:p.nextCursor}:p);}
     catch(e){if(serial===request.current)setError((e as Error).message);}finally{if(serial===request.current)setLoading(false);}
   },[projectId,folderId,query,kind]);

@@ -34,3 +34,35 @@ export const itemLocations = sqliteTable('item_locations', {
   index('locations_project_node').on(t.project_id,t.node_id),
   index('locations_project_folder_node').on(t.project_id,t.folder_id,t.node_id),
 ]);
+export const nodeDetails=sqliteTable('node_details',{
+  node_id:text('node_id').primaryKey().references(()=>nodes.id), labels:text('labels').notNull().default('[]'),
+  labels_origin:text('labels_origin').notNull().default('manual'), abstract:text('abstract').notNull().default(''),
+  provenance:text('provenance').notNull().default('{}'), listed:integer('listed').notNull().default(1),
+  location_locked:integer('location_locked').notNull().default(1), analyzed_version:integer('analyzed_version').notNull().default(0),
+});
+export const nodeLabels=sqliteTable('node_labels',{
+  node_id:text('node_id').notNull().references(()=>nodes.id),label:text('label').notNull(),
+},t=>[uniqueIndex('labels_node_label').on(t.node_id,t.label),index('labels_label_node').on(t.label,t.node_id)]);
+export const edgeDetails=sqliteTable('edge_details',{
+  edge_id:text('edge_id').primaryKey().references(()=>edges.id),origin:text('origin').notNull().default('manual'),rationale:text('rationale').notNull().default(''),
+});
+export const attachments=sqliteTable('attachments',{
+  id:text('id').primaryKey(),node_id:text('node_id').notNull().references(()=>nodes.id),name:text('name').notNull(),path:text('path').notNull().default(''),
+  mime:text('mime').notNull(),size:integer('size').notNull(),created_at:text('created_at').notNull(),checksum:text('checksum').notNull().default(''),
+},t=>[index('attachments_node_id').on(t.node_id,t.id)]);
+export const transferBatches=sqliteTable('transfer_batches',{
+  id:text('id').primaryKey(),checksum:text('checksum').notNull(),result:text('result').notNull(),created_at:text('created_at').notNull(),
+});
+export const organizationChanges=sqliteTable('organization_changes',{
+  id:text('id').primaryKey(),node_id:text('node_id').notNull(),before:text('before').notNull(),after:text('after').notNull(),
+  status:text('status').notNull().default('applied'),created_at:text('created_at').notNull(),
+},t=>[index('organization_changes_created_id').on(t.created_at,t.id)]);
+export const exportSessions=sqliteTable('export_sessions',{
+  id:text('id').primaryKey(),revision:integer('revision').notNull(),scope:text('scope').notNull(),status:text('status').notNull(),created_at:text('created_at').notNull(),
+});
+export const exportMembers=sqliteTable('export_members',{
+  session_id:text('session_id').notNull(),node_id:text('node_id').notNull(),expanded:integer('expanded').notNull().default(0),
+},t=>[uniqueIndex('export_members_session_node').on(t.session_id,t.node_id),index('export_members_pending').on(t.session_id,t.expanded,t.node_id)]);
+export const analysisQueue=sqliteTable('analysis_queue',{
+  node_id:text('node_id').primaryKey(),version:integer('version').notNull(),lease_until:integer('lease_until').notNull().default(0),token:text('token').notNull().default(''),
+},t=>[index('analysis_queue_lease_node').on(t.lease_until,t.node_id)]);
