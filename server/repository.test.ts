@@ -105,7 +105,7 @@ describe('import and compatibility',()=>{
 describe('HTTP and durable storage',()=>{
   it('uses the same persisted data through agent calls and visible endpoints',async()=>{
     const request=(path:string,body?:unknown)=>handleApi(new Request(`http://localhost${path}`,{method:body?'POST':'GET',headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined}),repo.db);
-    const tools=await request('/api/agent-tools');expect((await tools.json()).tools.map((t:{name:string})=>t.name)).toEqual(['list_projects','list_folders','search_arguments','read_argument','propose_argument']);
+    const tools=await request('/api/agent-tools');expect((await tools.json()).tools.map((t:{name:string})=>t.name)).toEqual(['read_changed_nodes','organize_node','list_projects','list_folders','search_arguments','read_argument','propose_argument']);
     const p=await request('/api/agent-call',{name:'propose_argument',arguments:{parent:'transport',baseVersion:1,relation:'supports',draft:{title:'Agent contribution'},rationale:'An explicit test proposal'}});expect(p.status).toBe(200);
     const id=(await p.json()).id;expect((await (await request('/api/proposals')).json()).items[0].id).toBe(id);
     expect((await request(`/api/proposals/${id}`,{accept:true})).status).toBe(200);

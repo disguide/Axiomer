@@ -66,7 +66,7 @@ export async function beginExport(repo:Repository,input:Record<string,unknown>){
   if(scope==='argument'){const root=identifier(input.root);await repo.node(root);statements.push(repo.db.prepare('INSERT INTO export_members(session_id,node_id) VALUES(?,?)').bind(id,root));}
   await repo.db.batch(statements);return exportProgress(repo,id);
 }
-export async function exportProgress(repo:Repository,id:string){const s=await exportSession(repo,id);const count=s.scope==='workspace'?await repo.db.prepare('SELECT value count FROM counters WHERE key='nodes'').first<{count:number}>():await repo.db.prepare('SELECT count(*) count FROM export_members WHERE session_id=?').bind(id).first<{count:number}>();return {...s,nodes:count?.count??0};}
+export async function exportProgress(repo:Repository,id:string){const s=await exportSession(repo,id);const count=s.scope==='workspace'?await repo.db.prepare("SELECT value count FROM counters WHERE key='nodes'").first<{count:number}>():await repo.db.prepare('SELECT count(*) count FROM export_members WHERE session_id=?').bind(id).first<{count:number}>();return {...s,nodes:count?.count??0};}
 export async function expandExport(repo:Repository,id:string){
   const s=await exportSession(repo,id);if(s.status==='ready')return exportProgress(repo,id);
   const frontier=(await repo.db.prepare('SELECT node_id FROM export_members WHERE session_id=? AND expanded=0 ORDER BY node_id LIMIT 40').bind(id).all<{node_id:string}>()).results;

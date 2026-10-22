@@ -88,9 +88,9 @@ describe('projects and folders',()=>{
   });
   it('upgrades an existing database without hiding user work, and does not refile deleted example folders',async()=>{
     const old=new DatabaseSync(':memory:');try{
-      migrate(old,migrations.filter(f=>!f.startsWith('0004')));
+      migrate(old,migrations.filter(f=>f<'0004'));
       old.prepare('INSERT INTO nodes(id,title,created_at,updated_at) VALUES(?,?,?,?)').run('my-old-work','Existing work','before','before');
-      migrate(old,migrations.filter(f=>f.startsWith('0004')));const r=new Repository(localDatabase(old));await r.seed();
+      migrate(old,migrations.filter(f=>f>='0004'));const r=new Repository(localDatabase(old));await r.seed();
       expect((await r.search(params({inbox:'true'}))).items.map(n=>n.id)).toEqual(['my-old-work']);
       await r.removeContainer('project','example-project');await r.seed();expect((await r.listProjects(params())).items).toHaveLength(0);expect((await r.node('transport')).project_id).toBeNull();
     }finally{old.close();}
