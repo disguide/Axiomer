@@ -1,0 +1,19 @@
+
+> axiomer@1.2.1 test
+> vitest run
+
+
+ RUN  v3.2.6 /workspace/Axiomer
+
+ ✓ client/src/roadmap/evidence.test.ts (16 tests) 104ms
+ ✓ client/src/roadmap/model.test.ts (10 tests) 85ms
+ ✓ client/src/lib/graph.test.ts (46 tests) 17ms
+ ✓ client/src/roadmap/review.test.ts (8 tests) 11ms
+ ✓ client/src/lib/io.test.ts (6 tests) 6ms
+ ✓ client/src/roadmap/layoutStorage.test.ts (2 tests) 6ms
+
+ Test Files  6 passed (6)
+      Tests  88 passed (88)
+   Start at  03:44:46
+   Duration  3.91s (transform 510ms, setup 0ms, collect 911ms, tests 228ms, environment 6ms, prepare 875ms)
+

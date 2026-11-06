@@ -1,0 +1,81 @@
+
+> axiomer@1.2.1 test:browser
+> node tests/browser.mjs
+
+Click: Start with a value
+Click: Create map
+Click: Continue this step
+Click: Add step
+Click: Back
+Click: Add another branch
+Click: Add step
+Click: Back
+Click: Build with AI
+Click: Draft a path
+Click: Approve
+Click: Build with AI
+Click: Reject
+Click: Close dialog
+Click: Whole map
+Click: Sign in
+Click: Create account
+Click: Publish
+Click: Publish revision
+Click: Sign in
+Click: Create account
+Click: Suggest a change
+Click: Edit thought
+Click: Save thought
+Click: Propose change
+Click: Submit proposal
+Click: More map actions
+Click: Proposed changes
+Click: Include indirect effects
+Click: Accept change
+Click: More map actions
+Click: Version history
+Click: Suggest a change
+Click: Edit thought
+Click: Save thought
+Click: Propose change
+Click: Submit proposal
+Click: Edit draft
+Click: Edit thought
+Click: Save thought
+Click: Add another branch
+Click: Add step
+Click: Publish
+Click: Publish revision
+Click: More map actions
+Click: Proposed changes
+Click: Reconsider starting value
+Click: More map actions
+Click: Proposed changes
+Click: Reconsider starting value
+Click: Update my proposal
+Click: Prepare updated draft
+Click: Propose change
+Click: Submit updated proposal
+Click: More map actions
+Click: Proposed changes
+Click: Reconsider starting value
+Click: View updated proposal
+Click: Accept change
+Click: More map actions
+Click: Proposed changes
+Click: Clarify original relationship
+Click: Accept change
+Click: More map actions
+Click: Share published argument
+Click: Copy latest version link
+Click: More map actions
+Click: Share published argument
+Click: Close dialog
+Click: Library
+Click: Reasoning step 500: a clear explanation.
+Click: Follow a path
+Click: Library
+Click: Broad reasoning step 150.
+Click: A shared conclusion.
+Click: Follow a path
+PASS: browser creation, branching, optional labels, AI review/edit/reject/recovery, key privacy, two-account correction, stale update/conflict resolution, semantic review, explicit share links, history, mobile layout, 502-node deep navigation and 202-node broad/converging navigation. Live AI inference was not used.

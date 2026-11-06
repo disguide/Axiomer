@@ -1,0 +1,20 @@
+
+> axiomer@1.2.1 test:server
+> node --test tests/server.test.mjs
+
+✔ two accounts publish, propose and review without overwriting history or newer work (933.233164ms)
+✔ published maps survive a service restart (291.393355ms)
+✔ AI adapter returns reviewed proposals only, never publishes and never stores the key (77.621788ms)
+✔ malformed and incomplete AI output cannot enter a draft (14.135171ms)
+✔ Anthropic adapter uses its structured format and refuses fabricated excerpts (24.295676ms)
+✔ proposal updates preserve history, enforce authorship/latest base, and review semantic changes (656.540026ms)
+✔ additive proposal migration preserves existing rows and is safe to reopen (3.794862ms)
+✔ source evidence survives public immutable revisions and source-only corrections (233.680328ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2904.384172

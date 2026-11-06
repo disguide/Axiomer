@@ -1,0 +1,4 @@
+
+> axiomer@1.2.1 typecheck
+> tsc -b --noEmit
+

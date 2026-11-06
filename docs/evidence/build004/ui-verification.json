@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "checks": [
+    "390px Save visible; closed/open disclosures and keyboard wrapping; unchanged collapsed source/kind/layout/AI queue preserved",
+    "invalid collapsed source reopens its disclosure without saving; Escape; separate Map actions",
+    "explicit zoom changes viewport; Fit and repeated Whole map recover panning within exposed canvas without graph/order/layout/AI mutation",
+    "800px selected-thought search and viewport controls do not overlap",
+    "readonly mobile viewer has Fit/zoom while retaining no edit/drag/connect/Undo controls or local draft"
+  ],
+  "errors": [],
+  "liveInference": false
+}

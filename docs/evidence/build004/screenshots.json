@@ -1,0 +1,1566 @@
+{
+  "errors": [],
+  "states": [
+    {
+      "screenshot": "01-desktop-selected-thought",
+      "text": "Axiomer\nA considered decision\nPrivate draft · saved on this device\nLibrary\nBuild with AI\nPublish\ntherefore\nconstraint\ncheck\nSTARTING VALUE\n\nWe should reduce avoidable suffering.\n\nCompare choices by their likely effects on wellbeing.\n\nPreventing a large, predictable harm deserves more attention than a small convenience.\n\n1 source\n\nRespect individual rights when evaluating consequences.\n\nChoose the action that reduces harm while respecting those constraints.\n\nUncertainty matters: check how likely the predicted harm really is.\n\nIf the evidence changes, revisit the choice rather than defend an old conclusion.\n\nFit\nReact Flow\n7 thoughts\n·\n7 connections\nWhole map\nFollow a path\nSTARTING VALUE\n\nWe should reduce avoidable suffering.\n\nEdit thought\nNEXT STEP\n01\nCompare choices by their likely effects on wellbeing.\nAdd another branch\nBack\n1 way forward\nNext\nOpen source · AGPL-3.0",
+      "overflow": false,
+      "small": [
+        {
+          "text": "Library",
+          "font": "14px",
+          "bounds": {
+            "w": 91,
+            "h": 37
+          }
+        },
+        {
+          "text": "Build with AI",
+          "font": "14px",
+          "bounds": {
+            "w": 126.53125,
+            "h": 37
+          }
+        },
+        {
+          "text": "We should reduce avoidable suffering.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.49996948242188,
+            "h": 39.899993896484375
+          }
+        },
+        {
+          "text": "Compare choices by their likely effects on wellbeing.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.49996948242188,
+            "h": 39.899993896484375
+          }
+        },
+        {
+          "text": "Preventing a large, predictable harm deserves more attention than a small convenience.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 59.8499755859375
+          }
+        },
+        {
+          "text": "Respect individual rights when evaluating consequences.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 39.89996337890625
+          }
+        },
+        {
+          "text": "Choose the action that reduces harm while respecting those constraints.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 59.8499755859375
+          }
+        },
+        {
+          "text": "Uncertainty matters: check how likely the predicted harm really is.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 59.8499755859375
+          }
+        },
+        {
+          "text": "If the evidence changes, revisit the choice rather than defend an old conclusion.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.49996948242188,
+            "h": 59.85003662109375
+          }
+        },
+        {
+          "text": "We should reduce avoidable suffering.",
+          "font": "24px",
+          "bounds": {
+            "w": 293,
+            "h": 69.59375
+          }
+        },
+        {
+          "text": "Back",
+          "font": "13px",
+          "bounds": {
+            "w": 70.25,
+            "h": 44
+          }
+        },
+        {
+          "text": "Next",
+          "font": "13px",
+          "bounds": {
+            "w": 67.34375,
+            "h": 44
+          }
+        }
+      ]
+    },
+    {
+      "before": "Close thought",
+      "controls": [
+        {
+          "text": "Axiomer",
+          "label": "Open map library",
+          "disabled": false
+        },
+        {
+          "text": "Library",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Build with AI",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Publish",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Sign in",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Zoom out",
+          "disabled": false
+        },
+        {
+          "text": "Fit",
+          "label": "Fit map",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Zoom in",
+          "disabled": false
+        },
+        {
+          "text": "Whole map",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Follow a path",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "More map actions",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Close thought",
+          "disabled": false
+        },
+        {
+          "text": "Edit thought",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "01\nCompare choices by their likely effects on wellbeing.",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Add another branch",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Back",
+          "label": null,
+          "disabled": true
+        },
+        {
+          "text": "Next",
+          "label": null,
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "screenshot": "02-desktop-overview",
+      "text": "Axiomer\nA considered decision\nPrivate draft · saved on this device\nLibrary\nBuild with AI\nPublish\ntherefore\nconstraint\ncheck\nSTARTING VALUE\n\nWe should reduce avoidable suffering.\n\nCompare choices by their likely effects on wellbeing.\n\nPreventing a large, predictable harm deserves more attention than a small convenience.\n\n1 source\n\nRespect individual rights when evaluating consequences.\n\nChoose the action that reduces harm while respecting those constraints.\n\nUncertainty matters: check how likely the predicted harm really is.\n\nIf the evidence changes, revisit the choice rather than defend an old conclusion.\n\nFit\nReact Flow\n7 thoughts\n·\n7 connections\nWhole map\nFollow a path\nOpen source · AGPL-3.0",
+      "overflow": false,
+      "small": [
+        {
+          "text": "Library",
+          "font": "14px",
+          "bounds": {
+            "w": 91,
+            "h": 37
+          }
+        },
+        {
+          "text": "Build with AI",
+          "font": "14px",
+          "bounds": {
+            "w": 126.53125,
+            "h": 37
+          }
+        },
+        {
+          "text": "We should reduce avoidable suffering.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 39.899993896484375
+          }
+        },
+        {
+          "text": "Compare choices by their likely effects on wellbeing.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 39.899993896484375
+          }
+        },
+        {
+          "text": "Preventing a large, predictable harm deserves more attention than a small convenience.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.49996948242188,
+            "h": 59.8499755859375
+          }
+        },
+        {
+          "text": "Respect individual rights when evaluating consequences.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 39.89996337890625
+          }
+        },
+        {
+          "text": "Choose the action that reduces harm while respecting those constraints.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 59.8499755859375
+          }
+        },
+        {
+          "text": "Uncertainty matters: check how likely the predicted harm really is.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.49996948242188,
+            "h": 59.8499755859375
+          }
+        },
+        {
+          "text": "If the evidence changes, revisit the choice rather than defend an old conclusion.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 59.85003662109375
+          }
+        }
+      ]
+    },
+    {
+      "screenshot": "03-desktop-reason-sources",
+      "text": "Axiomer\nA considered decision\nPrivate draft · saved on this device\nLibrary\nBuild with AI\nPublish\ntherefore\nconstraint\ncheck\nSTARTING VALUE\n\nWe should reduce avoidable suffering.\n\nCompare choices by their likely effects on wellbeing.\n\nPreventing a large, predictable harm deserves more attention than a small convenience.\n\n1 source\n\nRespect individual rights when evaluating consequences.\n\nChoose the action that reduces harm while respecting those constraints.\n\nUncertainty matters: check how likely the predicted harm really is.\n\nIf the evidence changes, revisit the choice rather than defend an old conclusion.\n\nFit\nReact Flow\n7 thoughts\n·\n7 connections\nWhole map\nFollow a path\nA STEP IN YOUR REASONING\n\nPreventing a large, predictable harm deserves more attention than a small convenience.\n\nSOURCES\nExample evidence reference\nhttps://example.org/evidence\nSample reference, not a verified factual claim\nEdit thought\nCHOOSE A BRANCH\n01\nChoose the action that reduces harm while respecting those constraints.\n02\nUncertainty matters: check how likely the predicted harm really is.\nAdd another branch\nBack\n2 ways forward\nNext\nOpen source · AGPL-3.0",
+      "overflow": false,
+      "small": [
+        {
+          "text": "Library",
+          "font": "14px",
+          "bounds": {
+            "w": 91,
+            "h": 37
+          }
+        },
+        {
+          "text": "Build with AI",
+          "font": "14px",
+          "bounds": {
+            "w": 126.53125,
+            "h": 37
+          }
+        },
+        {
+          "text": "We should reduce avoidable suffering.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.49996948242188,
+            "h": 39.899993896484375
+          }
+        },
+        {
+          "text": "Compare choices by their likely effects on wellbeing.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.49996948242188,
+            "h": 39.899993896484375
+          }
+        },
+        {
+          "text": "Preventing a large, predictable harm deserves more attention than a small convenience.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 59.8499755859375
+          }
+        },
+        {
+          "text": "Respect individual rights when evaluating consequences.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 39.89996337890625
+          }
+        },
+        {
+          "text": "Choose the action that reduces harm while respecting those constraints.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 59.8499755859375
+          }
+        },
+        {
+          "text": "Uncertainty matters: check how likely the predicted harm really is.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 59.8499755859375
+          }
+        },
+        {
+          "text": "If the evidence changes, revisit the choice rather than defend an old conclusion.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.49996948242188,
+            "h": 59.85003662109375
+          }
+        },
+        {
+          "text": "Preventing a large, predictable harm deserves more attention than a small convenience.",
+          "font": "24px",
+          "bounds": {
+            "w": 293,
+            "h": 104.390625
+          }
+        },
+        {
+          "text": "Back",
+          "font": "13px",
+          "bounds": {
+            "w": 70.25,
+            "h": 44
+          }
+        },
+        {
+          "text": "Next",
+          "font": "13px",
+          "bounds": {
+            "w": 67.34375,
+            "h": 44
+          }
+        }
+      ]
+    },
+    {
+      "before": "Edit thought",
+      "controls": [
+        {
+          "text": "Axiomer",
+          "label": "Open map library",
+          "disabled": false
+        },
+        {
+          "text": "Library",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Build with AI",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Publish",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Sign in",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Zoom out",
+          "disabled": false
+        },
+        {
+          "text": "Fit",
+          "label": "Fit map",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Zoom in",
+          "disabled": false
+        },
+        {
+          "text": "Whole map",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Follow a path",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "More map actions",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Close thought",
+          "disabled": false
+        },
+        {
+          "text": "Edit thought",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "01\nChoose the action that reduces harm while respecting those constraints.",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "02\nUncertainty matters: check how likely the predicted harm really is.",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Add another branch",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Back",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Next",
+          "label": null,
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "screenshot": "04-desktop-edit-dialog",
+      "text": "Axiomer\nA considered decision\nPrivate draft · saved on this device\nLibrary\nBuild with AI\nPublish\ntherefore\nconstraint\ncheck\nSTARTING VALUE\n\nWe should reduce avoidable suffering.\n\nCompare choices by their likely effects on wellbeing.\n\nPreventing a large, predictable harm deserves more attention than a small convenience.\n\n1 source\n\nRespect individual rights when evaluating consequences.\n\nChoose the action that reduces harm while respecting those constraints.\n\nUncertainty matters: check how likely the predicted harm really is.\n\nIf the evidence changes, revisit the choice rather than defend an old conclusion.\n\nFit\nReact Flow\n7 thoughts\n·\n7 connections\nWhole map\nFollow a path\nA STEP IN YOUR REASONING\n\nPreventing a large, predictable harm deserves more attention than a small convenience.\n\nSOURCES\nExample evidence reference\nhttps://example.org/evidence\nSample reference, not a verified factual claim\nEdit thought\nCHOOSE A BRANCH\n01\nChoose the action that reduces harm while respecting those constraints.\n02\nUncertainty matters: check how likely the predicted harm really is.\nAdd another branch\nBack\n2 ways forward\nNext\nEdit thought\nYour thought\nOptional label\nSources 1\nPosition on this device\nConnections & actions\nCancel\nSave thought\nOpen source · AGPL-3.0",
+      "overflow": false,
+      "small": [
+        {
+          "text": "Library",
+          "font": "14px",
+          "bounds": {
+            "w": 91,
+            "h": 37
+          }
+        },
+        {
+          "text": "Build with AI",
+          "font": "14px",
+          "bounds": {
+            "w": 126.53125,
+            "h": 37
+          }
+        },
+        {
+          "text": "We should reduce avoidable suffering.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.49996948242188,
+            "h": 39.899993896484375
+          }
+        },
+        {
+          "text": "Compare choices by their likely effects on wellbeing.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.49996948242188,
+            "h": 39.899993896484375
+          }
+        },
+        {
+          "text": "Preventing a large, predictable harm deserves more attention than a small convenience.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 59.8499755859375
+          }
+        },
+        {
+          "text": "Respect individual rights when evaluating consequences.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 39.89996337890625
+          }
+        },
+        {
+          "text": "Choose the action that reduces harm while respecting those constraints.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 59.8499755859375
+          }
+        },
+        {
+          "text": "Uncertainty matters: check how likely the predicted harm really is.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 59.8499755859375
+          }
+        },
+        {
+          "text": "If the evidence changes, revisit the choice rather than defend an old conclusion.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.49996948242188,
+            "h": 59.85003662109375
+          }
+        },
+        {
+          "text": "Preventing a large, predictable harm deserves more attention than a small convenience.",
+          "font": "24px",
+          "bounds": {
+            "w": 293,
+            "h": 104.390625
+          }
+        },
+        {
+          "text": "Back",
+          "font": "13px",
+          "bounds": {
+            "w": 70.25,
+            "h": 44
+          }
+        },
+        {
+          "text": "Next",
+          "font": "13px",
+          "bounds": {
+            "w": 67.34375,
+            "h": 44
+          }
+        },
+        {
+          "text": "Remove source 1",
+          "font": "13px",
+          "bounds": {
+            "w": 404,
+            "h": 35.5
+          }
+        },
+        {
+          "text": " Add source",
+          "font": "13px",
+          "bounds": {
+            "w": 112.421875,
+            "h": 35.5
+          }
+        },
+        {
+          "text": "Use as starting point",
+          "font": "13px",
+          "bounds": {
+            "w": 430,
+            "h": 35.5
+          }
+        },
+        {
+          "text": "Cancel",
+          "font": "14px",
+          "bounds": {
+            "w": 64.65625,
+            "h": 45
+          }
+        }
+      ]
+    },
+    {
+      "before": "Close dialog",
+      "controls": [
+        {
+          "text": "Axiomer",
+          "label": "Open map library",
+          "disabled": false
+        },
+        {
+          "text": "Library",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Build with AI",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Publish",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Sign in",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Zoom out",
+          "disabled": false
+        },
+        {
+          "text": "Fit",
+          "label": "Fit map",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Zoom in",
+          "disabled": false
+        },
+        {
+          "text": "Whole map",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Follow a path",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "More map actions",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Close thought",
+          "disabled": false
+        },
+        {
+          "text": "Edit thought",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "01\nChoose the action that reduces harm while respecting those constraints.",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "02\nUncertainty matters: check how likely the predicted harm really is.",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Add another branch",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Back",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Next",
+          "label": null,
+          "disabled": true
+        },
+        {
+          "text": "",
+          "label": "Close dialog",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Cancel",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Save thought",
+          "label": null,
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "before": "More map actions",
+      "controls": [
+        {
+          "text": "Axiomer",
+          "label": "Open map library",
+          "disabled": false
+        },
+        {
+          "text": "Library",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Build with AI",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Publish",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Sign in",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Zoom out",
+          "disabled": false
+        },
+        {
+          "text": "Fit",
+          "label": "Fit map",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Zoom in",
+          "disabled": false
+        },
+        {
+          "text": "Whole map",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Follow a path",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "More map actions",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Close thought",
+          "disabled": false
+        },
+        {
+          "text": "Edit thought",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "01\nChoose the action that reduces harm while respecting those constraints.",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "02\nUncertainty matters: check how likely the predicted harm really is.",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Add another branch",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Back",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Next",
+          "label": null,
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "screenshot": "05-desktop-map-actions",
+      "text": "Axiomer\nA considered decision\nPrivate draft · saved on this device\nLibrary\nBuild with AI\nPublish\ntherefore\nconstraint\ncheck\nSTARTING VALUE\n\nWe should reduce avoidable suffering.\n\nCompare choices by their likely effects on wellbeing.\n\nPreventing a large, predictable harm deserves more attention than a small convenience.\n\n1 source\n\nRespect individual rights when evaluating consequences.\n\nChoose the action that reduces harm while respecting those constraints.\n\nUncertainty matters: check how likely the predicted harm really is.\n\nIf the evidence changes, revisit the choice rather than defend an old conclusion.\n\nFit\nReact Flow\n7 thoughts\n·\n7 connections\nWhole map\nFollow a path\nA STEP IN YOUR REASONING\n\nPreventing a large, predictable harm deserves more attention than a small convenience.\n\nSOURCES\nExample evidence reference\nhttps://example.org/evidence\nSample reference, not a verified factual claim\nEdit thought\nCHOOSE A BRANCH\n01\nChoose the action that reduces harm while respecting those constraints.\n02\nUncertainty matters: check how likely the predicted harm really is.\nAdd another branch\nBack\n2 ways forward\nNext\nMap actions\nUndo last change\nExport a portable copy\nOpen source · AGPL-3.0",
+      "overflow": false,
+      "small": [
+        {
+          "text": "Library",
+          "font": "14px",
+          "bounds": {
+            "w": 91,
+            "h": 37
+          }
+        },
+        {
+          "text": "Build with AI",
+          "font": "14px",
+          "bounds": {
+            "w": 126.53125,
+            "h": 37
+          }
+        },
+        {
+          "text": "We should reduce avoidable suffering.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.49996948242188,
+            "h": 39.899993896484375
+          }
+        },
+        {
+          "text": "Compare choices by their likely effects on wellbeing.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.49996948242188,
+            "h": 39.899993896484375
+          }
+        },
+        {
+          "text": "Preventing a large, predictable harm deserves more attention than a small convenience.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 59.8499755859375
+          }
+        },
+        {
+          "text": "Respect individual rights when evaluating consequences.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 39.89996337890625
+          }
+        },
+        {
+          "text": "Choose the action that reduces harm while respecting those constraints.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 59.8499755859375
+          }
+        },
+        {
+          "text": "Uncertainty matters: check how likely the predicted harm really is.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.5,
+            "h": 59.8499755859375
+          }
+        },
+        {
+          "text": "If the evidence changes, revisit the choice rather than defend an old conclusion.",
+          "font": "14px",
+          "bounds": {
+            "w": 180.49996948242188,
+            "h": 59.85003662109375
+          }
+        },
+        {
+          "text": "Preventing a large, predictable harm deserves more attention than a small convenience.",
+          "font": "24px",
+          "bounds": {
+            "w": 293,
+            "h": 104.390625
+          }
+        },
+        {
+          "text": "Back",
+          "font": "13px",
+          "bounds": {
+            "w": 70.25,
+            "h": 44
+          }
+        },
+        {
+          "text": "Next",
+          "font": "13px",
+          "bounds": {
+            "w": 67.34375,
+            "h": 44
+          }
+        },
+        {
+          "text": "Undo last change",
+          "font": "14px",
+          "bounds": {
+            "w": 430,
+            "h": 44
+          }
+        },
+        {
+          "text": "Export a portable copy",
+          "font": "14px",
+          "bounds": {
+            "w": 430,
+            "h": 44
+          }
+        }
+      ]
+    },
+    {
+      "before": "Close dialog",
+      "controls": [
+        {
+          "text": "Axiomer",
+          "label": "Open map library",
+          "disabled": false
+        },
+        {
+          "text": "Library",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Build with AI",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Publish",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Sign in",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Zoom out",
+          "disabled": false
+        },
+        {
+          "text": "Fit",
+          "label": "Fit map",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Zoom in",
+          "disabled": false
+        },
+        {
+          "text": "Whole map",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Follow a path",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "More map actions",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Close thought",
+          "disabled": false
+        },
+        {
+          "text": "Edit thought",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "01\nChoose the action that reduces harm while respecting those constraints.",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "02\nUncertainty matters: check how likely the predicted harm really is.",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Add another branch",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Back",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Next",
+          "label": null,
+          "disabled": true
+        },
+        {
+          "text": "",
+          "label": "Close dialog",
+          "disabled": false
+        },
+        {
+          "text": "Undo last change",
+          "label": null,
+          "disabled": true
+        },
+        {
+          "text": "Export a portable copy",
+          "label": null,
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "screenshot": "06-mobile-thought",
+      "text": "Axiomer\nA considered decision\nPrivate draft · saved on this device\ntherefore\nconstraint\ncheck\nSTARTING VALUE\n\nWe should reduce avoidable suffering.\n\nCompare choices by their likely effects on wellbeing.\n\nPreventing a large, predictable harm deserves more attention than a small convenience.\n\n1 source\n\nRespect individual rights when evaluating consequences.\n\nChoose the action that reduces harm while respecting those constraints.\n\nUncertainty matters: check how likely the predicted harm really is.\n\nIf the evidence changes, revisit the choice rather than defend an old conclusion.\n\nFit\nReact Flow\n7 thoughts\n·\n7 connections\nWhole map\nFollow a path\nSTARTING VALUE\n\nWe should reduce avoidable suffering.\n\nEdit thought\nNEXT STEP\n01\nCompare choices by their likely effects on wellbeing.\nAdd another branch\nBack\n1 way forward\nNext\nOpen source · AGPL-3.0",
+      "overflow": false,
+      "small": [
+        {
+          "text": "Library",
+          "font": "14px",
+          "bounds": {
+            "w": 30,
+            "h": 34
+          }
+        },
+        {
+          "text": "Build with AI",
+          "font": "14px",
+          "bounds": {
+            "w": 30,
+            "h": 34
+          }
+        },
+        {
+          "text": "We should reduce avoidable suffering.",
+          "font": "14px",
+          "bounds": {
+            "w": 54.91180419921875,
+            "h": 12.138412475585938
+          }
+        },
+        {
+          "text": "Compare choices by their likely effects on wellbeing.",
+          "font": "14px",
+          "bounds": {
+            "w": 54.91180419921875,
+            "h": 12.138412475585938
+          }
+        },
+        {
+          "text": "Preventing a large, predictable harm deserves more attention than a small convenience.",
+          "font": "14px",
+          "bounds": {
+            "w": 54.91181945800781,
+            "h": 18.207611083984375
+          }
+        },
+        {
+          "text": "Respect individual rights when evaluating consequences.",
+          "font": "14px",
+          "bounds": {
+            "w": 54.91180419921875,
+            "h": 12.138397216796875
+          }
+        },
+        {
+          "text": "Choose the action that reduces harm while respecting those constraints.",
+          "font": "14px",
+          "bounds": {
+            "w": 54.91180419921875,
+            "h": 18.207611083984375
+          }
+        },
+        {
+          "text": "Uncertainty matters: check how likely the predicted harm really is.",
+          "font": "14px",
+          "bounds": {
+            "w": 54.91181945800781,
+            "h": 18.207611083984375
+          }
+        },
+        {
+          "text": "If the evidence changes, revisit the choice rather than defend an old conclusion.",
+          "font": "14px",
+          "bounds": {
+            "w": 54.91180419921875,
+            "h": 18.207611083984375
+          }
+        },
+        {
+          "text": "We should reduce avoidable suffering.",
+          "font": "21px",
+          "bounds": {
+            "w": 330,
+            "h": 30.4375
+          }
+        },
+        {
+          "text": "Back",
+          "font": "13px",
+          "bounds": {
+            "w": 70.25,
+            "h": 44
+          }
+        },
+        {
+          "text": "Next",
+          "font": "13px",
+          "bounds": {
+            "w": 67.34375,
+            "h": 44
+          }
+        }
+      ]
+    },
+    {
+      "before": "Close thought",
+      "controls": [
+        {
+          "text": "Axiomer",
+          "label": "Open map library",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Sign in",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Zoom out",
+          "disabled": false
+        },
+        {
+          "text": "Fit",
+          "label": "Fit map",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Zoom in",
+          "disabled": false
+        },
+        {
+          "text": "Whole map",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Follow a path",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "More map actions",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Close thought",
+          "disabled": false
+        },
+        {
+          "text": "Edit thought",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "01\nCompare choices by their likely effects on wellbeing.",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Add another branch",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Back",
+          "label": null,
+          "disabled": true
+        },
+        {
+          "text": "Next",
+          "label": null,
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "screenshot": "07-mobile-overview",
+      "text": "Axiomer\nA considered decision\nPrivate draft · saved on this device\ntherefore\nconstraint\ncheck\nSTARTING VALUE\n\nWe should reduce avoidable suffering.\n\nCompare choices by their likely effects on wellbeing.\n\nPreventing a large, predictable harm deserves more attention than a small convenience.\n\n1 source\n\nRespect individual rights when evaluating consequences.\n\nChoose the action that reduces harm while respecting those constraints.\n\nUncertainty matters: check how likely the predicted harm really is.\n\nIf the evidence changes, revisit the choice rather than defend an old conclusion.\n\nFit\nReact Flow\n7 thoughts\n·\n7 connections\nWhole map\nFollow a path\nOpen source · AGPL-3.0",
+      "overflow": false,
+      "small": [
+        {
+          "text": "Library",
+          "font": "14px",
+          "bounds": {
+            "w": 30,
+            "h": 34
+          }
+        },
+        {
+          "text": "Build with AI",
+          "font": "14px",
+          "bounds": {
+            "w": 30,
+            "h": 34
+          }
+        },
+        {
+          "text": "We should reduce avoidable suffering.",
+          "font": "14px",
+          "bounds": {
+            "w": 120.33334350585938,
+            "h": 26.600021362304688
+          }
+        },
+        {
+          "text": "Compare choices by their likely effects on wellbeing.",
+          "font": "14px",
+          "bounds": {
+            "w": 120.33334350585938,
+            "h": 26.5999755859375
+          }
+        },
+        {
+          "text": "Preventing a large, predictable harm deserves more attention than a small convenience.",
+          "font": "14px",
+          "bounds": {
+            "w": 120.33333587646484,
+            "h": 39.9000244140625
+          }
+        },
+        {
+          "text": "Respect individual rights when evaluating consequences.",
+          "font": "14px",
+          "bounds": {
+            "w": 120.33334350585938,
+            "h": 26.600006103515625
+          }
+        },
+        {
+          "text": "Choose the action that reduces harm while respecting those constraints.",
+          "font": "14px",
+          "bounds": {
+            "w": 120.33334350585938,
+            "h": 39.9000244140625
+          }
+        },
+        {
+          "text": "Uncertainty matters: check how likely the predicted harm really is.",
+          "font": "14px",
+          "bounds": {
+            "w": 120.33333587646484,
+            "h": 39.9000244140625
+          }
+        },
+        {
+          "text": "If the evidence changes, revisit the choice rather than defend an old conclusion.",
+          "font": "14px",
+          "bounds": {
+            "w": 120.33334350585938,
+            "h": 39.9000244140625
+          }
+        }
+      ]
+    },
+    {
+      "before": "Edit thought",
+      "controls": [
+        {
+          "text": "Axiomer",
+          "label": "Open map library",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Sign in",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Zoom out",
+          "disabled": false
+        },
+        {
+          "text": "Fit",
+          "label": "Fit map",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Zoom in",
+          "disabled": false
+        },
+        {
+          "text": "Whole map",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Follow a path",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "More map actions",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Close thought",
+          "disabled": false
+        },
+        {
+          "text": "Edit thought",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "01\nChoose the action that reduces harm while respecting those constraints.",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "02\nUncertainty matters: check how likely the predicted harm really is.",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Add another branch",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Back",
+          "label": null,
+          "disabled": false
+        },
+        {
+          "text": "Next",
+          "label": null,
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "screenshot": "08-mobile-edit-dialog",
+      "text": "Axiomer\nA considered decision\nPrivate draft · saved on this device\ntherefore\nconstraint\ncheck\nSTARTING VALUE\n\nWe should reduce avoidable suffering.\n\nCompare choices by their likely effects on wellbeing.\n\nPreventing a large, predictable harm deserves more attention than a small convenience.\n\n1 source\n\nRespect individual rights when evaluating consequences.\n\nChoose the action that reduces harm while respecting those constraints.\n\nUncertainty matters: check how likely the predicted harm really is.\n\nIf the evidence changes, revisit the choice rather than defend an old conclusion.\n\nFit\nReact Flow\n7 thoughts\n·\n7 connections\nWhole map\nFollow a path\nA STEP IN YOUR REASONING\n\nPreventing a large, predictable harm deserves more attention than a small convenience.\n\nSOURCES\nExample evidence reference\nhttps://example.org/evidence\nSample reference, not a verified factual claim\nEdit thought\nCHOOSE A BRANCH\n01\nChoose the action that reduces harm while respecting those constraints.\n02\nUncertainty matters: check how likely the predicted harm really is.\nAdd another branch\nBack\n2 ways forward\nNext\nEdit thought\nYour thought\nOptional label\nSources 1\nPosition on this device\nConnections & actions\nCancel\nSave thought\nOpen source · AGPL-3.0",
+      "overflow": false,
+      "small": [
+        {
+          "text": "Library",
+          "font": "14px",
+          "bounds": {
+            "w": 30,
+            "h": 34
+          }
+        },
+        {
+          "text": "Build with AI",
+          "font": "14px",
+          "bounds": {
+            "w": 30,
+            "h": 34
+          }
+        },
+        {
+          "text": "We should reduce avoidable suffering.",
+          "font": "14px",
+          "bounds": {
+            "w": 54.91180419921875,
+            "h": 12.138412475585938
+          }
+        },
+        {
+          "text": "Compare choices by their likely effects on wellbeing.",
+          "font": "14px",
+          "bounds": {
+            "w": 54.91180419921875,
+            "h": 12.138412475585938
+          }
+        },
+        {
+          "text": "Preventing a large, predictable harm deserves more attention than a small convenience.",
+          "font": "14px",
+          "bounds": {
+            "w": 54.91181945800781,
+            "h": 18.207611083984375
+          }
+        },
+        {
+          "text": "Respect individual rights when evaluating consequences.",
+          "font": "14px",
+          "bounds": {
+            "w": 54.91180419921875,
+            "h": 12.138397216796875
+          }
+        },
+        {
+          "text": "Choose the action that reduces harm while respecting those constraints.",
+          "font": "14px",
+          "bounds": {
+            "w": 54.91180419921875,
+            "h": 18.207611083984375
+          }
+        },
+        {
+          "text": "Uncertainty matters: check how likely the predicted harm really is.",
+          "font": "14px",
+          "bounds": {
+            "w": 54.91181945800781,
+            "h": 18.207611083984375
+          }
+        },
+        {
+          "text": "If the evidence changes, revisit the choice rather than defend an old conclusion.",
+          "font": "14px",
+          "bounds": {
+            "w": 54.91180419921875,
+            "h": 18.207611083984375
+          }
+        },
+        {
+          "text": "Preventing a large, predictable harm deserves more attention than a small convenience.",
+          "font": "21px",
+          "bounds": {
+            "w": 330,
+            "h": 91.3125
+          }
+        },
+        {
+          "text": "Back",
+          "font": "13px",
+          "bounds": {
+            "w": 70.25,
+            "h": 44
+          }
+        },
+        {
+          "text": "Next",
+          "font": "13px",
+          "bounds": {
+            "w": 67.34375,
+            "h": 44
+          }
+        },
+        {
+          "text": "Remove source 1",
+          "font": "13px",
+          "bounds": {
+            "w": 302,
+            "h": 35.5
+          }
+        },
+        {
+          "text": " Add source",
+          "font": "13px",
+          "bounds": {
+            "w": 112.421875,
+            "h": 35.5
+          }
+        },
+        {
+          "text": "Use as starting point",
+          "font": "13px",
+          "bounds": {
+            "w": 328,
+            "h": 35.5
+          }
+        },
+        {
+          "text": "Cancel",
+          "font": "14px",
+          "bounds": {
+            "w": 64.65625,
+            "h": 45
+          }
+        }
+      ]
+    }
+  ]
+}
