@@ -1,0 +1,19 @@
+.axiomer-native-editor{position:absolute;inset:0;isolation:isolate;background:#faf9f6}
+.axiomer-native-editor .tl-container{background:#faf9f6}
+.native-viewport-controls{position:absolute!important;top:24px!important;right:24px!important;margin:0!important;z-index:8}
+.native-tools{position:absolute;z-index:8;left:18px;top:88px;display:flex;gap:2px;align-items:center;padding:5px;background:#fffefa;border:1px solid #dedfd4;border-radius:10px;box-shadow:0 3px 10px #343d2820}
+.native-tools button{display:grid;place-items:center;width:36px;height:38px;border:0;border-radius:6px;color:#526047;background:transparent;cursor:pointer}
+.native-tools button[aria-pressed="true"]{color:#263b24;background:#e5ecd9}
+.native-tools button:hover{background:#eff1e9}
+.native-tools button:focus-visible,.native-hint button:focus-visible{outline:2px solid #587547;outline-offset:2px}
+.native-tool-divider{height:22px;border-left:1px solid #dedfd4;margin:0 3px}
+.native-hint{position:absolute;z-index:9;left:18px;top:145px;display:flex;align-items:center;gap:16px;max-width:calc(100% - 36px);padding:8px 12px;color:#415039;background:#f5f6ed;border:1px solid #d9dfcd;border-radius:7px;font-size:12px;box-shadow:0 3px 8px #34452510}
+.native-hint button{display:grid;place-items:center;min-width:32px;min-height:32px;border:0;background:transparent;color:inherit;cursor:pointer}
+.native-editor-credit{position:absolute;pointer-events:none;bottom:6px;right:8px;z-index:3;font-size:9px;color:#7b8276}
+@media(max-width:760px){.native-tools{left:12px;right:12px;top:83px;justify-content:center;gap:0;padding:4px}.native-tools button{width:36px;height:40px;flex:1;max-width:42px}.native-tool-divider{margin:0 1px}.native-viewport-controls{top:16px!important;right:12px!important}.native-hint{top:138px;left:12px;max-width:calc(100% - 24px)}}
+/* Pinned v1 labels measure as unbounded text; constrain argument labels only. */
+.axiomer-native-editor [id^="axiomer-thought-"] > div > div > div {
+  width:216px!important;height:auto!important;max-height:86px;overflow:hidden;
+  font:16px/1.3 "Source Sans Pro",sans-serif!important;white-space:pre-wrap!important;
+  overflow-wrap:anywhere;transform:none!important;color:#344330!important;
+}

@@ -1,26 +1,34 @@
 {
-  "name": "axiomer",
+  "name": "axiomer-tldraw",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.3.0-tldraw.1",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.mjs",
     "build": "tsc -b && vite build",
     "build:viewer": "tsc -b && VITE_PUBLIC_READONLY=1 vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "dev:web": "vite --host 127.0.0.1",
+    "start": "node server/app.mjs",
+    "test:server": "node --test tests/server.test.mjs",
+    "test:browser": "node tests/browser.mjs",
+    "test:whiteboard": "node tests/whiteboard.browser.mjs",
+    "test:ui": "node tests/ui-ux.browser.mjs",
+    "test:native": "node tests/native.browser.mjs"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.20",
+    "@tldraw/tldraw": "1.29.2",
     "@xyflow/react": "^12.11.0",
     "dagre": "^0.8.5",
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.26.0",
     "lz-string": "^1.5.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "react-markdown": "^10.1.0",
     "react-textarea-autosize": "^8.5.9",
     "wouter": "^3.10.0"
@@ -29,13 +37,14 @@
     "@tailwindcss/vite": "^4.1.0",
     "@types/dagre": "^0.7.54",
     "@types/node": "^22.10.0",
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.4.0",
     "puppeteer": "^25.4.0",
     "tailwindcss": "^4.1.0",
     "typescript": "^5.8.0",
     "vite": "^6.3.0",
     "vitest": "^3.1.0"
-  }
+  },
+  "license": "AGPL-3.0-only"
 }

@@ -1,130 +1,35 @@
-# Working on Axiomer
+# Working on the Axiomer tldraw fork
 
-This is the current implementation guide. `docs/SPECIFICATION.md` and
-`STATUS_WINDOW_PLAN.md` describe earlier product iterations and are not the
-source of truth for the UI or ontology.
+The current product direction is value-first, map-first reasoning with clean node-by-node reading and branching. This file and README supersede older specifications, including mandatory types, terminal values, static viewer flags and outline-first UX. Preserve historical docs as evidence, not current requirements.
 
-## Product rule
+## Product rules
 
-Axiomer should make one loop effortless:
+- Begin with a human value; add a reason, then another connected step. A chosen path is readable and ordered; the overall map supports many branches, depth and shared nodes.
+- One expanded thought at a time. Minimal controls; whole-map overview, guided navigation and simple authoring.
+- Labels are optional and may be assigned after writing. No required ontology knowledge or forced terminal nodes.
+- AI is a drafting assistant. Every proposed node/connection requires Approve/Edit/Reject. AI review, publication and acceptance of a reader correction are distinct actions.
+- Free core use, open-source code, visible version history and PR-style corrections. Never claim a well-structured map proves truth.
+- 100+ nodes are a baseline ambition, not a limit. Do not claim Wikipedia scalability from local tests.
 
-> State a thought → add what supports or challenges it → ground it in a
-> foundation.
+## Architecture
 
-The software is a neutral thinking tool. It does not coach, judge, score, or
-nag. Prefer plain language, visible actions, inline editing, and progressive
-disclosure. A first-time user should not need to understand graph terminology.
+- React18.3.1/TypeScript/Vite; official MIT tldraw v1.29.2 lazily loaded in `client/src/roadmap/Canvas.tsx`. This legacy editor is no longer maintained; currentSDK licensing differs. Retain docs/vendor attribution.
+- `nativeAdapter.ts` projects the canonical argument into native shapes. `whiteboard.ts` validates the separate shared drawing layer; native decorative arrows are not semantic links. Annotation-only corrections use an explicit atomic drawing-layer rebase choice.
+- `client/src/roadmap/Workbench.tsx`: current app shell and journeys. `App.tsx` mounts it.
+- `client/src/roadmap/model.ts`: schema v2, optional kinds, navigation links, iterative DAG validation/index/layout, AI proposal validation, graph diffs and legacy import.
+- Legacy edge meaning/direction is retained in `semantic`; navigation projection is separate. Do not silently turn semantic evidence into proven conclusions.
+- `Review.tsx`: readable old/new node, source, relationship, original-semantic and branch-order diffs; conflict version previews. Never hide a semantic-only change.
+- `model.ts` proposal updates use three-way item comparisons and explicit conflict choices. Validate merged graphs; never silently prune a broken link or auto-publish the result.
+- `layoutStorage.ts`: legacy device-local arrangement cache; new drawing placement lives in graph.whiteboardPositions and travels with revisions/exports, separately from argument relationships and reading order. Treat arbitrary imported IDs as data with own-property guards; a view-only save must not clear pending AI review.
+- `storage.ts`: atomic draft/review snapshot at `axiomer.tldraw.roadmaps.v1` (read-only legacy fallback from `axiomer.roadmaps.v2`); old keys untouched. Active draft and proposal-update provenance recover with the saved work. Corrupt data must not be silently overwritten.
+- `server/app.mjs`: Node24 built-ins, SQLite, scrypt passwords, hashed session tokens, immutable full revisions, optimistic base checks and owner-reviewed proposals. Additive proposal-history columns link superseded/updated requests; only their author can submit an update against the latest head. No provider key storage/logging.
+- `scripts/dev.mjs` starts Vite + API. `npm start` serves built UI + API.
+- Old `pages`, `hooks`, `components` and `lib` modules are retained for migration/reference and their existing tests; they are not the current UI.
 
-## Stack and commands
+## Verification
 
-- React 19 + TypeScript + Vite
-- Tailwind CSS 4
-- `wouter` routing
-- React Flow + dagre for the lazy-loaded Map
-- `localStorage` in authoring mode; static JSON in public read-only mode
+Run `npm run typecheck`, `npm test`, `npm run build`, `npm run test:server`, and `npm run test:native` (systemChromium; CHROMIUM_PATH override). Native browser regression checks pen persistence, drawingUndo/Redo, public readonly drawings, deep/broad focus and corrupt-storage export/recovery on disposable memory services. Legacy browser/whiteboard/UI scripts contain ReactFlow-specific selectors and are historical until adapted; do not report them as passing the newcanvas. Providerfixtures do not prove liveinference.
 
-```bash
-npm run typecheck
-npm test
-npm run build
-```
+## Release constraints
 
-All three must pass before handoff.
-
-## Current product structure
-
-```text
-client/src/
-├── pages/
-│   ├── Dashboard.tsx       map library and first-run explanation
-│   └── Home.tsx            editor shell; Map and Outline modes
-├── components/
-│   ├── GraphMap.tsx        visual graph, search, inspector, authoring
-│   ├── ArgumentView.tsx    readable recursive outline and authoring
-│   ├── ExportModal.tsx
-│   └── TutorialOverlay.tsx
-├── hooks/
-│   ├── useGraph.ts         persistence and graph mutations
-│   └── useProjects.ts      lightweight local map library
-└── lib/
-    ├── types.ts            graph schema and legacy migration
-    ├── meta.tsx            display metadata and child rules
-    ├── graph.ts            pure graph logic
-    ├── flowLayout.ts       dagre layout
-    ├── seed.ts             two compact worked examples
-    ├── io.ts               validated import/export
-    └── dataSource.ts       authoring vs. public data source
-```
-
-The example map uses `graphId === "starter"`. New maps start empty. Do not make
-every new graph load the examples.
-
-## Graph model
-
-There are exactly 10 node types:
-
-```ts
-type NodeType =
-  | "claim" | "premise" | "support" | "conflict" | "note"
-  | "value" | "source" | "limit" | "bedrock" | "preference";
-```
-
-The five foundation types are terminal and cannot have children. Keep
-`types.ts`, `meta.tsx`, import validation, and UI choices in sync.
-
-There are five edge types:
-
-```ts
-type EdgeType = "supports" | "conflicts" | "annotates" | "grounds" | "cites";
-```
-
-### Edge direction
-
-Edge direction is semantic, not visual:
-
-- `supports`, `conflicts`, and `annotates` are stored child → parent.
-- `grounds` and `cites` are stored parent → foundation.
-
-Never infer hierarchy by directly reading `from` and `to`. Use
-`edgeEndpoints`, `getChildren`, `getParent`, `getParents`, and `getRoots` from
-`lib/graph.ts`. Use `addNode`/`edgeTypeFor` to construct relationships.
-
-### Grounding
-
-Grounding answers whether a claim's reasoning reaches a terminal foundation.
-Use `isFullyGrounded` for root claims and `isNodeGrounded` for node-level UI.
-Grounding and conflict acceptability are separate signals. The UI shows one
-primary status: Conflicted takes priority, otherwise Grounded or Open.
-
-### Reuse and convergence
-
-Reuse is the core differentiator. `linkToExistingValue` links a reasoning node
-to an existing terminal instead of duplicating it. The Map and Outline both
-surface this action only after a user has selected a thought. Keep graph queries
-pure and reuse `getValueUsage`, `getValueClashes`, and `findSimilarTerminals`.
-
-## UI conventions
-
-- The Map is the default view; the Outline is the readable alternative.
-- Node creation and editing happen in context. Do not use `prompt`, `alert`, or
-  `confirm`.
-- Do not require hover for essential actions; controls must remain usable on
-  touch devices.
-- Use five calm visual families: blue claim, violet premise, green support,
-  rose conflict, slate note, with warm foundation accents.
-- Keep graph nodes compact. Full content and authoring actions belong in the
-  inspector.
-- React Flow stays lazy-loaded through `Home.tsx`.
-- Preserve read-only mode by omitting mutation callbacks and controls.
-- Avoid adding dependencies for interaction patterns React and Tailwind can
-  express directly.
-
-## Persistence
-
-Authoring graphs are stored under `axiomer_graph_<graphId>`. The library is
-stored under `axiomer_projects`. Shared links may hydrate a graph from the URL
-hash. Public mode is selected by `VITE_PUBLIC_READONLY` and loads
-`client/public/graph.json`.
-
-Graph transforms belong in `lib/graph.ts` and must remain pure. React, DOM,
-storage, network, and presentation logic do not belong there.
+See docs/ANTIGRAVITY_HANDOFF.md for the GitHub source branch, setup, known defects and verification scope. Historical release reports describe their original local-only snapshots. Do not imply deployment or Wikipedia-scale performance. Colab Calendar and the recurring discovery task remain outside this manual implementation scope.

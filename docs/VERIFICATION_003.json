@@ -1,0 +1,82 @@
+{
+  "version": "1.2.0",
+  "build": "003",
+  "date": "2026-10-27",
+  "base": "47533dc28ba833c3bb5e1d662554a34ba6ef7997",
+  "branch": "feat/value-first-axiomer",
+  "checks": {
+    "typecheck": "passed",
+    "unit": {
+      "passed": 88,
+      "failed": 0
+    },
+    "api": {
+      "passed": 8,
+      "failed": 0
+    },
+    "production_build": "passed",
+    "browser": "passed: two accounts,502deep,202broad,AI fixture review/recovery and publication/proposals/history",
+    "whiteboard": {
+      "passed": true,
+      "checks": [
+        "source attach/reload/public read-only",
+        "direct pointer connection",
+        "edge label/remove/undo",
+        "drag view-only persistence",
+        "numeric reposition alternative",
+        "view-only and unchanged-edge saves retain pending AI review",
+        "cycle rejection",
+        "distant layout and pointer pan recover through Arrange",
+        "read-only overview has no handles/drag/Arrange",
+        "reserved imported thought and draft IDs",
+        "mobile layout"
+      ],
+      "liveInference": false
+    },
+    "git_diff_check": "passed",
+    "server_syntax": "passed"
+  },
+  "candidate_code_sha256": {
+    "client/src/App.tsx": "99e8f18c8d0793188df6198aba090908f21d92c6ccfbcd513f37245ada560e7c",
+    "client/src/roadmap/Canvas.tsx": "fbfd9680262a453d794005d616545632342b8332b6005345c41c51423bc8d26d",
+    "client/src/roadmap/Review.tsx": "1f9a197efc2e541944958f18d68e6c6c3de32fa3606bed7ffee88c34014803b4",
+    "client/src/roadmap/Workbench.tsx": "5668ac1b1ed54daf83bbf76a27888e935bade3bf97748f935cde850bc044d18d",
+    "client/src/roadmap/api.ts": "0155d03013fa7785c46cc1f29573a1bb539ecc3ec457b006a3be0a3abb0444a9",
+    "client/src/roadmap/evidence.test.ts": "75f5ccd7bb785a52386e471a452a431c27253f13608fc77272a2d2d6fc9b40cc",
+    "client/src/roadmap/layoutStorage.test.ts": "5f1fac75a6201d10584ad6d4b0d36727739498c214e2e41e47b835c2b56bcf25",
+    "client/src/roadmap/layoutStorage.ts": "53a2abb8d6b680732e968acf22fe21ce87cc76a6df90aee384754da887aa4847",
+    "client/src/roadmap/model.test.ts": "d4b2eb0a8d357502326698a9bc19c66c5a88437707363bbdbf7c9a7346352fc4",
+    "client/src/roadmap/model.ts": "81b75bab7e8f3f76c0e01d518f010b0b2f85cac3b4a2eeda53a95aa303941968",
+    "client/src/roadmap/review.test.ts": "baa73c43c7c252dccce4176c6f99a7ed6e6f371b61251c9939521c365c6e4496",
+    "client/src/roadmap/storage.ts": "7600855c3cad05422fd52428f7b502ccea4d9fb8a52c96418c14977180cfb558",
+    "client/src/roadmap/workbench.css": "b6bceb970445ca9f5743d43da8b4c1ce280b1d9f88b3d6617c3d9358eee6f277",
+    "package-lock.json": "0e92a313c7b172cf947a3e0ad60e8bfb70471649206a9e29fc7c4e0d48151353",
+    "package.json": "7f828e2467995b9d64772477aa23831d989f41eb7921160d82cbea80799a467b",
+    "server/app.mjs": "eda0998b51309df151c05cee3b66ed1dd3667598f366cd3195cf073362f4cc0f",
+    "tests/browser.mjs": "a720eb2389a4243b85a657d36cf2fcf12b80b28eb836b24cdeb16c8552c7e7ef",
+    "tests/server.test.mjs": "77ebdef56950a345654eb9dd38fa002de67292500af11f060c504a86e661b23b",
+    "tests/whiteboard.browser.mjs": "4c10e946e8b8cd9811ec816eb5871fefdcbcde2683690300d36adb12c75bbcff",
+    "vite.config.ts": "455f618a9d51835c01ebb6a5f03be7991b8166e74fa8d1812c0eb89b7a668c1e"
+  },
+  "dist_sha256": {
+    "dist/assets/Canvas-C5ap-Sga.css": "d34cf723b92d9c85640db4d0e5b6270630c3cd6e08823df16ee5a1ff55def948",
+    "dist/assets/Canvas-D8m5O_Tj.js": "a761b074dbde2f9e6ebf0993e9e5c17428222c97c4e5379183364da34eb018ab",
+    "dist/assets/index-CgZTbaOG.js": "5ea1dc674c4c5861a5e3fb299741ffffb3e82ab224d57a5ef7a5d402fd03dc6f",
+    "dist/assets/index-s6rBI_Qb.css": "683006ea3e8a8481161e9690a6ac6bc76dbc62942173b0286dbab151db26cc8f",
+    "dist/graph.json": "4fd017002ef5ca720786bd37dcec0e9481b87240739bdd41e553b76502186b94",
+    "dist/index.html": "56554f1d88ada51c5e618de1ec093d3a7d6e087271c4c30f5eb7d45407751cdf"
+  },
+  "live_inference": false,
+  "deployed": false,
+  "production_database_touched": false,
+  "limits": [
+    "Manual arrangement is local view state, not shared/exported graph data",
+    "No independent-reader or real-device study",
+    "No Wikipedia scale or public-load guarantee"
+  ],
+  "failed_check_history": [
+    "whiteboard-preload-seed-failure.log: fixture race with running empty app startup persistence; fixed pre-document seed",
+    "whiteboard-edge-render-failure.log: immediate generated-edge lookup before ReactFlow rendered; fixed waiting for edge DOM"
+  ],
+  "logs": "/workspace/revival/tasks/2026-10-27-arthur-t5/research/axiomer-final-logs"
+}

@@ -1,0 +1,14 @@
+{
+  "checks": [
+    "Native pen persists and reloads without changing argument semantics",
+    "Native rectangle Undo/Redo preserves the previously saved drawing",
+    "Native thought placement is saved with the shared drawing layer",
+    "Published drawings are visible in anonymous mobile reading without drawing/edit controls",
+    "502-node deep map retains content and enters focused reading",
+    "202-node broad/converging map retains content and enters focused reading",
+    "Corrupt legacy storage remains intact while current work exports, recovers and reloads safely"
+  ],
+  "errors": [],
+  "liveAI": false,
+  "realDevice": false
+}

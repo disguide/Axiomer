@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "checks": [
+    "source attach/reload/public read-only",
+    "direct pointer connection",
+    "edge label/remove/undo",
+    "drag view-only persistence",
+    "numeric reposition alternative",
+    "view-only and unchanged-edge saves retain pending AI review",
+    "cycle rejection",
+    "distant layout and pointer pan recover through Arrange",
+    "read-only overview has no handles/drag/Arrange",
+    "reserved imported thought and draft IDs",
+    "mobile layout"
+  ],
+  "liveInference": false
+}

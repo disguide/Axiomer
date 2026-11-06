@@ -1,0 +1,36 @@
+
+> axiomer@1.2.1 test:whiteboard
+> node tests/whiteboard.browser.mjs
+
+Click: Edit thought
+Click: Add source
+Click: Save thought
+Click: Close thought
+Click: Save connection
+Click: Remove connection
+Click: More map actions
+Click: Undo last change
+PASS sources, connect, label, remove and Undo
+Click: Close thought
+Click: Edit thought
+Click: Save thought
+Click: Close thought
+Click: Save connection
+Click: Edit thought
+Click: Close dialog
+Click: Edit thought
+Click: Save thought
+Click: Close thought
+Click: Arrange
+Click: Dismiss message
+PASS local arrangement, view-only queue retention and cycle rejection
+Click: Sign in
+Click: Create account
+Click: Publish
+Click: Publish revision
+Click: Close thought
+Click: Whole map
+Click: Close thought
+Click: Edit thought
+Click: Save thought
+PASS: evidence whiteboard, direct connections, local arrangement, read-only sharing and mobile layout. No live inference.

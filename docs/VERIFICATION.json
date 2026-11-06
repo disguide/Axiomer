@@ -1,0 +1,22 @@
+{
+  "version": "1.1.0",
+  "date": "2026-10-20",
+  "checks": {
+    "typecheck": "passed",
+    "unit_tests": {
+      "passed": 70,
+      "failed": 0
+    },
+    "server_tests": {
+      "passed": 7,
+      "failed": 0
+    },
+    "production_build": "passed",
+    "browser": "passed: two-account proposal update/conflict/review/history, semantic-only review, latest/fixed links, mobile, AI fixture approval and recovery, 502-node deep and 202-node broad/converging maps",
+    "diff_whitespace": "passed",
+    "server_syntax": "passed"
+  },
+  "live_ai_inference": "not performed; explicit fixture only",
+  "deployment": "not performed",
+  "performance_claim": "functional datasets only; no Wikipedia-scale guarantee"
+}

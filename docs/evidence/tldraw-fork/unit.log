@@ -1,0 +1,21 @@
+
+> axiomer-tldraw@1.3.0-tldraw.1 test
+> vitest run
+
+
+ RUN  v3.2.6 /workspace/Axiomer-tldraw
+
+ ✓ client/src/roadmap/whiteboard.test.ts (12 tests) 22ms
+ ✓ client/src/roadmap/model.test.ts (10 tests) 17ms
+ ✓ client/src/lib/graph.test.ts (46 tests) 9ms
+ ✓ client/src/roadmap/evidence.test.ts (16 tests) 7ms
+ ✓ client/src/roadmap/review.test.ts (8 tests) 7ms
+ ✓ client/src/roadmap/nativeAdapter.test.ts (3 tests) 4ms
+ ✓ client/src/lib/io.test.ts (6 tests) 3ms
+ ✓ client/src/roadmap/layoutStorage.test.ts (2 tests) 2ms
+
+ Test Files  8 passed (8)
+      Tests  103 passed (103)
+   Start at  14:35:51
+   Duration  1.14s (transform 153ms, setup 0ms, collect 266ms, tests 72ms, environment 1ms, prepare 236ms)
+

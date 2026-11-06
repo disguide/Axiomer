@@ -1,0 +1,12 @@
+
+> axiomer-tldraw@1.3.0-tldraw.1 test:native
+> node tests/native.browser.mjs
+
+PASS Native pen persists and reloads without changing argument semantics
+PASS Native rectangle Undo/Redo preserves the previously saved drawing
+PASS Native thought placement is saved with the shared drawing layer
+PASS Published drawings are visible in anonymous mobile reading without drawing/edit controls
+PASS 502-node deep map retains content and enters focused reading
+PASS 202-node broad/converging map retains content and enters focused reading
+PASS Corrupt legacy storage remains intact while current work exports, recovers and reloads safely
+PASS No browser runtime errors

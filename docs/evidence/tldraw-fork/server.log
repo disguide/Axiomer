@@ -1,0 +1,21 @@
+
+> axiomer-tldraw@1.3.0-tldraw.1 test:server
+> node --test tests/server.test.mjs
+
+✔ two accounts publish, propose and review without overwriting history or newer work (216.514374ms)
+✔ published maps survive a service restart (78.961164ms)
+✔ AI adapter returns reviewed proposals only, never publishes and never stores the key (17.821767ms)
+✔ malformed and incomplete AI output cannot enter a draft (46.006124ms)
+✔ Anthropic adapter uses its structured format and refuses fabricated excerpts (21.653536ms)
+✔ proposal updates preserve history, enforce authorship/latest base, and review semantic changes (422.380119ms)
+✔ additive proposal migration preserves existing rows and is safe to reopen (8.562293ms)
+✔ source evidence survives public immutable revisions and source-only corrections (178.688612ms)
+✔ drawing-only publication and correction preserve immutable drawings and reject assets (70.710512ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1174.79717

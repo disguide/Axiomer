@@ -9,3 +9,11 @@ yarn-debug.log*
 yarn-error.log*
 
 *.tsbuildinfo
+
+.data/
+test-results/
+
+# Keep local credentials out of source control; retain configuration examples.
+.env
+.env.*
+!.env.example

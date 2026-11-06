@@ -1,0 +1,13 @@
+# Axiomer tldraw fork checkpoint — 2026-11-06
+
+Explicit manual fork/build, including later Continue. User's setting change from ultra to high did not cancel work. This is separate from the cancelled discovery schedule; all tasks remain disabled, no new ones created.
+
+Current experimental fork: /workspace/Axiomer-tldraw, branchfeat/tldraw-axiomer, package1.3.0-tldraw.1. Based on132 exact localdirtysourcefiles+current builtUI from originalAxiomer1.2.1/build004 over47533dc28ba833c3bb5e1d662554a34ba6ef7997. No push remote configured. Original /workspace/Axiomer138bundledfiles and Gitstatus remain unchanged; previousarchives and otherapps untouched. No GitHub fork, deployment or original-source fix is implied.
+
+OfficialMIT @tldraw/tldraw1.29.2 editor reused directly; older/unmaintained, unlike current5.6 SDK with productionlicense requirements. ShippedMIT and productiondependency notices retained. Native drawing/notes/shapes/UndoRedo and semanticConnect/editing now coexist with retained Axiomer sources, AIapproval/history/corrections. Shared validated drawings and thoughtpositions travel through export/import/revisions/proposals; concurrent board edits require whole-layer explicitchoice. Import oldmaps here; olderclients neednotretainnewdrawingextension.
+
+Fresh currentchecks: typecheck/build,103unit,9API,8nativebrowser checks pass. Actualdesktop/mobile manual97eventsession has0pageerrors; drawing/UndoRedo/reload/text/semanticconnect/publication/anonymousreading/deep502/broad202/corruptoriginal/currentworkrecovery exercised. Native SVGgesture check verifies movedthoughtcoordinates published. ExistinglegacyReactFlowbrowser suites notclaimedpassing. LiveAI/realphone/Safari/humancomprehension/accessibility/load/hosting unverified; SDKlargechunk warning and unsupporteddrawingassets/groups/bindings noted. No realuserdata/keys/billing/providercalls.
+
+Report /workspace/Axiomer-tldraw/docs/TLDRAW_VERIFICATION.md; task REPORT/AUDIT/source/license/receipt records here. Expectedportablebundle /workspace/revival/exports/axiomer-tldraw-2026-11-06.zip contains source+builtUI+licenses/evidence; EXPORT.json identifies exact sealedbytes after creation and extracted smoke. Builtbundle can run with Node24.19+ using npm start; rebuilding requires npm ci and npm run build. No DB/dependencies/credentials/git/privateagentinstructions bundled. Old publications require their matching service/database, not automatically copied.
+
+Actual tool/host records, not a formal mediated-host/T5 certification. Finalhostdelivery links the verified fork/artifacts; savedcheckpointalone is not delivery. All temporary browser/memoryservices closed. Nextmanualwork should use thisfork ifrequested, preserveoriginal, and never restart scheduledresearch automatically.
