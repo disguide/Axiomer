@@ -135,22 +135,25 @@ export default function Canvas(props: CanvasProps) {
     <Tldraw document={document} currentPageId="page" autofocus={false} showUI={false} readOnly={!canEdit} disableAssets
       onMount={(app) => { editor.current = app; lastAnnotation.current = JSON.stringify(latest.current.graph.whiteboard || []); installProjection(app, false); setMounted(true); }}
       onChange={changed} onSessionEnd={(app) => { requestAnimationFrame(() => commit(app)); }} onUndo={commit} onRedo={commit}/>
-    <div className="viewport-controls native-viewport-controls" role="group" aria-label="Map view controls">
-      <button type="button" aria-label="Zoom out" title="Zoom out" onClick={() => editor.current?.zoomOut()}>−</button>
-      <button type="button" aria-label="Fit map" title="Fit the visible map" onClick={fit}>Fit</button>
-      <button type="button" aria-label="Zoom in" title="Zoom in" onClick={() => editor.current?.zoomIn()}>+</button>
+    <div className="native-top-strip" role="toolbar" aria-label="Whiteboard and view tools">
+      {canEdit && <div className="native-tools" role="group" aria-label="Whiteboard tools">
+        <button type="button" aria-label="Select" title="Select and move" aria-pressed={tool === "select" && !connecting} onClick={() => choose("select")}><MousePointer2 size={17}/></button>
+        <button type="button" aria-label="Draw" title="Draw freely" aria-pressed={tool === TDShapeType.Draw} onClick={() => choose(TDShapeType.Draw)}><Pencil size={17}/></button>
+        <button type="button" aria-label="Add note" title="Add a drawing note" aria-pressed={tool === TDShapeType.Sticky} onClick={() => choose(TDShapeType.Sticky)}><StickyNote size={17}/></button>
+        <button type="button" aria-label="Draw rectangle" title="Draw a rectangle" aria-pressed={tool === TDShapeType.Rectangle} onClick={() => choose(TDShapeType.Rectangle)}><Square size={17}/></button>
+        <button type="button" aria-label="Draw arrow" title="Draw an annotation arrow" aria-pressed={tool === TDShapeType.Arrow} onClick={() => choose(TDShapeType.Arrow)}><ArrowUpRight size={17}/></button>
+        <span className="native-tool-divider"/>
+        <button type="button" aria-label="Connect thoughts" title="Connect the selected thought to another thought" aria-pressed={connecting} onClick={() => { choose("select"); connectFrom.current = props.selected; connectingRef.current = true; setConnecting(true); }}><GitBranch size={17}/></button>
+        <button type="button" aria-label="Undo drawing" title="Undo drawing" onClick={() => editor.current?.undo()}><Undo2 size={17}/></button>
+        <button type="button" aria-label="Redo drawing" title="Redo drawing" onClick={() => editor.current?.redo()}><Redo2 size={17}/></button>
+        <span className="native-tool-divider"/>
+      </div>}
+      <div className="viewport-controls native-viewport-controls" role="group" aria-label="Map view controls">
+        <button type="button" aria-label="Zoom out" title="Zoom out" onClick={() => editor.current?.zoomOut()}>−</button>
+        <button type="button" aria-label="Fit map" title="Fit the visible map" onClick={fit}>Fit</button>
+        <button type="button" aria-label="Zoom in" title="Zoom in" onClick={() => editor.current?.zoomIn()}>+</button>
+      </div>
     </div>
-    {canEdit && <div className="native-tools" role="toolbar" aria-label="Whiteboard tools">
-      <button type="button" aria-label="Select" title="Select and move" aria-pressed={tool === "select" && !connecting} onClick={() => choose("select")}><MousePointer2 size={17}/></button>
-      <button type="button" aria-label="Draw" title="Draw freely" aria-pressed={tool === TDShapeType.Draw} onClick={() => choose(TDShapeType.Draw)}><Pencil size={17}/></button>
-      <button type="button" aria-label="Add note" title="Add a drawing note" aria-pressed={tool === TDShapeType.Sticky} onClick={() => choose(TDShapeType.Sticky)}><StickyNote size={17}/></button>
-      <button type="button" aria-label="Draw rectangle" title="Draw a rectangle" aria-pressed={tool === TDShapeType.Rectangle} onClick={() => choose(TDShapeType.Rectangle)}><Square size={17}/></button>
-      <button type="button" aria-label="Draw arrow" title="Draw an annotation arrow" aria-pressed={tool === TDShapeType.Arrow} onClick={() => choose(TDShapeType.Arrow)}><ArrowUpRight size={17}/></button>
-      <span className="native-tool-divider"/>
-      <button type="button" aria-label="Connect thoughts" title="Connect the selected thought to another thought" aria-pressed={connecting} onClick={() => { choose("select"); connectFrom.current = props.selected; connectingRef.current = true; setConnecting(true); }}><GitBranch size={17}/></button>
-      <button type="button" aria-label="Undo drawing" title="Undo drawing" onClick={() => editor.current?.undo()}><Undo2 size={17}/></button>
-      <button type="button" aria-label="Redo drawing" title="Redo drawing" onClick={() => editor.current?.redo()}><Redo2 size={17}/></button>
-    </div>}
     {(connecting || message) && <div className="native-hint" role="status"><span>{connecting ? connectFrom.current ? "Choose the next thought." : "Choose two thoughts to connect." : message}</span>
       <button type="button" aria-label="Dismiss whiteboard message" onClick={() => { connectingRef.current = false; connectFrom.current = null; setConnecting(false); setMessage(""); }}><X size={14}/></button>
     </div>}

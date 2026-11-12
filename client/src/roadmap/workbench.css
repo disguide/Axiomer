@@ -1424,3 +1424,161 @@
   .header-actions { margin-left:auto; gap:8px; }
   .header-actions button { min-width:42px; min-height:42px; padding:10px; }
 }
+
+
+/* Consolidated top-bar layout with clear bottom edge and single left/right corner controls */
+.app-header {
+  height: 58px;
+  padding: 0 18px;
+  gap: 12px;
+}
+.header-center-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 auto;
+  min-width: 0;
+}
+.header-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: #efefe8;
+  border: 1px solid #dfdfd4;
+  border-radius: 9px;
+}
+.header-mode-switch button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  min-height: 30px;
+  border-radius: 6px;
+  background: none;
+  color: #5b6653;
+  font-size: 12px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+.header-mode-switch button.selected {
+  background: #fffefa;
+  color: #2f3b2c;
+  box-shadow: 0 1px 4px #2f3b2c14;
+}
+.header-search-wrap {
+  position: relative;
+  width: 210px;
+}
+.header-search-wrap .map-search {
+  padding: 6px 10px;
+  min-height: 34px;
+  border-radius: 8px;
+  background: #fffefa;
+}
+.header-search-wrap .search-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 300px;
+  z-index: 30;
+}
+.has-focus .map-canvas {
+  right: 0 !important;
+  bottom: 0 !important;
+}
+.canvas-corner-left {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  z-index: 8;
+}
+.canvas-corner-right-toggle {
+  position: absolute;
+  top: 54px;
+  right: 16px;
+  z-index: 8;
+}
+.corner-pill-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  min-height: 38px;
+  border-radius: 9px;
+  border: 1px solid #dedfd4 !important;
+  background: #fffefaf5;
+  color: #354330;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 3px 10px #343d2814;
+}
+.corner-pill-button:hover {
+  background: #f0f3e9;
+}
+.focus-card {
+  top: 56px;
+  right: 16px;
+  width: 320px;
+  max-height: calc(100% - 72px);
+  padding: 16px 18px;
+  background: #fffefaf7;
+  backdrop-filter: blur(8px);
+}
+.focus-card-header-buttons {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.compact-pill {
+  min-height: 28px !important;
+  padding: 4px 9px !important;
+  font-size: 11px !important;
+}
+.thought-content {
+  font-size: 19px;
+  margin: 12px 0 6px;
+}
+.axiomer-app .source-link {
+  display: none;
+}
+@media (max-width: 760px) {
+  .header-center-tools {
+    width: 100%;
+    justify-content: space-between;
+    order: 3;
+  }
+  .header-search-wrap {
+    flex: 1;
+    width: auto;
+  }
+  .header-mode-switch button span {
+    display: inline;
+  }
+  .canvas-corner-left {
+    top: 10px;
+    left: 12px;
+  }
+  .focus-card {
+    top: 98px;
+    bottom: auto;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: calc(100% - 112px);
+  }
+}
+
+.canvas-corner-right-toggle {
+  top: 12px !important;
+  right: 16px !important;
+}
+.focus-card {
+  top: 12px !important;
+  right: 16px !important;
+  max-height: calc(100% - 28px) !important;
+}
+.toast {
+  bottom: auto !important;
+  top: 66px !important;
+}

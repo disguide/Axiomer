@@ -209,6 +209,7 @@ export default function Workbench() {
   const [initialLayouts] = useState(() => readArrangements(localStorage));
   const [arrangeVersion, setArrangeVersion] = useState(0);
   const [fitVersion, setFitVersion] = useState(0);
+  const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
   const focusCardRef = useRef<HTMLElement>(null);
   const [sheetHeight, setSheetHeight] = useState(0);
   const [layouts, setLayouts] = useState(initialLayouts.layouts);
@@ -608,6 +609,76 @@ export default function Workbench() {
             </div>
           )}
         </div>
+        {graph.nodes.length > 0 && (
+          <div className="header-center-tools" role="toolbar" aria-label="Workspace view and search">
+            <div className="header-mode-switch">
+              <button
+                type="button"
+                className={overview ? "selected" : ""}
+                onClick={() => { setOverview(true); setFitVersion((version) => version + 1); }}
+              >
+                <Maximize2 size={14} />
+                <span>Whole map</span>
+              </button>
+              <button
+                type="button"
+                className={!overview ? "selected" : ""}
+                onClick={() => {
+                  setOverview(false);
+                  if (!selected && graph.anchor) select(graph.anchor);
+                }}
+              >
+                <BookOpen size={14} />
+                <span>Follow a path</span>
+              </button>
+              {overview && !readonly && Object.keys(manualPositions).length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { savePositions({}); setArrangeVersion((version) => version + 1); }}
+                  title="Restore the automatic reading layout on this device"
+                >
+                  Arrange
+                </button>
+              )}
+            </div>
+            <div className="header-search-wrap">
+              <label className="map-search">
+                <Search size={14} />
+                <input
+                  aria-label="Search thoughts"
+                  placeholder="Find a thought…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+                {query && (
+                  <button type="button" aria-label="Clear search" onClick={() => setQuery("")}>
+                    <X size={13} />
+                  </button>
+                )}
+              </label>
+              {query && (
+                <div className="search-results">
+                  {visibleResults.length ? (
+                    visibleResults.map((n) => (
+                      <button
+                        key={n.id}
+                        type="button"
+                        onClick={() => {
+                          select(n.id);
+                          setQuery("");
+                        }}
+                      >
+                        {n.text}
+                      </button>
+                    ))
+                  ) : (
+                    <p>No matching thoughts.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         <nav className="header-actions" aria-label="Map actions">
           <button className="quiet-button" aria-label="Library" title="Library" onClick={() => void openLibrary()}>
             <Layers2 size={16} />
@@ -659,6 +730,14 @@ export default function Workbench() {
                   </span>
                 </button>
               )}
+              <button
+                className="icon-button"
+                aria-label="More map actions"
+                title="Map actions"
+                onClick={() => setPanel("map")}
+              >
+                <MoreHorizontal size={18} />
+              </button>
             </>
           )}
           <button
@@ -786,79 +865,53 @@ export default function Workbench() {
               />
             </Suspense>
           </div>
-          <div className="map-top-tools">
-            <label className="map-search">
-              <Search size={16} />
-              <input
-                aria-label="Search thoughts"
-                placeholder="Find a thought…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-              {query && (
-                <button aria-label="Clear search" onClick={() => setQuery("")}>
-                  <X size={14} />
-                </button>
-              )}
-            </label>
-            {query && (
-              <div className="search-results">
-                {visibleResults.length ? (
-                  visibleResults.map((n) => (
-                    <button
-                      key={n.id}
-                      onClick={() => {
-                        select(n.id);
-                        setQuery("");
-                      }}
-                    >
-                      {n.text}
-                    </button>
-                  ))
-                ) : (
-                  <p>No matching thoughts.</p>
-                )}
-              </div>
+          <div className="canvas-corner-left">
+            {!readonly ? (
+              <button
+                type="button"
+                className="corner-pill-button"
+                onClick={() => {
+                  const parentId = selected || graph.anchor;
+                  if (parentId) {
+                    setSelected(parentId);
+                    setInspectorCollapsed(false);
+                    setComposer(true);
+                    setNextText("");
+                  } else {
+                    setPanel("new");
+                  }
+                }}
+                title="Add a connected thought"
+              >
+                <Plus size={15} />
+                <span>Add thought</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="corner-pill-button"
+                onClick={editPublished}
+                title="Unlock drawing and editing in a local draft"
+              >
+                <Plus size={15} />
+                <span>Draw &amp; edit copy</span>
+              </button>
             )}
           </div>
-          <div className="map-caption">
-            <span className="live-dot" />
-            {graph.nodes.length} {graph.nodes.length === 1 ? "thought" : "thoughts"} <span>·</span> {graph.edges.length}{" "}
-            connections
-          </div>
-          <div className="map-bottom-tools">
-            <button
-              className={overview ? "selected" : ""}
-              onClick={() => { setOverview(true); setFitVersion((version) => version + 1); }}
-            >
-              <Maximize2 size={15} />
-              Whole map
-            </button>
-            <button
-              className={!overview ? "selected" : ""}
-              onClick={() => {
-                setOverview(false);
-                if (!selected && graph.anchor) select(graph.anchor);
-              }}
-            >
-              <BookOpen size={15} />
-              Follow a path
-            </button>
-            {overview && !readonly && Object.keys(manualPositions).length > 0 && (
-              <button onClick={() => { savePositions({}); setArrangeVersion((version) => version + 1); }} title="Restore the automatic reading layout on this device">Arrange</button>
-            )}
-          </div>
-          <div className="map-more">
-            <button
-              className="icon-button"
-              aria-label="More map actions"
-              title="Map actions"
-              onClick={() => setPanel("map")}
-            >
-              <MoreHorizontal size={20} />
-            </button>
-          </div>
-          {thought && (
+          {thought && inspectorCollapsed && (
+            <div className="canvas-corner-right-toggle">
+              <button
+                type="button"
+                className="corner-pill-button"
+                onClick={() => setInspectorCollapsed(false)}
+                title="Show selected thought panel"
+              >
+                <BookOpen size={15} />
+                <span>Selected thought</span>
+              </button>
+            </div>
+          )}
+          {thought && !inspectorCollapsed && (
             <aside ref={focusCardRef} className="focus-card" aria-label="Selected thought">
               <header>
                 <span className="eyebrow">
@@ -866,17 +919,27 @@ export default function Workbench() {
                     ? "Starting value"
                     : thought.kind || "A step in your reasoning"}
                 </span>
-                <button
-                  className="icon-button"
-                  aria-label="Close thought"
-                  onClick={() => {
-                    setSelected(null);
-                    setTrail([]);
-                    setOverview(true);
-                  }}
-                >
-                  <X size={17} />
-                </button>
+                <div className="focus-card-header-buttons">
+                  <button
+                    className="quiet-button compact-pill"
+                    type="button"
+                    onClick={() => setInspectorCollapsed(true)}
+                    title="Minimize to right corner"
+                  >
+                    Hide
+                  </button>
+                  <button
+                    className="icon-button"
+                    aria-label="Close thought"
+                    onClick={() => {
+                      setSelected(null);
+                      setTrail([]);
+                      setOverview(true);
+                    }}
+                  >
+                    <X size={17} />
+                  </button>
+                </div>
               </header>
               <p className="thought-content">{thought.text}</p>
               {!!thought.sources?.length && <div className="focus-sources"><span className="eyebrow">Sources</span><SourceLinks sources={thought.sources} /></div>}
