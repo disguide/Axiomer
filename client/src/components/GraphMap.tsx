@@ -1,3 +1,11 @@
+import { BottomSheet } from "@astryxdesign/core/BottomSheet";
+import { VStack } from "@astryxdesign/core/VStack";
+import { Heading } from "@astryxdesign/core/Heading";
+import { Text } from "@astryxdesign/core/Text";
+import { TextArea } from "@astryxdesign/core/TextArea";
+import { Button } from "@astryxdesign/core/Button";
+import { HStack } from "@astryxdesign/core/HStack";
+import { Icon } from "@astryxdesign/core/Icon";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Background,
@@ -258,7 +266,7 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
         proOptions={{ hideAttribution: true }}
       >
         <Background variant={BackgroundVariant.Dots} color="#d7dce2" gap={24} size={1} />
-        <Controls showInteractive={false} className="!bottom-4 !left-4 !rounded-xl !border-slate-200 !shadow-sm" />
+        <Controls showInteractive={false} className="!bottom-24 sm:!bottom-4 !left-4 !rounded-xl !border-slate-200 !shadow-sm" />
         <MiniMap pannable zoomable className="!bottom-4 !right-4 !hidden !rounded-xl !border !border-slate-200 !bg-white sm:!block" nodeColor={(node) => NODE_META[(node.data as FlowData).node.type].color} maskColor="rgba(247,247,244,.78)" />
       </ReactFlow>
 
@@ -283,7 +291,7 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
             )}
           </div>
           {onCreateRoot && (
-            <button onClick={() => setRootComposer(true)} className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50" title="Add a root claim">
+            <button onClick={() => setRootComposer(true)} className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50" aria-label="Add a starting thought" title="Add a starting thought">
               <Plus className="h-4 w-4" />
             </button>
           )}
@@ -291,16 +299,27 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
         </div>
       )}
 
-      {rootComposer && onCreateRoot && (
-        <div className="absolute inset-0 z-30 grid place-items-center bg-slate-950/20 p-4 backdrop-blur-sm" onMouseDown={(event) => event.target === event.currentTarget && setRootComposer(false)}>
-          <form className="w-full max-w-md rounded-2xl border border-white/70 bg-white p-5 shadow-2xl" onSubmit={(event) => { event.preventDefault(); if (!rootDraft.trim()) return; onCreateRoot(rootDraft.trim()); setRootDraft(""); setRootComposer(false); }}>
-            <div className="flex items-center justify-between"><h2 className="text-lg font-semibold tracking-tight">Add another starting thought</h2><button type="button" onClick={() => setRootComposer(false)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button></div>
-            <p className="mt-1 text-sm text-slate-500">A separate question, decision, or belief for this map.</p>
-            <textarea autoFocus value={rootDraft} onChange={(event) => setRootDraft(event.target.value)} placeholder="What else do you want to explore?" className="mt-4 min-h-24 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-6 outline-none focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-100" />
-            <div className="mt-3 flex justify-end gap-2"><button type="button" onClick={() => setRootComposer(false)} className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100">Cancel</button><button disabled={!rootDraft.trim()} className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white disabled:opacity-30">Add thought</button></div>
-          </form>
-        </div>
+      {!selectedNode && !rootComposer && (
+        <HStack as="nav" aria-label="Map actions" gap={2} padding={2} hAlign="between" vAlign="center" className="map-thumb-dock sm:!hidden">
+          <Button label="Find" size="lg" variant="ghost" icon={<Icon icon={Search} />} onClick={() => searchRef.current?.focus()} />
+          {onCreateRoot && <Button label="Add thought" size="lg" variant="primary" icon={<Icon icon={Plus} />} onClick={() => setRootComposer(true)} />}
+          <Button label="Fit map" size="lg" variant="ghost" onClick={() => fitView({ duration: 400, padding: 0.2, maxZoom: 1.1 })} />
+        </HStack>
       )}
+
+      {onCreateRoot && <BottomSheet isOpen={rootComposer} onOpenChange={setRootComposer} label="Add another starting thought" purpose="form" height="tall">
+        <VStack height="100%" justify="between" gap={4} padding={3}>
+          <VStack gap={4}>
+          <Heading level={2}>Add another starting thought</Heading>
+          <Text color="secondary">A separate question, decision, or belief for this map.</Text>
+          <TextArea label="Starting thought" value={rootDraft} onChange={setRootDraft} placeholder="What else do you want to explore?" rows={5} hasAutoFocus />
+          </VStack>
+          <HStack gap={2} hAlign="end">
+            <Button label="Cancel" size="lg" onClick={() => setRootComposer(false)} />
+            <Button label="Add thought" size="lg" variant="primary" isDisabled={!rootDraft.trim()} onClick={() => { if (!rootDraft.trim()) return; onCreateRoot(rootDraft.trim()); setRootDraft(""); setRootComposer(false); }} />
+          </HStack>
+        </VStack>
+      </BottomSheet>}
 
       {selectedNode && (
         <aside className="absolute right-3 top-3 z-20 max-h-[calc(100%-1.5rem)] w-[350px] overflow-y-auto rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-2xl shadow-slate-300/30 backdrop-blur-xl max-sm:inset-x-3 max-sm:bottom-3 max-sm:top-auto max-sm:max-h-[54%] max-sm:w-auto">

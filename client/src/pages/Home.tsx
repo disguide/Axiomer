@@ -107,9 +107,9 @@ export default function Home() {
               {stats.openClaims > 0 && <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200"><CircleDashed className="h-3.5 w-3.5 text-amber-500" /> {stats.openClaims} open</span>}
             </div>
           )}
-          <div className="flex rounded-xl bg-slate-100 p-1">
-            <button onClick={() => setView("map")} className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition sm:px-3 ${view === "map" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}><Network className="h-3.5 w-3.5" /><span className="hidden sm:inline">Map</span></button>
-            <button onClick={() => setView("outline")} className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition sm:px-3 ${view === "outline" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}><ListTree className="h-3.5 w-3.5" /><span className="hidden sm:inline">Outline</span></button>
+          <div className="flex rounded-xl bg-slate-100 p-1" role="group" aria-label="Reasoning view">
+            <button aria-label="Map view" aria-pressed={view === "map"} onClick={() => setView("map")} className={`flex items-center gap-1.5 rounded-lg min-h-11 px-2.5 py-1.5 text-xs font-semibold transition sm:px-3 ${view === "map" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}><Network className="h-3.5 w-3.5" /><span className="inline">Map</span></button>
+            <button aria-label="Outline view" aria-pressed={view === "outline"} onClick={() => setView("outline")} className={`flex items-center gap-1.5 rounded-lg min-h-11 px-2.5 py-1.5 text-xs font-semibold transition sm:px-3 ${view === "outline" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}><ListTree className="h-3.5 w-3.5" /><span className="inline">Outline</span></button>
           </div>
           <button onClick={() => setShowGuide(true)} className="hidden h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 sm:grid" aria-label="How Axiomer works"><HelpCircle className="h-4 w-4" /></button>
           <div className="relative">

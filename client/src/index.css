@@ -1,4 +1,9 @@
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
+
 @import "tailwindcss";
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-neutral/theme.css";
 @plugin "@tailwindcss/typography";
 
 @theme {
@@ -54,3 +59,21 @@ a {
   background: #fde68a;
   color: #0f172a;
 }
+
+/* The floating action group leaves the canvas intact and respects phone safe areas. */
+.map-thumb-dock {
+  position: absolute;
+  inset-inline: var(--spacing-3);
+  bottom: max(var(--spacing-3), env(safe-area-inset-bottom));
+  z-index: 20;
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+@media (pointer: coarse) {
+  button:not(.react-flow__node button), a { min-height: 44px; }
+  input, textarea { font-size: max(16px, 1em); }
+}
+
+.map-thumb-dock .astryx-button, .astryx-bottom-sheet .astryx-button { min-block-size: var(--spacing-12); }
