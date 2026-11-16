@@ -25,8 +25,8 @@ export function layoutGraph(
   for (const node of graph.nodes) {
     const isRoot = ["claim", "premise"].includes(node.type);
     const isTerminal = ["value", "bedrock", "limit", "preference", "source"].includes(node.type);
-    const w = isRoot ? 240 : (isTerminal ? 200 : 220);
-    const h = isRoot ? 80 : (isTerminal ? 36 : 48);
+    const w = isRoot ? 250 : (isTerminal ? 210 : 225);
+    const h = isRoot ? 100 : (isTerminal ? 80 : 84);
     g.setNode(node.id, { width: w, height: h });
   }
   for (const edge of graph.edges) {
@@ -42,8 +42,8 @@ export function layoutGraph(
     if (laid) {
       const isRoot = ["claim", "premise"].includes(node.type);
       const isTerminal = ["value", "bedrock", "limit", "preference", "source"].includes(node.type);
-      const w = isRoot ? 240 : (isTerminal ? 200 : 220);
-      const h = isRoot ? 80 : (isTerminal ? 36 : 48);
+      const w = isRoot ? 250 : (isTerminal ? 210 : 225);
+      const h = isRoot ? 100 : (isTerminal ? 80 : 84);
       // dagre centers nodes; React Flow positions from the top-left corner.
       positions[node.id] = {
         x: laid.x - w / 2,

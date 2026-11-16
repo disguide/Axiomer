@@ -10,9 +10,13 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:browser": "node tests/workbench.browser.mjs"
   },
   "dependencies": {
+    "@astryxdesign/core": "0.7.16",
+    "@astryxdesign/theme-neutral": "0.7.16",
+    "@stylexjs/stylex": "^0.19.2",
     "@tailwindcss/typography": "^0.5.20",
     "@xyflow/react": "^12.11.0",
     "dagre": "^0.8.5",
@@ -26,6 +30,8 @@
     "wouter": "^3.10.0"
   },
   "devDependencies": {
+    "@astryxdesign/cli": "0.7.16",
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/vite": "^4.1.0",
     "@types/dagre": "^0.7.54",
     "@types/node": "^22.10.0",

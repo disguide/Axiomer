@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { Text } from "@astryxdesign/core/Text";
+import { indexGraph, indexedNodeStates } from "@/lib/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { Check, Link2, Pencil, Plus, Trash2, X } from "lucide-react";
 import type { Graph, GraphNode, NodeType } from "@/lib/types";
@@ -8,6 +10,7 @@ import * as G from "@/lib/graph";
 
 interface Props {
   graph: Graph;
+  sourceGraph?: Graph;
   readOnly?: boolean;
   focusId: string | null;
   onSetFocus: (id: string | null) => void;
@@ -26,6 +29,9 @@ function OutlineNode({
   depth,
   visited,
   readOnly,
+  states,
+  parentId,
+  primaryParents,
   onAddNode,
   onLinkValue,
   onEditNode,
@@ -36,6 +42,9 @@ function OutlineNode({
   depth: number;
   visited: Set<string>;
   readOnly: boolean;
+  states: ReturnType<typeof indexedNodeStates>;
+  parentId?: string;
+  primaryParents: Map<string, string>;
   onAddNode: Props["onAddNode"];
   onLinkValue: Props["onLinkValue"];
   onEditNode: Props["onEditNode"];
@@ -54,13 +63,13 @@ function OutlineNode({
   const root = depth === 0;
   const allowed = ALLOWED_CHILDREN[node.type];
   const foundations = G.getTerminals(graph).filter((item) => item.id !== node.id);
-  const grounded = G.isNodeGrounded(graph, node.id);
-  const acceptability = G.getAcceptability(graph).get(node.id);
+  const grounded = states.grounded.get(node.id);
+  const acceptability = states.acceptability.get(node.id);
 
   useEffect(() => setEditDraft(node.content), [node.content]);
 
-  if (visited.has(node.id)) {
-    return <p className="ml-6 py-2 text-xs italic text-slate-400">Linked above: {node.content}</p>;
+  if (visited.has(node.id) || (parentId && primaryParents.get(node.id) !== parentId)) {
+    return <Text color="secondary" className="ml-6 py-2">Linked thought: {node.content}</Text>;
   }
   const nextVisited = new Set(visited).add(node.id);
 
@@ -143,13 +152,16 @@ function OutlineNode({
         )}
       </article>
 
-      {children.length > 0 && <div className={`${root ? "mt-3 sm:ml-5" : ""}`}>{children.map((child) => <OutlineNode key={`${node.id}-${child.id}`} node={child} graph={graph} depth={depth + 1} visited={nextVisited} readOnly={readOnly} onAddNode={onAddNode} onLinkValue={onLinkValue} onEditNode={onEditNode} onDeleteNode={onDeleteNode} />)}</div>}
+      {children.length > 0 && <div className={`${root ? "mt-3 sm:ml-5" : ""}`}>{children.map((child) => <OutlineNode key={`${node.id}-${child.id}`} node={child} graph={graph} depth={depth + 1} visited={nextVisited} readOnly={readOnly} states={states} parentId={node.id} primaryParents={primaryParents} onAddNode={onAddNode} onLinkValue={onLinkValue} onEditNode={onEditNode} onDeleteNode={onDeleteNode} />)}</div>}
     </div>
   );
 }
 
-export default function ArgumentView({ graph, readOnly = false, onAddNode, onLinkValue, onEditNode, onDeleteNode }: Props) {
-  const roots = G.getRoots(graph);
+export default function ArgumentView({ graph, sourceGraph, readOnly = false, onAddNode, onLinkValue, onEditNode, onDeleteNode }: Props) {
+  const states = useMemo(() => indexedNodeStates(indexGraph(sourceGraph || graph)), [graph, sourceGraph]);
+  const visibleIndex = useMemo(() => indexGraph(graph), [graph]);
+  const primaryParents = useMemo(() => new Map([...visibleIndex.parents].flatMap(([id, parents]) => parents.length ? [[id, parents[0]] as [string, string]] : [])), [visibleIndex]);
+  const roots = visibleIndex.roots;
   if (roots.length === 0) return null;
-  return <div>{roots.map((root) => <OutlineNode key={root.id} node={root} graph={graph} depth={0} visited={new Set()} readOnly={readOnly} onAddNode={onAddNode} onLinkValue={onLinkValue} onEditNode={onEditNode} onDeleteNode={onDeleteNode} />)}</div>;
+  return <div>{roots.map((root) => <OutlineNode key={root.id} node={root} graph={graph} depth={0} visited={new Set()} readOnly={readOnly} states={states} primaryParents={primaryParents} onAddNode={onAddNode} onLinkValue={onLinkValue} onEditNode={onEditNode} onDeleteNode={onDeleteNode} />)}</div>;
 }
