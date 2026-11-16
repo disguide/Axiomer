@@ -164,3 +164,12 @@ RULES:
 ## Astryx mobile controls
 
 The Map keeps its existing canvas and semantics. `GraphMap.tsx` uses Astryx for its mobile action dock and starting-thought sheet; root CSS loads the layered compatibility styles before the theme module. See `docs/UI_IMPROVEMENTS.md` for the scope and visual verification.
+
+## Reasoning framework and document boundaries
+
+- `ReasoningWorkbench.tsx` owns guided argument steps, local self-authored profile, copy/attachment previews, snapshot export and AI proposal review. The ten node types are unchanged.
+- `lib/framework.ts` owns pure guided construction, copied composition, graph fingerprints and additions-only proposal validation; `lib/sharing.ts` owns versioned snapshots and default profile exclusion.
+- Shared snapshots are read-only and never auto-import into the active graph. Save an editable copy creates a separate project. Hash navigation remounts the shared session.
+- `useGraph` validates imports and keeps a bounded in-memory undo/redo history. Invalid saved data is kept rather than overwritten by an empty graph. Project reads never write the map library on mount.
+- `lib/navigation.ts` indexes documents and bounds rendered views before layout. Full-document search can reveal hidden thoughts. Do not substitute scoped graph data for the full document when mutating.
+- AI integration is a structured export/paste-proposal interface with preview/apply; there is no connected provider or simulated judgment. Personal profile context is explicitly opt-in.

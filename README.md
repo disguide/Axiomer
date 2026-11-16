@@ -55,3 +55,7 @@ Five labelled edge types connect them: `supports`, `conflicts`, `annotates`,
 
 See [VISION.md](VISION.md) for the product philosophy and [CLAUDE.md](CLAUDE.md)
 for implementation conventions.
+
+## Thinking framework
+
+See [the thinking framework and instructions](docs/THINKING_FRAMEWORK.md) for guided arguments, personal foundations, tree composition, sharing, larger maps and AI proposal exchange. Open **Framework** in the editor to use these tools. Share links open read-only; editable copies are explicit.

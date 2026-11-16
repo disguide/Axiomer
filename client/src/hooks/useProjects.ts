@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { Graph } from "@/lib/types";
 import type { Project, Branch } from "@/lib/projectTypes";
 
 const PROJECTS_STORAGE_KEY = "axiomer_projects";
@@ -29,7 +30,9 @@ function loadProjects(): Project[] {
   try {
     const stored = localStorage.getItem(PROJECTS_STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed) || parsed.some((p) => !p || typeof p.id !== "string" || typeof p.name !== "string" || !Array.isArray(p.branches) || p.branches.some((b: Branch) => !b || typeof b.id !== "string" || typeof b.graphId !== "string" || typeof b.name !== "string"))) throw new Error("Saved map library is not valid");
+      return parsed;
     }
   } catch (err) {
     console.error("Failed to load projects", err);
@@ -38,9 +41,12 @@ function loadProjects(): Project[] {
 }
 
 export function useProjects() {
-  const [projects, setProjects] = useState<Project[]>(loadProjects());
+  const [projects, setProjectState] = useState<Project[]>(loadProjects);
+  const changed = useRef(false);
+  const setProjects: typeof setProjectState = (action) => { changed.current = true; setProjectState(action); };
 
   useEffect(() => {
+    if (!changed.current) return;
     try {
       localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
     } catch (err) {
@@ -48,7 +54,7 @@ export function useProjects() {
     }
   }, [projects]);
 
-  const createProject = (name: string) => {
+  const createProject = (name: string, graph?: Graph) => {
     const newProject: Project = {
       id: generateId(),
       name,
@@ -66,7 +72,10 @@ export function useProjects() {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
-    setProjects((prev) => [newProject, ...prev]);
+    if (graph) localStorage.setItem(`axiomer_graph_${newProject.branches[0].graphId}`, JSON.stringify(graph));
+    const next = [newProject, ...projects];
+    localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(next));
+    setProjects(next);
     return newProject;
   };
 

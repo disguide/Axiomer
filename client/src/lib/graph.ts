@@ -53,37 +53,58 @@ export function getParents(graph: Graph, nodeId: string): GraphNode[] {
     .filter((n): n is GraphNode => Boolean(n));
 }
 
-// Every node reachable downward FROM nodeId (descendants, including nodeId).
-export function getDescendantIds(graph: Graph, nodeId: string): Set<string> {
-  const seen = new Set<string>([nodeId]);
-  const queue = [nodeId];
-  while (queue.length > 0) {
-    const current = queue.shift() as string;
-    for (const child of getChildren(graph, current)) {
-      if (!seen.has(child.id)) {
-        seen.add(child.id);
-        queue.push(child.id);
-      }
+// Index semantic hierarchy once per traversal, rather than scanning every edge
+// and looking up every node at each depth. This stays linear for large maps.
+function hierarchyIndex(graph: Graph): {
+  children: Map<string, string[]>;
+  parents: Map<string, string[]>;
+} {
+  const nodeIds = new Set(graph.nodes.map((node) => node.id));
+  const children = new Map<string, string[]>();
+  const parents = new Map<string, string[]>();
+  for (const edge of graph.edges) {
+    const { parent, child } = endpoints(edge);
+    if (nodeIds.has(child)) {
+      const list = children.get(parent) || [];
+      list.push(child);
+      children.set(parent, list);
+    }
+    if (nodeIds.has(parent)) {
+      const list = parents.get(child) || [];
+      list.push(parent);
+      parents.set(child, list);
+    }
+  }
+  return { children, parents };
+}
+
+function reachableIds(
+  adjacency: Map<string, string[]>,
+  starts: Iterable<string>,
+  blockedId?: string,
+): Set<string> {
+  const seen = new Set<string>();
+  const queue: string[] = [];
+  for (const start of starts) {
+    if (start !== blockedId && !seen.has(start)) { seen.add(start); queue.push(start); }
+  }
+  for (let index = 0; index < queue.length; index += 1) {
+    for (const next of adjacency.get(queue[index]) || []) {
+      if (next !== blockedId && !seen.has(next)) { seen.add(next); queue.push(next); }
     }
   }
   return seen;
 }
 
-// Every node with a downward path INTO nodeId (its ancestors).
+// Every node reachable downward FROM nodeId (descendants, including nodeId).
+export function getDescendantIds(graph: Graph, nodeId: string): Set<string> {
+  return reachableIds(hierarchyIndex(graph).children, [nodeId]);
+}
+
+// Every node with a downward path INTO nodeId (its ancestors, excluding itself).
 export function getAncestors(graph: Graph, nodeId: string): Set<string> {
-  const result = new Set<string>();
-  const queue = [nodeId];
-  const seen = new Set<string>([nodeId]);
-  while (queue.length > 0) {
-    const current = queue.shift() as string;
-    for (const parent of getParents(graph, current)) {
-      if (!seen.has(parent.id)) {
-        seen.add(parent.id);
-        result.add(parent.id);
-        queue.push(parent.id);
-      }
-    }
-  }
+  const result = reachableIds(hierarchyIndex(graph).parents, [nodeId]);
+  result.delete(nodeId);
   return result;
 }
 
@@ -240,33 +261,19 @@ export function addEdge(
   };
 }
 
-// Collect a node and all descendants, EXCEPT shared terminals that are still
-// grounded by a parent outside the deletion set.
+// Remove the selected thought and only descendants that lose every surviving
+// route into the subtree. A shared reasoning branch protects its own children,
+// including foundations, just as a directly shared foundation protects itself.
 function doomedSet(graph: Graph, nodeId: string): Set<string> {
-  const doomed = new Set<string>();
-  const queue = [nodeId];
-  while (queue.length > 0) {
-    const current = queue.shift() as string;
-    if (doomed.has(current)) continue;
-    doomed.add(current);
-    for (const child of getChildren(graph, current)) {
-      if (!doomed.has(child.id)) queue.push(child.id);
-    }
-  }
-  // Spare shared terminals with a surviving parent.
-  for (const id of [...doomed]) {
-    const node = getNode(graph, id);
-    if (node && isTerminalType(node.type) && id !== nodeId) {
-      const hasSurvivingParent = graph.edges.some(
-        (e) =>
-          e.edgeType === "grounds" &&
-          e.to === id &&
-          !doomed.has(e.from),
-      );
-      if (hasSurvivingParent) doomed.delete(id);
-    }
-  }
-  return doomed;
+  const { children, parents } = hierarchyIndex(graph);
+  const candidate = reachableIds(children, [nodeId]);
+  const shared = [...candidate].filter((id) =>
+    id !== nodeId && (parents.get(id) || []).some((parent) => !candidate.has(parent)),
+  );
+  // Protection flows downward from a surviving parent. The explicitly selected
+  // thought remains deleted even if another parent points at it.
+  const preserved = reachableIds(children, shared, nodeId);
+  return new Set([...candidate].filter((id) => !preserved.has(id)));
 }
 
 export function countDescendants(graph: Graph, nodeId: string): number {

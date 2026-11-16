@@ -3,6 +3,7 @@ import { VStack } from "@astryxdesign/core/VStack";
 import { Heading } from "@astryxdesign/core/Heading";
 import { Text } from "@astryxdesign/core/Text";
 import { TextArea } from "@astryxdesign/core/TextArea";
+import { TextInput } from "@astryxdesign/core/TextInput";
 import { Button } from "@astryxdesign/core/Button";
 import { HStack } from "@astryxdesign/core/HStack";
 import { Icon } from "@astryxdesign/core/Icon";
@@ -28,6 +29,8 @@ import { isTerminalType } from "@/lib/types";
 import { ALLOWED_CHILDREN, NODE_META } from "@/lib/meta";
 import * as G from "@/lib/graph";
 import { layoutGraph } from "@/lib/flowLayout";
+import { indexGraph, indexedNodeStates, relatedIds, selectVisibleGraph } from "@/lib/navigation";
+import "./map-navigation.css";
 
 interface GraphMapProps {
   graph: Graph;
@@ -36,6 +39,8 @@ interface GraphMapProps {
   onEditNode?: (id: string, content: string) => void;
   onDeleteNode?: (id: string) => void;
   onLinkValue?: (parentId: string, terminalId: string) => void;
+  onBuildArgument?: () => void;
+  onAttachTree?: (parentId: string) => void;
 }
 
 const EDGE_LABEL: Record<EdgeType, string> = {
@@ -100,7 +105,7 @@ function FlowNode({ data }: NodeProps<Node<FlowData>>) {
           <span className={`ml-auto h-1.5 w-1.5 rounded-full ${grounded ? "bg-emerald-500" : "bg-amber-400"}`} title={grounded ? "Grounded" : "Open"} />
         )}
       </div>
-      <p className={`${root ? "mt-2 text-sm font-semibold" : terminal ? "ml-6 -mt-4 text-xs font-medium" : "mt-1.5 text-xs font-medium"} line-clamp-3 leading-snug text-slate-800`}>
+      <p className={`${root ? "mt-2 text-sm font-semibold" : terminal ? "mt-1.5 text-xs font-medium" : "mt-1.5 text-xs font-medium"} line-clamp-3 leading-snug text-slate-800`}>
         {node.content}
       </p>
       <Handle type="source" position={Position.Bottom} className="!opacity-0" />
@@ -118,7 +123,7 @@ export default function GraphMap(props: GraphMapProps) {
   );
 }
 
-function EmptyMap({ onCreate }: { onCreate: (content: string) => void }) {
+function EmptyMap({ onCreate, onGuided }: { onCreate: (content: string) => void; onGuided?: () => void }) {
   const [draft, setDraft] = useState("");
   return (
     <div className="absolute inset-0 z-20 grid place-items-center bg-[radial-gradient(circle_at_center,#fff_0%,#f7f7f4_70%)] p-5">
@@ -126,17 +131,18 @@ function EmptyMap({ onCreate }: { onCreate: (content: string) => void }) {
         <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-slate-950 text-white shadow-lg"><Plus className="h-5 w-5" /></span>
         <h2 className="mt-6 text-3xl font-semibold tracking-[-0.04em] text-slate-950">Start with one clear thought.</h2>
         <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-500">Write a question, decision, or belief. You can trace the reasons beneath it next.</p>
+        {onGuided && <HStack hAlign="center" paddingBlock={4}><Button label="Build an argument" variant="primary" size="lg" onClick={onGuided} /></HStack>}
         <div className="mt-7 flex rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-200/50 focus-within:border-slate-400 focus-within:ring-4 focus-within:ring-slate-100">
           <input autoFocus value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Should I change careers?" className="min-w-0 flex-1 bg-transparent px-3 py-2 text-base outline-none placeholder:text-slate-400" />
           <button disabled={!draft.trim()} className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white disabled:opacity-30">Begin</button>
         </div>
-        <p className="mt-3 text-xs text-slate-400">No setup, template, or special notation required.</p>
+        <p className="mt-3 text-xs text-slate-400">Or begin freely with one thought. No special notation required.</p>
       </form>
     </div>
   );
 }
 
-function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNode, onLinkValue }: GraphMapProps) {
+function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNode, onLinkValue, onBuildArgument, onAttachTree }: GraphMapProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [addingType, setAddingType] = useState<NodeType | null>(null);
@@ -147,11 +153,60 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [rootComposer, setRootComposer] = useState(false);
   const [rootDraft, setRootDraft] = useState("");
+  const [focusId, setFocusId] = useState<string | null | undefined>(undefined);
+  const [depth, setDepth] = useState(3);
+  const [topicsOpen, setTopicsOpen] = useState(false);
+  const [topicQuery, setTopicQuery] = useState("");
+  const [pendingCenter, setPendingCenter] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const { setCenter, fitView } = useReactFlow();
-  const positions = useMemo(() => layoutGraph(graph), [graph]);
-  const acceptability = useMemo(() => G.getAcceptability(graph), [graph]);
-  const selectedNode = selectedId ? G.getNode(graph, selectedId) : undefined;
+  const index = useMemo(() => indexGraph(graph), [graph]);
+  const effectiveFocusId = focusId === undefined
+    ? graph.nodes.length > 200 ? index.roots[0]?.id || graph.nodes[0]?.id : null
+    : focusId && index.nodes.has(focusId) ? focusId : null;
+  const scope = useMemo(() => selectVisibleGraph(graph, index, {
+    focusId: effectiveFocusId,
+    depth: effectiveFocusId ? depth : Infinity,
+    maxNodes: 200,
+  }), [graph, index, effectiveFocusId, depth]);
+  const displayedGraph = scope.graph;
+  // Content edits do not change the fixed-size layout skeleton.
+  const layoutKey = JSON.stringify([displayedGraph.nodes.map(node => [node.id, node.type]), displayedGraph.edges.map(edge => [edge.id, edge.from, edge.to, edge.edgeType])]);
+  const positions = useMemo(() => layoutGraph(displayedGraph), [layoutKey]);
+  const states = useMemo(() => indexedNodeStates(index), [index]);
+  const acceptability = states.acceptability;
+  const selectedNode = selectedId ? index.nodes.get(selectedId) : undefined;
+  const focus = effectiveFocusId ? index.nodes.get(effectiveFocusId) : undefined;
+  const topics = useMemo(() => index.roots.filter(node => node.content.toLowerCase().includes(topicQuery.trim().toLowerCase())), [index, topicQuery]);
+
+  useEffect(() => {
+    if (!pendingCenter) return;
+    const position = positions[pendingCenter];
+    if (!position) return;
+    const handle = requestAnimationFrame(() => {
+      setCenter(position.x + 115, position.y + 35, { zoom: 1.05, duration: 300 });
+      setPendingCenter(null);
+    });
+    return () => cancelAnimationFrame(handle);
+  }, [pendingCenter, positions, setCenter]);
+
+  const showBranch = (id: string | null) => {
+    setFocusId(id);
+    setSelectedId(null);
+    setPendingCenter(id);
+    setTopicsOpen(false);
+    setDepth(3);
+  };
+  useEffect(() => {
+    if (pendingCenter) return;
+    let inner = 0;
+    const handle = requestAnimationFrame(() => { inner = requestAnimationFrame(() => fitView({ duration: 200, padding: 0.2, maxZoom: 1.1 })); });
+    return () => { cancelAnimationFrame(handle); cancelAnimationFrame(inner); };
+  }, [effectiveFocusId, depth, layoutKey, fitView]);
+  const startArgument = onBuildArgument || (() => setRootComposer(true));
+  useEffect(() => {
+    if (selectedId && !index.nodes.has(selectedId)) setSelectedId(null);
+  }, [index, selectedId]);
 
   useEffect(() => {
     if (!selectedNode) return;
@@ -176,13 +231,13 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
 
   const highlighted = useMemo<Set<string> | null>(() => {
     if (!selectedId) return null;
-    const ids = G.getAncestors(graph, selectedId);
-    for (const id of G.getDescendantIds(graph, selectedId)) ids.add(id);
+    const ids = relatedIds(index, selectedId, "parents");
+    for (const id of relatedIds(index, selectedId, "children")) ids.add(id);
     ids.add(selectedId);
     return ids;
-  }, [graph, selectedId]);
+  }, [index, selectedId]);
 
-  const nodes = useMemo<Node<FlowData>[]>(() => graph.nodes.map((node) => ({
+  const nodes = useMemo<Node<FlowData>[]>(() => displayedGraph.nodes.map((node) => ({
     id: node.id,
     type: "axiomer",
     position: positions[node.id] ?? { x: 0, y: 0 },
@@ -190,11 +245,11 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
       node,
       selected: node.id === selectedId,
       dimmed: Boolean(highlighted && !highlighted.has(node.id)),
-      grounded: G.isNodeGrounded(graph, node.id),
+      grounded: states.grounded.get(node.id) || false,
     },
-  })), [graph, positions, selectedId, highlighted]);
+  })), [displayedGraph, positions, selectedId, highlighted, states]);
 
-  const edges = useMemo<Edge[]>(() => graph.edges.map((edge) => {
+  const edges = useMemo<Edge[]>(() => displayedGraph.edges.map((edge) => {
     const { parent, child } = G.edgeEndpoints(edge);
     const active = !highlighted || (highlighted.has(parent) && highlighted.has(child));
     return {
@@ -215,7 +270,7 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
         strokeDasharray: edge.edgeType === "conflicts" ? "5 5" : undefined,
       },
     };
-  }), [graph.edges, highlighted]);
+  }), [displayedGraph.edges, highlighted]);
 
   const matches = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -226,9 +281,10 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
   const focusNode = useCallback((node: GraphNode) => {
     setSelectedId(node.id);
     setQuery("");
-    const position = positions[node.id];
-    if (position) setCenter(position.x + 115, position.y + 35, { zoom: 1.05, duration: 450 });
-  }, [positions, setCenter]);
+    setFocusId(node.id);
+    setDepth(3);
+    setPendingCenter(node.id);
+  }, []);
 
   const submitAdd = () => {
     if (!selectedNode || !addingType || !addDraft.trim() || !onAddNode) return;
@@ -242,7 +298,7 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
     : [];
   const terminalChoices = G.getTerminals(graph).filter((node) => node.id !== selectedId);
   const nodeAcceptability = selectedId ? acceptability.get(selectedId) : undefined;
-  const nodeGrounded = selectedId ? G.isNodeGrounded(graph, selectedId) : true;
+  const nodeGrounded = selectedId ? states.grounded.get(selectedId) : true;
   const status = nodeAcceptability === "conflicted"
     ? { label: "Conflicted", className: "bg-rose-50 text-rose-700 ring-rose-200" }
     : nodeGrounded
@@ -250,13 +306,14 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
       : { label: "Open", className: "bg-amber-50 text-amber-700 ring-amber-200" };
 
   return (
-    <div className="relative h-full min-h-[520px] overflow-hidden bg-[var(--canvas)]">
+    <div className="relative h-full min-h-0 overflow-hidden bg-[var(--canvas)]">
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onNodeClick={(_, node) => setSelectedId((current) => current === node.id ? null : node.id)}
         onPaneClick={() => setSelectedId(null)}
+        onlyRenderVisibleElements
         nodesDraggable={false}
         nodesConnectable={false}
         fitView
@@ -270,14 +327,14 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
         <MiniMap pannable zoomable className="!bottom-4 !right-4 !hidden !rounded-xl !border !border-slate-200 !bg-white sm:!block" nodeColor={(node) => NODE_META[(node.data as FlowData).node.type].color} maskColor="rgba(247,247,244,.78)" />
       </ReactFlow>
 
-      {graph.nodes.length === 0 && onCreateRoot && <EmptyMap onCreate={onCreateRoot} />}
+      {graph.nodes.length === 0 && onCreateRoot && <EmptyMap onCreate={onCreateRoot} onGuided={onBuildArgument} />}
 
       {graph.nodes.length > 0 && (
         <div className="absolute left-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] items-start gap-2 sm:left-4 sm:top-4">
           <div className="relative w-56 max-w-[calc(100vw-7rem)]">
             <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a thought…" className="w-full rounded-xl border border-slate-200 bg-white/95 py-2 pl-9 pr-9 text-sm shadow-sm outline-none backdrop-blur focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60" />
-            {query && <button onClick={() => setQuery("")} className="absolute right-2 top-2 rounded p-1 text-slate-400 hover:bg-slate-100"><X className="h-3.5 w-3.5" /></button>}
+            <input aria-label="Find a thought" ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a thought…" className="w-full rounded-xl border border-slate-200 bg-white/95 py-2 pl-9 pr-9 text-sm shadow-sm outline-none backdrop-blur focus:border-slate-400 focus:ring-4 focus:ring-slate-200/60" />
+            {query && <button aria-label="Clear thought search" onClick={() => setQuery("")} className="absolute right-2 top-2 rounded p-1 text-slate-400 hover:bg-slate-100"><X className="h-3.5 w-3.5" /></button>}
             {query && (
               <div className="absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
                 {matches.length ? matches.map((node) => (
@@ -291,7 +348,7 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
             )}
           </div>
           {onCreateRoot && (
-            <button onClick={() => setRootComposer(true)} className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50" aria-label="Add a starting thought" title="Add a starting thought">
+            <button onClick={startArgument} className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50" aria-label={onBuildArgument ? "Build an argument" : "Add a starting thought"} title={onBuildArgument ? "Build an argument" : "Add a starting thought"}>
               <Plus className="h-4 w-4" />
             </button>
           )}
@@ -299,10 +356,38 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
         </div>
       )}
 
+      {graph.nodes.length > 0 && <VStack className="map-navigation" gap={2} padding={2} aria-label="Map scope">
+        <HStack gap={2} vAlign="center" wrap="wrap">
+          <Button label={focus ? "Change topic" : "Topics"} size="sm" icon={<Icon icon="chevronDown" />} aria-haspopup="dialog" aria-expanded={topicsOpen} onClick={() => setTopicsOpen(true)} />
+          {focus && <Button label="All topics" size="sm" variant="ghost" onClick={() => showBranch(null)} />}
+          {focus && <Text type="supporting" maxLines={1}>{focus.content}</Text>}
+        </HStack>
+        {(focus || scope.truncated) && <HStack gap={1} wrap="wrap" aria-label="Visible tree depth">
+          {([{ value: 1, label: "2 levels" }, { value: 3, label: "4 levels" }, { value: Infinity, label: "All levels" }]).map(option => <Button key={option.label} label={option.label} size="sm" variant={depth === option.value ? "secondary" : "ghost"} aria-pressed={depth === option.value} onClick={() => { setDepth(option.value); if (!effectiveFocusId) setFocusId(index.roots[0]?.id || graph.nodes[0]?.id); }} />)}
+        </HStack>}
+        <Text type="supporting" color="secondary">Showing {displayedGraph.nodes.length} of {graph.nodes.length} thoughts{scope.truncated ? " · Search or focus a branch for more" : ""}</Text>
+        {focus && Boolean(index.parents.get(focus.id)?.length) && <HStack gap={1} wrap="wrap">
+          {(index.parents.get(focus.id) || []).slice(0, 3).map(id => <Button key={id} label={`Up: ${index.nodes.get(id)?.content || "Parent thought"}`} size="sm" variant="ghost" onClick={() => showBranch(id)} />)}
+        </HStack>}
+      </VStack>}
+
+      <BottomSheet isOpen={topicsOpen} onOpenChange={setTopicsOpen} label="Choose a topic" height="tall">
+        <VStack gap={3} padding={3}>
+          <Heading level={2}>Choose a topic</Heading>
+          <Text color="secondary">Work on one tree at a time. Search the map above to jump to any thought.</Text>
+          <TextInput label="Find a topic" value={topicQuery} onChange={setTopicQuery} type="search" />
+          <Button label="All topics" onClick={() => showBranch(null)} />
+          {topics.slice(0, 100).map(node => <Button key={node.id} label={node.content} width="100%" onClick={() => showBranch(node.id)} />)}
+          {topics.length > 100 && <Text type="supporting">Showing the first 100 topics. Refine your topic search.</Text>}
+          {topics.length === 0 && <Text type="supporting">No topics match. Search the full map for a specific thought.</Text>}
+          <Button label="Close topics" variant="ghost" onClick={() => setTopicsOpen(false)} />
+        </VStack>
+      </BottomSheet>
+
       {!selectedNode && !rootComposer && (
         <HStack as="nav" aria-label="Map actions" gap={2} padding={2} hAlign="between" vAlign="center" className="map-thumb-dock sm:!hidden">
           <Button label="Find" size="lg" variant="ghost" icon={<Icon icon={Search} />} onClick={() => searchRef.current?.focus()} />
-          {onCreateRoot && <Button label="Add thought" size="lg" variant="primary" icon={<Icon icon={Plus} />} onClick={() => setRootComposer(true)} />}
+          {onCreateRoot && <Button label={onBuildArgument ? "Build argument" : "Add thought"} size="lg" variant="primary" icon={<Icon icon={Plus} />} onClick={startArgument} />}
           <Button label="Fit map" size="lg" variant="ghost" onClick={() => fitView({ duration: 400, padding: 0.2, maxZoom: 1.1 })} />
         </HStack>
       )}
@@ -343,6 +428,11 @@ function GraphMapInner({ graph, onCreateRoot, onAddNode, onEditNode, onDeleteNod
           ) : (
             <button onDoubleClick={() => onEditNode && setEditing(true)} onClick={() => onEditNode && setEditing(true)} className="mt-5 w-full text-left text-base font-medium leading-7 text-slate-900">{selectedNode.content}</button>
           )}
+
+          <HStack gap={2} paddingBlock={3} wrap="wrap">
+            <Button label="Focus this branch" size="sm" onClick={() => { setFocusId(selectedNode.id); setPendingCenter(selectedNode.id); setDepth(3); }} />
+            {!isTerminalType(selectedNode.type) && onAttachTree && <Button label="Attach a tree" size="sm" onClick={() => onAttachTree(selectedNode.id)} />}
+          </HStack>
 
           {!isTerminalType(selectedNode.type) && onAddNode && (
             <div className="mt-6 border-t border-slate-100 pt-5">

@@ -9,3 +9,6 @@ yarn-debug.log*
 yarn-error.log*
 
 *.tsbuildinfo
+
+# Local browser verification output
+test-results/

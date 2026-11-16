@@ -132,8 +132,11 @@ describe("value reuse (convergence)", () => {
 });
 
 describe("deletion", () => {
-  it("removes a node and all descendants", () => {
-    const g = G.deleteNode(seedGraph, "trolley-p1");
+  it("removes a node and all unshared descendants", () => {
+    // a1 also has an external context parent q2 in the example; isolate this
+    // fixture so this test covers an exclusively owned subtree.
+    const unshared = { ...seedGraph, edges: seedGraph.edges.filter((edge) => edge.id !== "t-edge-5") };
+    const g = G.deleteNode(unshared, "trolley-p1");
     for (const id of ["trolley-p1", "trolley-a1", "trolley-e1", "trolley-c1"]) {
       expect(G.getNode(g, id)).toBeUndefined();
     }
@@ -464,5 +467,79 @@ describe("Status Profiles", () => {
     
     expect(G.computeArchetype([mockRank("value")])).toContain("Value-grounded");
     expect(G.computeArchetype([mockRank("limit")])).toContain("Epistemically cautious");
+  });
+});
+
+
+describe("shared reasoning deletion and large-map traversal", () => {
+  const sharedReasoning = (): Graph => ({
+    nodes: [
+      { id: "first", type: "claim", content: "First question" },
+      { id: "second", type: "claim", content: "Second question" },
+      { id: "owned", type: "note", content: "First question's own context" },
+      { id: "reason", type: "support", content: "Shared reasoning" },
+      { id: "bridge", type: "premise", content: "A deeper assumption" },
+      { id: "source", type: "source", content: "Shared evidence" },
+      { id: "value", type: "value", content: "Shared foundation" },
+    ],
+    edges: [
+      { id: "a", from: "reason", to: "first", edgeType: "supports" },
+      { id: "b", from: "reason", to: "second", edgeType: "supports" },
+      { id: "c", from: "owned", to: "first", edgeType: "annotates" },
+      { id: "d", from: "bridge", to: "reason", edgeType: "annotates" },
+      { id: "e", from: "bridge", to: "source", edgeType: "cites" },
+      { id: "f", from: "bridge", to: "value", edgeType: "grounds" },
+    ],
+  });
+
+  it("keeps a shared nonterminal branch and all its descendants through a surviving root", () => {
+    const graph = sharedReasoning();
+    const before = JSON.stringify(graph);
+    expect(G.countDescendants(graph, "first")).toBe(1); // owned context only
+    const next = G.deleteNode(graph, "first");
+    expect(next.nodes.map((node) => node.id)).toEqual(["second", "reason", "bridge", "source", "value"]);
+    expect(G.getChildren(next, "second").map((node) => node.id)).toEqual(["reason"]);
+    expect(G.getChildren(next, "bridge").map((node) => node.id)).toEqual(["source", "value"]);
+    expect(next.edges.map((edge) => edge.id)).toEqual(["b", "d", "e", "f"]);
+    expect(JSON.stringify(graph)).toBe(before);
+  });
+
+  it("explicitly deletes a shared selected node while leaving its ancestors intact", () => {
+    const graph = sharedReasoning();
+    const next = G.deleteNode(graph, "reason");
+    expect(next.nodes.map((node) => node.id)).toEqual(["first", "second", "owned"]);
+    expect(next.edges.map((edge) => edge.id)).toEqual(["c"]);
+    expect(G.countDescendants(graph, "reason")).toBe(3);
+  });
+
+  it("protects a descendant independently shared below an explicitly deleted thought", () => {
+    const graph = sharedReasoning();
+    graph.edges.push({ id: "other-evidence", from: "second", to: "source", edgeType: "cites" });
+    const next = G.deleteNode(graph, "reason");
+    expect(next.nodes.map((node) => node.id)).toEqual(["first", "second", "owned", "source"]);
+    expect(next.edges.map((edge) => edge.id)).toEqual(["c", "other-evidence"]);
+    expect(G.countDescendants(graph, "reason")).toBe(2);
+  });
+
+  it("preserves the seeded context branch that has another root", () => {
+    const next = G.deleteNode(seedGraph, "trolley-p1");
+    expect(G.getNode(next, "trolley-p1")).toBeUndefined();
+    for (const id of ["trolley-a1", "trolley-e1", "trolley-c1"]) expect(G.getNode(next, id)).toBeDefined();
+    expect(G.getChildren(next, "trolley-q2").some((node) => node.id === "trolley-a1")).toBe(true);
+  });
+
+  it("traverses and deletes a 10,000-thought chain without recursive calls or repeated scans", () => {
+    const graph: Graph = {
+      nodes: Array.from({ length: 10_000 }, (_, index) => ({ id: `n${index}`, type: "claim", content: `Thought ${index}` })),
+      edges: Array.from({ length: 9_999 }, (_, index) => ({ id: `e${index}`, from: `n${index + 1}`, to: `n${index}`, edgeType: "supports" })),
+    };
+    const descendants = G.getDescendantIds(graph, "n0");
+    const ancestors = G.getAncestors(graph, "n9999");
+    expect(descendants.size).toBe(10_000);
+    expect(descendants.has("n0")).toBe(true);
+    expect(ancestors.size).toBe(9_999);
+    expect(ancestors.has("n9999")).toBe(false);
+    expect(G.countDescendants(graph, "n0")).toBe(9_999);
+    expect(G.deleteNode(graph, "n0")).toEqual({ nodes: [], edges: [] });
   });
 });
